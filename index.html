@@ -87,6 +87,13 @@ button:disabled{opacity:.55;cursor:default}
 .route .pd{font-size:11px;color:var(--mut);display:flex;gap:6px;min-width:0}.route .pdt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.route .pd a{flex:none}
 .route a{color:var(--acc2)}
 .route .stp .pk{color:#ffd23f}.route .stp.done{opacity:.55}
+.pqjob{margin-top:8px;padding:8px 10px;border:1px solid #3a2d55;border-left:3px solid #a371f7;border-radius:10px;background:#1a1626;font-size:12.5px}
+.pqjob .h{display:flex;justify-content:space-between;font-weight:700;color:var(--txt)}.pqjob .w{color:var(--mut);margin-top:2px}.pqjob .frag{color:var(--warn)}
+.pqtag{background:#251a3a!important;color:#c9a7ff!important;border-color:#a371f7!important}
+.pq-ic{display:inline-block;min-width:34px;padding:1px 5px;border-radius:12px;background:#a371f7;color:#fff;font:700 11px/18px sans-serif;text-align:center;border:2px solid #111;white-space:nowrap}
+.pq-ic.pu{background:#21d07a;color:#111}.pq-ic.de{background:#f85149}.pq-ic.ret{background:#d29922;color:#111}.pq-ic.done{background:#555;color:#ccc;opacity:.7}
+.pqcode{display:flex;gap:8px;margin-top:8px;align-items:stretch}.pqcode .btn{flex:1 1 auto;width:auto;min-width:0;margin:0}#pqCode{flex:0 0 7.2em;width:7.2em;min-width:6em;box-sizing:border-box;background:#0f141a;color:var(--txt);border:1px solid var(--line);border-radius:8px;font:inherit;font-size:22px;font-weight:700;letter-spacing:6px;text-align:center;padding:6px;min-height:44px}
+.pqstops .pl.pqdone{opacity:.5}.pqstops .pl.pqcur .pn{color:var(--acc)}.pqall summary{cursor:pointer;font-size:12.5px;color:var(--mut);margin-top:8px}
 .stop-icon{width:20px;height:20px;border-radius:50%;background:#ffd23f;color:#111;font:700 11px/20px sans-serif;text-align:center;border:2px solid #111;box-shadow:0 0 0 2px #ffd23f}
 .stop-icon.fer{background:#00d4ff;box-shadow:0 0 0 2px #00d4ff}
 .hub-icon{font-size:16px;line-height:22px;text-align:center;filter:drop-shadow(0 0 2px #000)}
@@ -335,6 +342,17 @@ button:disabled{opacity:.55;cursor:default}
         <label for="acceptSel">Tiempo para aceptar</label>
         <select id="acceptSel"><option value="30">30 s</option><option value="45">45 s</option><option value="60">60 s</option><option value="90">90 s</option><option value="0">Sin límite</option></select>
       </div>
+      <div class="sec" id="secPq">
+        <h2>📦 Paquetería <span class="simtag">simulada</span></h2>
+        <label class="ck"><input type="checkbox" id="pqOn" title="Recibir también envíos de paquetería (solo en modo Urbano)"> Envíos de paquetería (solo Urbano)</label>
+        <div class="g2">
+          <div><label for="pqDay">De día (7–22 h)</label><select id="pqDay"><option value="2">1 de cada 2</option><option value="3.5">1 de cada 3–4</option><option value="6">1 de cada 6</option><option value="10">1 de cada 10</option></select></div>
+          <div><label for="pqNight">De noche (22–7 h)</label><select id="pqNight"><option value="8">1 de cada 8</option><option value="15">1 de cada 15</option><option value="25">1 de cada 25</option><option value="0">Nunca</option></select></div>
+          <div><label for="eComP">Comisión paquetería (%)</label><input type="number" id="eComP" min="0" max="100" step="1"></div>
+        </div>
+        <div class="hint" id="pqHint"></div>
+        <div class="hint">Envíos, remitentes, destinatarios, códigos y tarifas son <b>simulados</b> (no son de ninguna empresa real). Recogidas y entregas en lugares reales de OpenStreetMap. Varios envíos a la vez solo si las recogidas están en la misma zona (≈ 1,5 km). Fuera de ciudad (menos de 50.000 hab.) salen menos. De noche solo pedidos urgentes de farmacias o tiendas 24 h. Nunca se mezclan con pasajeros ni con BlaBlaCar.</div>
+      </div>
       <div class="sec" id="secVeh">
         <h2>Tu vehículo</h2>
         <select id="vehSel"><option value="">Sin especificar (genérico)</option>
@@ -393,7 +411,7 @@ button:disabled{opacity:.55;cursor:default}
           <div class="stat"><div class="v" id="sKm">0,0</div><div class="k">Kilómetros</div></div>
           <div class="stat"><div class="v" id="sTips">0,00 €</div><div class="k">Propinas (simuladas)</div></div>
           <div class="stat"><div class="v" id="sFees">0,00 €</div><div class="k">Esperas y cancelaciones</div></div>
-          <div class="stat big" style="padding:6px 10px"><div class="k">Cancelados: <b id="sCan" style="color:var(--txt)">0</b></div></div>
+          <div class="stat big" style="padding:6px 10px"><div class="k">Cancelados: <b id="sCan" style="color:var(--txt)">0</b> · 📦 Envíos entregados: <b id="sPq" style="color:var(--txt)">0</b></div></div>
         </div>
       </div>
       <div class="sec">
@@ -414,7 +432,7 @@ button:disabled{opacity:.55;cursor:default}
   <div class="mfilt">
     <label>Desde<input type="date" id="hmFrom"></label><label>Hasta<input type="date" id="hmTo"></label>
     <button class="mbtn" id="hmToday">Hoy</button><button class="mbtn" id="hmAll">Quitar filtros</button>
-    <label>Servicio<select id="hmSvc"><option value="">Todos</option><option value="urbano">🏙️ Urbano</option><option value="compartido">🛣️ Compartido</option></select></label>
+    <label>Servicio<select id="hmSvc"><option value="">Todos</option><option value="urbano">🏙️ Urbano</option><option value="compartido">🛣️ Compartido</option><option value="paquete">📦 Paquetería</option></select></label>
     <label>Ciudad<select id="hmCity"><option value="">Todas</option></select></label>
   </div>
   <div class="mtot" id="hmTot"></div>
@@ -823,11 +841,11 @@ const LS = "simConductorV1";
 const today = tz => tzParts(new Date(),tz).ymd; // fecha de 'Hoy' en la zona horaria del simulador
 let S = load();
 function defState(){const c=CITIES[0];return {settings:{city:0,center:c.c,home:c.c,place:c.n,radius:3,svc:"urbano",custom:false,acceptSec:45,vehicle:null,sup:{air:5.5,st:1.5},clock:{mode:"real",dow:6,hour:1,setAt:0},tz:"madrid",snd:{vol:70,mute:false,notif:false,on:{}},wake:null,voz:{on:true,voice:"",rate:1,vol:90,rating:false,quien:true,ev:{},resumen:60},
-  exp:{type:"gasolina",cons:{gasolina:6.5,diesel:5.5,electrico:16,hibrido:4.5},price:{gasolina:1.6,diesel:1.5,electrico:0.25,hibrido:1.6},comU:25,comS:0,fixH:0,ferry:60,seatKm:0.05},ev:Object.assign({},EV_DEF),goals:{net:150,trips:15,hours:8}},
+  exp:{type:"gasolina",cons:{gasolina:6.5,diesel:5.5,electrico:16,hibrido:4.5},price:{gasolina:1.6,diesel:1.5,electrico:0.25,hibrido:1.6},comU:25,comS:0,comP:20,fixH:0,ferry:60,seatKm:0.05},pq:{on:true,day:3.5,night:15},ev:Object.assign({},EV_DEF),goals:{net:150,trips:15,hours:8}},
   driver:c.c,trip:null,online:false,
-  day:today(),stats:{earn:0,trips:0,offered:0,accepted:0,cancelled:0,rateSum:0,rateN:0,km:0,net:0,energy:0,com:0,ferry:0,onlineMs:0,tips:0,fees:0,stops:0},history:[],rates:[],shift:null,shifts:[],lvl:{ev:[],last:"azul",warn:null}};}
+  day:today(),stats:{earn:0,trips:0,offered:0,accepted:0,cancelled:0,rateSum:0,rateN:0,km:0,net:0,energy:0,com:0,ferry:0,onlineMs:0,tips:0,fees:0,stops:0,pq:0},history:[],rates:[],shift:null,shifts:[],lvl:{ev:[],last:"azul",warn:null}};}
 function load(){try{const s=JSON.parse(localStorage.getItem(LS));if(s&&s.settings&&s.stats){
-  const d=defState();s.settings=Object.assign({},d.settings,s.settings);s.settings.exp=Object.assign({},d.settings.exp,s.settings.exp);s.settings.sup=Object.assign({},d.settings.sup,s.settings.sup);s.settings.ev=Object.assign({},d.settings.ev,s.settings.ev);s.settings.snd=Object.assign({},d.settings.snd,s.settings.snd);s.settings.snd.on=Object.assign({},s.settings.snd.on);s.settings.voz=Object.assign({},d.settings.voz,s.settings.voz);s.settings.voz.ev=Object.assign({},s.settings.voz.ev);s.settings.goals=Object.assign({},d.settings.goals,s.settings.goals);
+  const d=defState();s.settings=Object.assign({},d.settings,s.settings);s.settings.exp=Object.assign({},d.settings.exp,s.settings.exp);s.settings.sup=Object.assign({},d.settings.sup,s.settings.sup);s.settings.ev=Object.assign({},d.settings.ev,s.settings.ev);s.settings.snd=Object.assign({},d.settings.snd,s.settings.snd);s.settings.snd.on=Object.assign({},s.settings.snd.on);s.settings.voz=Object.assign({},d.settings.voz,s.settings.voz);s.settings.voz.ev=Object.assign({},s.settings.voz.ev);s.settings.goals=Object.assign({},d.settings.goals,s.settings.goals);s.settings.pq=Object.assign({},d.settings.pq,s.settings.pq);
   if(s.shift===undefined)s.shift=null;if(!Array.isArray(s.shifts))s.shifts=[];if(!s.lvl||!Array.isArray(s.lvl.ev))s.lvl={ev:[],last:"azul",warn:null};if(s.pub===undefined||(s.pub&&!Array.isArray(s.pub.B)))s.pub=null;
   if(!s.settings.home)s.settings.home=s.settings.center;
   if(!s.driver)s.driver=s.settings.center;
@@ -996,7 +1014,7 @@ function syncUI(){
   selCity.value=S.settings.custom?"custom":S.settings.city;
   $("radius").value=S.settings.radius;$("radVal").textContent=S.settings.radius;
   document.querySelectorAll("#svc button").forEach(b=>b.classList.toggle("on",b.dataset.s===S.settings.svc));
-  $("acceptSel").value=String(S.settings.acceptSec);
+  $("acceptSel").value=String(S.settings.acceptSec);if($("pqHint"))pqSync();
   $("svcHint").textContent=S.settings.svc==="urbano"
     ?"Trayectos cortos alrededor de tu posición, estilo VTC/taxi. Tarifa simulada: 2,50 € + 1,10 €/km + 0,25 €/min (mín. 5 €)."
     :`Viajes entre ciudades con varias plazas, estilo coche compartido; salen desde la ciudad donde estés. Aportación por plaza: ${String(S.settings.exp.seatKm).replace(".",",")} €/km (recomendación de BlaBlaCar en España: 0,05 €/km; editable en Gastos).`;
@@ -1081,14 +1099,16 @@ const legFactor=km=>1-0.13*Math.min(1,Math.max(0,(km-30)/170));
 const legMin=l=>l.s/60*legFactor(l.km);
 const STOP_MIN=8; // minutos por parada intermedia (recoger / dejar pasajeros), supuesto del simulador
 function seatPrice(km){const v=+S.settings.exp.seatKm;return Math.round(Math.max(FARE.seatMin,(isFinite(v)?v:FARE.seatKm)*km)*100)/100;}
-function expCalc(fare,kmTot,svc,r){const e=S.settings.exp,pct=svc==="compartido"?e.comS:e.comU;
+function svcIc(v){return v==="urbano"?"🏙️":v==="paquete"?"📦":"🛣️";}
+function svcName(v){return v==="urbano"?"Urbano":v==="paquete"?"Paquetería":"Compartido";}
+function expCalc(fare,kmTot,svc,r){const e=S.settings.exp,pct=svc==="compartido"?e.comS:svc==="paquete"?(e.comP!=null?+e.comP:20):e.comU;
   const com=fare*pct/100,energy=energyCost(kmTot),ferry=r&&r.ferry?(+e.ferry||0):0;return {fare,pct,com,energy,ferry,kmTot,net:fare-com-energy-ferry};}
 function netEstHTML(r){const x=expCalc(r.price,r.pickupDist+r.km,r.svc,r);
   const v=curVeh();
   return `${v?`Con tu ${v.icon} ${esc(vehName(v))} · `:""}Neto estimado <b>${eur(x.net)}</b> <span style="color:var(--mut)">· comisión ${x.pct.toLocaleString("es-ES")} % (${eur(x.com)}) · energía ${eur(x.energy)} (${num1(x.kmTot)} km)${x.ferry?" · ferry "+eur(x.ferry)+" (ejemplo)":""}</span>${x.net<0?` <span class="nocub">⚠️ no cubres gastos</span>`:""}`;}
 function refreshNet(){if(curReq&&$("netEst"))$("netEst").innerHTML=netEstHTML(curReq);if(trip&&!animating)showTrip(false);}
 function syncExpUI(){const e=S.settings.exp;$("eType").value=e.type;$("eCons").value=e.cons[e.type];$("ePrice").value=e.price[e.type];
-  $("eComU").value=e.comU;$("eComS").value=e.comS;$("eFix").value=e.fixH;$("eFerry").value=e.ferry;$("eSeatKm").value=e.seatKm;$("supAir").value=S.settings.sup.air;$("supSt").value=S.settings.sup.st;$("uCons").textContent=EUNIT[e.type][0];$("uPrice").textContent=EUNIT[e.type][1];}
+  $("eComU").value=e.comU;$("eComS").value=e.comS;$("eComP").value=e.comP!=null?e.comP:20;pqSync();$("eFix").value=e.fixH;$("eFerry").value=e.ferry;$("eSeatKm").value=e.seatKm;$("supAir").value=S.settings.sup.air;$("supSt").value=S.settings.sup.st;$("uCons").textContent=EUNIT[e.type][0];$("uPrice").textContent=EUNIT[e.type][1];}
 function readNum(id,max){let v=parseFloat(String($(id).value).replace(",","."));if(!isFinite(v)||v<0)v=0;if(max!=null)v=Math.min(max,v);return v;}
 const EV_IDS={evWaitFree:["waitFree",30],evWaitFee:["waitFee",5],evNoShowMin:["noShowMin",30],evNoShowFee:["noShowFee",50],evCancelKm:["cancelKm",20],evCancelFee:["cancelFee",50],evBbComp:["bbComp",100],evScale:["tscale",60]};
 function syncEvUI(){const e=S.settings.ev;$("evFreq").value=e.freq;$("evSpeed").value=e.speed||"rapida";for(const id in EV_IDS)$(id).value=e[EV_IDS[id][0]];}
@@ -1098,6 +1118,15 @@ Object.keys(EV_IDS).forEach(id=>$(id).onchange=()=>{const [k,mx]=EV_IDS[id];S.se
 syncEvUI();
 $("eType").onchange=()=>{S.settings.exp.type=$("eType").value;save();syncExpUI();renderStats();refreshNet();renderCityInfo();};
 ["supAir","supSt"].forEach(id=>$(id).onchange=()=>{S.settings.sup.air=readNum("supAir");S.settings.sup.st=readNum("supSt");save();syncExpUI();});
+function pqSync(){const P=S.settings.pq||{on:true,day:3.5,night:15};$("pqOn").checked=!!P.on;$("pqDay").value=String(P.day);$("pqNight").value=String(P.night);
+  ["pqDay","pqNight","eComP"].forEach(id=>$(id).disabled=!P.on);
+  const urb=S.settings.svc==="urbano",c=nearestCity(S.driver||S.settings.center,12),city=c&&(c.pop||0)>=50000;
+  $("pqHint").innerHTML=!P.on?"Desactivada: solo pasajeros.":!urb?"⚠️ Ahora estás en modo Compartido: la paquetería solo sale en modo Urbano.":
+    `Aquí (${city?"zona urbana: "+esc(c.n):"fuera de ciudad"}): de día ≈ 1 de cada ${num1(P.day/(city?1:.4))} solicitudes; de noche ${+P.night?"≈ 1 de cada "+num1(P.night/(city?1:.5))+" (solo urgentes)":"nunca"}.`;}
+$("pqOn").onchange=()=>{pqS().on=$("pqOn").checked;save();pqSync();};
+$("pqDay").onchange=()=>{pqS().day=+$("pqDay").value;save();pqSync();};
+$("pqNight").onchange=()=>{pqS().night=+$("pqNight").value;save();pqSync();};
+$("eComP").onchange=()=>{S.settings.exp.comP=readNum("eComP",100);save();pqSync();};
 ["eCons","ePrice","eComU","eComS","eFix","eFerry","eSeatKm"].forEach(id=>$(id).onchange=()=>{const e=S.settings.exp;e.ferry=readNum("eFerry");e.seatKm=readNum("eSeatKm",0.5);
   e.cons[e.type]=readNum("eCons");e.price[e.type]=readNum("ePrice");e.comU=readNum("eComU",100);e.comS=readNum("eComS",100);e.fixH=readNum("eFix");
   save();syncExpUI();renderStats();refreshNet();if(id==="eSeatKm")syncUI();});
@@ -1117,14 +1146,14 @@ function renderStats(){
   $("sRate").textContent=s.rateN?"★ "+(s.rateSum/s.rateN).toFixed(2).replace(".",","):"–";
   {const a=drvAvg(),n=(S.rates||[]).length;$("sDrv").textContent=a==null?"–":"★ "+a.toFixed(2).replace(".",",");$("sDrv").title=n?`Media de tus últimas ${n} valoraciones (máx. 500), como en las apps de VTC · simulada`:"Aún sin valoraciones";}
   $("sStops").textContent=s.stops||0;$("sStops").title="Paradas que has comunicado (o hecho sin avisar) hoy";
-  $("sKm").textContent=num1(s.km);$("sCan").textContent=s.cancelled;$("sTips").textContent=eur(s.tips||0);$("sFees").textContent=eur(s.fees||0);
+  $("sKm").textContent=num1(s.km);$("sCan").textContent=s.cancelled;$("sPq").textContent=s.pq||0;$("sTips").textContent=eur(s.tips||0);$("sFees").textContent=eur(s.fees||0);
   $("sFees").title="Tarifas de espera, de 'no se presenta' y compensaciones por cancelación (simuladas); incluidas en bruto y neto";
   const h=$("hist");h.innerHTML="";
   const HL=HREC||S.history;
   if(!HL.length){h.innerHTML='<li><span class="m">Aún no hay viajes. ¡Conéctate!</span></li>';return;}
   HL.slice(0,50).forEach(t=>{const li=document.createElement("li");
     const can=t.status!=="ok",evs=(t.ev||[]);
-    li.innerHTML=`<div><div>${t.svc==="urbano"?"🏙️":"🛣️"} ${esc(t.from)} → ${esc(t.to)}${t.via?`<span class="m"> · vía ${esc(t.via)}</span>`:""}</div><div class="m">${t.time} · ${t.pax} · ${num1(t.km)} km${t.surge>1?" · ⚡"+fx(t.surge):""}${can?" · "+esc(t.status):" · ★"+t.rate+(t.rates&&t.rates.length>1?" ("+t.rates.map(x=>x.rate+"★").join(" ")+")":"")}</div>${t.comment&&!can?`<div class="hcm">💬 “${esc(t.comment)}”</div>`:""}${evs.length?`<div class="hev" title="${esc(evs.map(e=>e.t).join("\n"))}">${evs.map(e=>e.ic).join(" ")} ${esc(evs.map(e=>e.t).join(" · "))}</div>`:""}</div><div class="p" style="${can&&!(t.net>0)?"color:var(--bad)":""}">${t.net!=null?eur(t.net):can?"0,00 €":eur(t.price)}${t.net!=null?`<small>${can?(t.fees?"compensación "+eur(t.fees)+" · ":"")+"energía "+eur(t.energy):"bruto "+eur(t.price)+(t.tip?" · propina "+eur(t.tip):"")+" · com. "+eur(t.com)+" · energía "+eur(t.energy)+(t.ferry?" · ferry "+eur(t.ferry):"")}</small>`:""}</div>`;
+    li.innerHTML=`<div><div>${svcIc(t.svc)} ${esc(t.from)} → ${esc(t.to)}${t.via?`<span class="m"> · vía ${esc(t.via)}</span>`:""}</div><div class="m">${t.time} · ${t.pax} · ${num1(t.km)} km${t.surge>1?" · ⚡"+fx(t.surge):""}${can?" · "+esc(t.status):" · ★"+t.rate+(t.rates&&t.rates.length>1?" ("+t.rates.map(x=>x.rate+"★").join(" ")+")":"")}</div>${t.comment&&!can?`<div class="hcm">💬 “${esc(t.comment)}”</div>`:""}${evs.length?`<div class="hev" title="${esc(evs.map(e=>e.t).join("\n"))}">${evs.map(e=>e.ic).join(" ")} ${esc(evs.map(e=>e.t).join(" · "))}</div>`:""}</div><div class="p" style="${can&&!(t.net>0)?"color:var(--bad)":""}">${t.net!=null?eur(t.net):can?"0,00 €":eur(t.price)}${t.net!=null?`<small>${can?(t.fees?"compensación "+eur(t.fees)+" · ":"")+"energía "+eur(t.energy):"bruto "+eur(t.price)+(t.tip?" · propina "+eur(t.tip):"")+" · com. "+eur(t.com)+" · energía "+eur(t.energy)+(t.ferry?" · ferry "+eur(t.ferry):"")}</small>`:""}</div>`;
     h.appendChild(li);});
 }
 $("btnReset").onclick=()=>{
@@ -1187,7 +1216,9 @@ const OVERPASS=["https://overpass-api.de/api/interpreter","https://overpass.kumi
 const OSM_ES={hotel:"Hotel",hostel:"Albergue",guest_house:"Pensión",station:"Estación",halt:"Apeadero",bus_station:"Estación de autobuses",aerodrome:"Aeropuerto",
   hospital:"Hospital",clinic:"Clínica",university:"Universidad",college:"Centro de estudios",mall:"Centro comercial",department_store:"Grandes almacenes",
   supermarket:"Supermercado",pharmacy:"Farmacia",atm:"Cajero automático",bank:"Banco",convenience:"Tienda de alimentación",pub:"Pub",nightclub:"Discoteca",company:"Oficinas",government:"Organismo público",museum:"Museo",theatre:"Teatro",cinema:"Cine",stadium:"Estadio",sports_centre:"Polideportivo",restaurant:"Restaurante",cafe:"Cafetería",
-  bar:"Bar",library:"Biblioteca",townhall:"Ayuntamiento",ferry_terminal:"Terminal de ferris",attraction:"Atracción turística"};
+  bar:"Bar",library:"Biblioteca",townhall:"Ayuntamiento",ferry_terminal:"Terminal de ferris",attraction:"Atracción turística",
+  clothes:"Tienda de ropa",shoes:"Zapatería",electronics:"Tienda de electrónica",mobile_phone:"Tienda de telefonía",computer:"Tienda de informática",florist:"Floristería",bakery:"Panadería",pastry:"Pastelería",
+  books:"Librería",stationery:"Papelería",lawyer:"Despacho de abogados",estate_agent:"Inmobiliaria",hardware:"Ferretería",doityourself:"Bricolaje",furniture:"Tienda de muebles",gift:"Tienda de regalos",toys:"Juguetería",jewelry:"Joyería"};
 const G={transport:["railway:station","amenity:bus_station","amenity:ferry_terminal","aeroway:aerodrome"],hotel:["tourism:hotel","tourism:hostel","tourism:guest_house"],
   health:["amenity:hospital","amenity:clinic"],study:["amenity:university","amenity:college","amenity:library"],work:["office:company","office:government","amenity:townhall"],
   shop:["shop:mall","shop:department_store","shop:supermarket"],culture:["tourism:museum","amenity:theatre","amenity:cinema","leisure:stadium","leisure:sports_centre"],
@@ -1413,13 +1444,16 @@ let searching=false;
 async function newRequest(){
   if(searching||curReq||trip||!online)return;
   searching=true;
-  setStatus("Buscando pasajero…");
-  $("overlay").innerHTML='<div class="req"><div style="display:flex;align-items:center;gap:10px"><div class="spin"></div><div><b>Buscando pasajero…</b><div class="sub">Buscando lugares reales y ruta por carretera</div></div></div></div>';
+  const wantPq=Math.random()<pqChance();
+  setStatus(wantPq?"Buscando envío…":"Buscando pasajero…");
+  $("overlay").innerHTML=`<div class="req"><div style="display:flex;align-items:center;gap:10px"><div class="spin"></div><div><b>${wantPq?"Buscando envío…":"Buscando pasajero…"}</b><div class="sub">${wantPq?"Paquetería: tiendas y direcciones reales y ruta por carretera":"Buscando lugares reales y ruta por carretera"}</div></div></div></div>`;
   let r=null;
-  try{r=await makeRequest();if(r)tempsFor(r);}catch(e){r=null;}
+  try{if(wantPq)try{r=await pqMakeRequest();}catch(e){r=null;}
+    if(!r){r=await makeRequest();if(r)tempsFor(r);}}catch(e){r=null;}
   searching=false;
   if(!online||trip||curReq||!r){if(!curReq&&!trip)$("overlay").innerHTML="";idleStatus();if(!r)scheduleReq(nextGap());return;}
   curReq=r;S.stats.offered++;save();renderStats();
+  if(r.svc==="paquete")return pqReqShow(r);
   layerReq.clearLayers();drawRoute(r,0);
   map.fitBounds(routeBounds(r,0),fitPad());
   const isU=r.svc==="urbano";
@@ -1567,7 +1601,7 @@ function evReady(e){const r=trip.r,p1=trip.phase===1,NP=(r.pts||[]).length,si=tr
   if(e.type==="atasco")return !p1&&!isFerLeg(r,Math.min(si-1,r.route.segs.length-1))&&(r.svc!=="urbano"||si>NP);
   if(e.type==="cambio"||e.type==="parada")return !p1&&si>NP;
   return false;}
-function evArm(){clearTimeout(evT);if(!trip||!trip.ev)return;const ev=trip.ev;
+function evArm(){clearTimeout(evT);if(!trip||!trip.ev)return;if(trip.r.svc==="paquete")return pqArm();const ev=trip.ev;
   if(ev.cur&&ev.cur.loading&&!evBusy){const a=ev.plan.find(x=>x.st==="active"&&x.type===ev.cur.type);if(a){a.st="pending";a.due=null;}ev.cur=null;}
   if(ev.cur)return;
   const e=ev.plan.find(x=>x.st==="pending"&&evReady(x));if(!e)return;
@@ -1865,10 +1899,11 @@ const tempHTML=p=>p&&p.temp?`<div title="Carácter simulado: cambia sus respuest
 
 // ---------- Pasajeros del viaje y en qué situación están ----------
 function paxList(r){r=r||trip.r;const NP=(r.pts||[]).length;
+  if(r.svc==="paquete")return pqPaxList(r);
   if(r.svc==="urbano")return [{key:"main",per:r.per||{},n:(r.per&&r.per.nom)||r.name.split(" ")[0],full:r.name,f:0,t:NP+1}];
   return (r.bookings||[]).map((b,i)=>{if(!b.id)b.id="b"+i;return {key:b.id,per:b.per||{},n:(b.per&&b.per.nom)||b.name.split(" ")[0],full:b.name,f:b.from,t:b.to,seats:b.seats,main:!!b.main};});}
 // "wait": aún no ha subido · "on": va en el coche · "gone": ya se bajó
-function paxState(P){if(!trip||trip.phase!==2)return "wait";const si=trip.si||1;return P.f<si&&P.t>=si?"on":P.f>=si?"wait":"gone";}
+function paxState(P){if(trip&&P.role)return pqPaxState(P);if(!trip||trip.phase!==2)return "wait";const si=trip.si||1;return P.f<si&&P.t>=si?"on":P.f>=si?"wait":"gone";}
 
 // ---------- Tiempos: puntualidad medida con el reloj real × escala (ajustes) ----------
 function ovl(a,b,iv){let s=0;for(const [x,y] of iv){const lo=Math.max(a,x),hi=Math.min(b,y);if(hi>lo)s+=hi-lo;}return s;}
@@ -1900,6 +1935,7 @@ function incAud(d){const aff=paxList().filter(P=>paxState(P)!=="gone"),on=aff.fi
   const to=d.canal==="persona"?on:aff,one=to.length===1?to[0]:null;
   return {aff,on,to,group:to.length>1,u:!!one&&usted(one.per),onb:on.length>0,long:trip.r.svc!=="urbano"};}
 function incPhrases(d){const A=incAud(d),N=d.min,X=incX(d),t=(a,b,c)=>A.group?c:A.u?b:a;
+  if(trip&&trip.r.svc==="paquete")return pqIncPhrases(d,A,t,X,N);
   if(d.canal==="persona")return [
     `${t("Perdona","Perdone","Perdonad")}, tengo que parar ${X}. Serán unos ${N} minutos, ${t("disculpa","disculpe","disculpad")} las molestias.`,
     `${t("Oye, ¿te importa","Disculpe, ¿le importa","¿Os importa")} si paro ${X}? Unos ${N} minutos y seguimos.`,
@@ -1909,7 +1945,7 @@ function incPhrases(d){const A=incAud(d),N=d.min,X=incX(d),t=(a,b,c)=>A.group?c:
     `Hola, ${t("te escribo","le escribo","os escribo")} para avisar${t("te","le","os")}: paro ${X} y ${A.onb&&!A.group?"seguimos enseguida":"voy para allá"}. Unos ${N} min de retraso, lo siento.`,
     `Buenas, aviso de un pequeño retraso de unos ${N} minutos: tengo que parar ${X}. Enseguida estoy ${t("contigo","con usted","con vosotros")}.`];}
 // Respuesta del pasajero según su carácter (texto simulado)
-function incReply(P,d,c){const p=P.per,u=usted(p),T=tempOf(p),N=d.min,m=d.mot,tu=(a,b)=>u?b:a,air=trip.r.de&&trip.r.de.hub==="air"&&trip.r.svc==="urbano";
+function incReply(P,d,c){if(P.role&&trip&&trip.r.svc==="paquete")return pqIncReply(P,d,c);const p=P.per,u=usted(p),T=tempOf(p),N=d.min,m=d.mot,tu=(a,b)=>u?b:a,air=trip.r.de&&trip.r.de.hub==="air"&&trip.r.svc==="urbano";
   if(c.unwarned){if(c.on)return {prisa:"¿Por qué paramos? Nadie me ha avisado…",exigente:tu("Perdona, ¿esto qué es? Podrías haber avisado.","Disculpe, ¿por qué paramos? Podría haber avisado."),normal:"¿Pasa algo? ¿Por qué paramos?",paciente:"¿Paramos aquí? Vale…",simpatico:"Ah, ¿paramos? ¿Todo bien?"}[T];
     return {prisa:"Hola, veo en la app que el coche está parado… ¿Vienes o no? Tengo prisa.",exigente:"¿Hola? El coche lleva un rato parado en el mapa. ¿Va a venir?",normal:"Hola, veo que el coche está parado en la app. ¿Va todo bien?",paciente:"Hola, ¿todo bien? Veo el coche parado. Aquí espero.",simpatico:"¡Hola! Veo el coche parado, ¿todo bien? 😊"}[T];}
   if(c.follow)return {prisa:`¿Queda mucho? ${d.canal==="sin"?"Llevamos un buen rato.":"Dijiste "+N+" minutos."}`,exigente:`${d.canal==="sin"?"Esto ya es demasiado.":"Dijo "+N+" minutos y ya va bastante más."} ¿Cuánto falta?`,normal:"¿Te falta mucho?",paciente:"¿Va todo bien? Sin prisa, solo pregunto.",simpatico:"¿Todo bien por ahí? 😊"}[T];
@@ -1922,7 +1958,7 @@ function incReply(P,d,c){const p=P.per,u=usted(p),T=tempOf(p),N=d.min,m=d.mot,tu
   return pick(R[T]);}
 function incNewDlg(){const on=paxList().some(P=>paxState(P)==="on"),d={mot:"repostar",txt:"",min:10,canal:on?"persona":"mensaje",ph:0,text:"",edited:false};d.text=incPhrases(d)[0];return d;}
 function incRegen(d){if(d.canal==="sin")return;const L=incPhrases(d);d.ph=Math.min(d.ph,L.length-1);if(!d.edited)d.text=L[d.ph];}
-function incCanOpen(){return trip&&!animating&&!(trip.ev&&trip.ev.cur)&&!trip.atPickup&&!(trip.inc&&(trip.inc.cur!=null||trip.inc.dlg));}
+function incCanOpen(){return trip&&!animating&&!(trip.pq&&(trip.pq.ev||trip.pq.wait))&&!(trip.ev&&trip.ev.cur)&&!trip.atPickup&&!(trip.inc&&(trip.inc.cur!=null||trip.inc.dlg));}
 function incOpen(){if(!incCanOpen())return;incS().dlg=incNewDlg();S.trip=trip;save();showTrip(false);$("overlay").scrollTop=0;}
 function incCancel(){if(!trip||!trip.inc)return;trip.inc.dlg=null;S.trip=trip;save();showTrip(false);}
 function incSend(){const I=incS(),d=I.dlg;if(!d)return;
@@ -1947,13 +1983,13 @@ function incResume(){const I=trip&&trip.inc;if(!I||I.cur==null)return;incClose()
 function incClose(){const I=trip.inc,s=I.list[I.cur];if(!s)return;clearInterval(incTick);s.end=Date.now();s.act=Math.round((s.end-s.t0)/1000/(s.spm||secMin())*10)/10;I.cur=null;
   S.stats.stops=(S.stats.stops||0)+1;renderStats();
   const can=s.canal==="sin"?"sin avisar":s.canal==="persona"?"avisado en persona":"avisado por mensaje",act=Math.max(0,Math.round(s.act));
-  evLog(s.ic,`Parada tuya (${s.mot==="otro"&&s.txt?s.txt:INC_MOT[s.mot].n.toLowerCase()}): ${can} · ${s.canal==="sin"?"":s.ann+" min anunciados, "}${act} min reales · ${s.phase===2?"con pasajero a bordo":"antes de recoger"}`);
+  evLog(s.ic,`Parada tuya (${s.mot==="otro"&&s.txt?s.txt:INC_MOT[s.mot].n.toLowerCase()}): ${can} · ${s.canal==="sin"?"":s.ann+" min anunciados, "}${act} min reales · ${trip.r.svc==="paquete"?(s.phase===2?"con paquetes a bordo":"antes de recoger"):s.phase===2?"con pasajero a bordo":"antes de recoger"}`);
   s.chat.filter(c=>c.who!=="yo"&&c.at<=s.end).slice(0,3).forEach(c=>evLog("💬",`${c.n}: “${c.t}”`));
   toast(`▶️ En marcha de nuevo (${act} min parado)`);}
 function incChatHTML(s){const now=Date.now(),m=stopAct(s);
   const vis=s.chat.filter(c=>c.at<=now),typing=s.chat.filter(c=>c.at>now);
   return vis.map(c=>c.who==="yo"?`<div class="bub me">${esc(c.t)}<small>Tú · ${c.how==="persona"?"en persona":"mensaje"}${c.note?" ("+c.note+")":""}</small></div>`
-      :`<div class="bub cl">${esc(c.t)}<small>${esc(c.n)} · ${c.on?"en el coche":"por mensaje"}</small></div>`).join("")+
+      :`<div class="bub cl">${esc(c.t)}<small>${esc(c.n)} · ${c.on?(trip&&trip.r.svc==="paquete"?"en persona":"en el coche"):"por mensaje"}</small></div>`).join("")+
     (typing.length?`<div class="typing">✍️ ${esc(typing[0].n)} ${typing[0].on&&s.canal==="persona"?"va a contestar…":"está escribiendo…"}</div>`:"")+
     (!s.chat.length&&!vis.length&&s.canal==="sin"?`<div class="typing">🤐 No has avisado a nadie.</div>`:"");}
 function incBoxHTML(){const I=trip.inc;if(!I)return "";const B=(id,cls,t,dis)=>`<button class="btn ${cls}" id="${id}"${dis?" disabled":""}>${t}</button>`;
@@ -1961,18 +1997,18 @@ function incBoxHTML(){const I=trip.inc;if(!I)return "";const B=(id,cls,t,dis)=>`
     return `<div class="incp" id="incBox"><div class="evh">${mi.ic} Parado · ${esc(s.mot==="otro"&&s.txt?s.txt:mi.n)} ${SIM}</div>
       <div class="chat" id="incChat">${incChatHTML(s)}</div>
       <div class="evwait"><b id="incClock">0:00</b><span id="incClockL"> min parado${s.canal==="sin"?" · sin avisar":" · anunciaste "+s.ann+" min"}</span></div>
-      <div class="sub">${spm>=60?"Tiempo real.":"Espera acelerada: 1 min = "+spm+" s reales."} Es una parada tuya: no se cobra espera al pasajero.</div>
+      <div class="sub">${spm>=60?"Tiempo real.":"Espera acelerada: 1 min = "+spm+" s reales."} Es una parada tuya: ${trip.r.svc==="paquete"?"no se cobra nada extra.":"no se cobra espera al pasajero."}</div>
       <div class="evacts">${B("incGo","ok","▶️ Reanudar la marcha")}</div></div>`;}
   if(!I.dlg)return "";const d=I.dlg,A=incAud(d);
-  const chip=(grp,v,t,on,dis)=>`<button class="chip${on?" on":""}" data-g="${grp}" data-v="${v}"${dis?" disabled title=\"Nadie va en el coche todavía\"":""}>${t}</button>`;
-  const to=A.to.length?A.to.map(P=>esc(P.n)+(paxState(P)==="on"?" (en el coche)":" (esperando)")).join(", "):"nadie";
+  const chip=(grp,v,t,on,dis,pq)=>`<button class="chip${on?" on":""}" data-g="${grp}" data-v="${v}"${dis?(pq?" disabled title=\"En persona solo en la recogida o la entrega\"":" disabled title=\"Nadie va en el coche todavía\""):""}>${t}</button>`;
+  const to=A.to.length?A.to.map(P=>esc(P.n)+(P.role?" ("+P.role+(paxState(P)==="on"?", aquí":"")+")":paxState(P)==="on"?" (en el coche)":" (esperando)")).join(", "):"nadie";
   const L=d.canal==="sin"?[]:incPhrases(d);
   return `<div class="incp" id="incBox"><div class="evh">📣 Comunicar incidencia ${SIM}</div>
-    <div class="sub">Lo decide el juego (combustible, baño, hambre…). Aquí solo se lo comunicas al pasajero.</div>
+    <div class="sub">Lo decide el juego (combustible, baño, hambre…). Aquí solo se lo comunicas ${trip.r.svc==="paquete"?"al remitente y al destinatario (por mensaje; en persona solo si estás con ellos)":"al pasajero"}.</div>
     <div class="ilab">Motivo</div><div class="chips">${Object.entries(INC_MOT).map(([k,m])=>chip("mot",k,m.ic+" "+m.n,d.mot===k)).join("")}</div>
     ${d.mot==="otro"?`<input type="text" id="incTxt" class="itx" maxlength="60" placeholder="¿Qué pasa? (p. ej. revisar una rueda)" value="${esc(d.txt)}">`:""}
     <div class="ilab">Minutos estimados</div><div class="chips">${[5,10,15,20].map(n=>chip("min",n,n+" min",+d.min===n)).join("")}<input type="number" id="incMinC" class="inum" min="1" max="240" step="1" value="${[5,10,15,20].includes(+d.min)?"":d.min}" placeholder="otro"></div>
-    <div class="ilab">Cómo avisas</div><div class="chips">${Object.entries(INC_CAN).map(([k,t])=>chip("can",k,t,d.canal===k,k==="persona"&&!A.onb)).join("")}</div>
+    <div class="ilab">Cómo avisas</div><div class="chips">${Object.entries(INC_CAN).map(([k,t])=>chip("can",k,t,d.canal===k,k==="persona"&&!A.onb,trip.r.svc==="paquete")).join("")}</div>
     ${d.canal==="sin"?`<div class="sub" style="color:var(--warn)">Paras sin decir nada${A.onb?": el pasajero lo notará":""}. Puede bajarte bastante la valoración.</div>`:
       `<div class="sub">Para: ${to}${d.canal==="persona"&&A.on.length<A.aff.length?" · a quienes esperan se les manda por mensaje":""}</div>
       <div class="ilab">Mensaje (elige o escribe)</div><select id="incPh" class="isel">${L.map((t,i)=>`<option value="${i}"${i===d.ph&&!d.edited?" selected":""}>${esc(t.length>60?t.slice(0,58)+"…":t)}</option>`).join("")}${d.edited?'<option value="-1" selected>✏️ Texto propio</option>':""}</select>
@@ -2068,12 +2104,16 @@ let trip=null,elT=null;
 function accept(){
   const r=curReq;vozCancel("req");clearInterval(cdT);stopReqLoop();stopBlink();curReq=null;clearTimeout(spawnT);
   S.stats.accepted++;lvlEv("acc");
-  trip={r,phase:1,acceptedAt:Date.now(),start:S.driver.slice(),ev:planEvents(r),shift:S.shift?S.shift.id:null};S.trip=trip;save();renderStats();
-  toast("Viaje aceptado: ve a recoger a "+r.name);
+  const isP=r.svc==="paquete";
+  trip={r,phase:1,acceptedAt:Date.now(),start:S.driver.slice(),ev:isP?evNew():planEvents(r),shift:S.shift?S.shift.id:null};
+  if(isP)trip.pq={k:0,at:null,ev:null,wait:null,plan:pqPlan(r)};
+  S.trip=trip;save();renderStats();
+  toast(isP?"📦 Envío aceptado: ve a recoger a "+r.from:"Viaje aceptado: ve a recoger a "+r.name);
   showTrip(true);
 }
 function showTrip(fit){
   const r=trip.r;if(!trip.ev)trip.ev=evNew();clearTimeout(sumT);
+  if(r.svc==="paquete")return pqShow(fit);
   {const ae=document.activeElement;if(ae&&$("overlay").contains(ae)&&ae.matches("input,textarea,select")){incR=true;try{ae.blur();}finally{incR=false;}}}
   const evc=trip.ev.cur;
   layerReq.clearLayers();drawRoute(r,trip.phase);evDraw();
@@ -2106,7 +2146,7 @@ function showTrip(fit){
   evWire();incWire();evArm();
 }
 function pickedUp(){
-  if(!trip||animating||(trip.ev&&trip.ev.cur)||(trip.inc&&trip.inc.cur!=null))return;
+  if(!trip||trip.r.svc==="paquete"||animating||(trip.ev&&trip.ev.cur)||(trip.inc&&trip.inc.cur!=null))return;
   const r=trip.r,from=car.getLatLng(),late=evAtPickupLate();trip.arrivedAt=Date.now();if(trip.inc)trip.inc.dlg=null;
   if(late){late.st="active";trip.atPickup=true;trip.ev.cur=lateCur("tarde",r,late,r.per);}
   else{trip.phase=2;trip.si=1;trip.pickedAt=Date.now();}
@@ -2125,14 +2165,15 @@ function historyEntry(r,status,rate,ex){
   S.history=S.history.slice(0,100);
   const e=S.history[0];if(HREC)HREC.unshift(e);
   // Detalle completo solo en IndexedDB (no en localStorage): perfil, acompañantes, reservas, tramos, tarifas, gastos, imprevistos, vehículo y zona
-  const rr=Object.assign({},r);delete rr.route;
+  const rr=Object.assign({},r);delete rr.route;if(rr.seq)rr.seq=rr.seq.map(x=>Object.assign({},x,{geo:undefined}));
   const det=JSON.parse(JSON.stringify({req:rr,trip:trip?{acceptedAt:trip.acceptedAt,pickedAt:trip.pickedAt||null,start:trip.start,endedAt:Date.now(),ev:trip.ev?{log:trip.ev.log,money:trip.ev.money,score:trip.ev.score}:null,
     arrivedAt:trip.arrivedAt||null,stopAt:trip.stopAt||null,paxWaits:trip.pw||null,inc:trip.inc?trip.inc.list:null,ratings:trip.ratings||null,timeScale:tScale()}:null,
     exp:S.settings.exp,vehicle:S.settings.vehicle||null,zone:{place:S.settings.place,center:S.settings.center,radius:S.settings.radius},timeZone:tzId(),clock:S.settings.clock}));
-  if(status==="ok")lvlEv("ok",r.svc==="urbano"?1:3);
+  if(status==="ok")lvlEv("ok",r.svc==="urbano"?1:r.svc==="paquete"?Math.max(1,(r.jobs||[]).filter(pqOk).length):3);
   H_PEND.push([e,det]);setTimeout(flushHist,0);setTimeout(shiftUI,0);
 }
 function finishTrip(){
+  if(trip&&trip.r.svc==="paquete")return pqFinish();
   if(!trip||animating||(trip.ev&&trip.ev.cur)||(trip.inc&&trip.inc.cur!=null))return;
   const r=trip.r,ev=trip.ev||evNew();if(trip.inc)trip.inc.dlg=null;
   // Valoraciones: una por pasajero (en compartido, cada reserva valora por separado)
@@ -2161,6 +2202,7 @@ function finishTrip(){
     say("fin",VOZT.fin(r,RT,rate),{after:"fin"});if(tip)say("propina",VOZT.propina(pnom(r),tip));});
 }
 function cancelTrip(){
+  if(trip&&trip.r.svc==="paquete")return pqCancel();
   const r=trip.r;
   // Km recorridos: si ya se recogió al pasajero, todo el tramo a la recogida; si no, la parte proporcional
   // al tiempo transcurrido frente al tiempo estimado de llegada (cancelar al instante ≈ 0 km)
@@ -2177,10 +2219,415 @@ function cancelTrip(){
   toast("Viaje cancelado (sin ganancias"+(energy>0.005?", energía "+eur(energy):"")+")");
   idleStatus();scheduleReq(nextGap());
 }
-function stopTripUI(){clearInterval(elT);clearInterval(incTick);clearTimeout(evT);clearInterval(evTick);trip=null;S.trip=null;layerReq.clearLayers();$("overlay").innerHTML="";}
+function stopTripUI(){clearTimeout(pqT);clearInterval(pqTick);clearInterval(elT);clearInterval(incTick);clearTimeout(evT);clearInterval(evTick);trip=null;S.trip=null;layerReq.clearLayers();$("overlay").innerHTML="";}
 
 PROVIDERS.forEach((P,i)=>{const o=document.createElement("option");o.value=i;o.textContent=P.n;$("mapSel").appendChild(o);});
 $("mapSel").value=provIdx;$("mapSel").onchange=e=>setProvider(+e.target.value);
+// ---------- Paquetería (v23) · SIMULADA: envíos, remitentes, destinatarios, códigos y tarifas inventados (sin relación con ninguna empresa) ----------
+// Lugares reales: tiendas/oficinas y direcciones de OpenStreetMap (Photon), y de noche farmacias/tiendas 24 h (Overpass, con alternativa).
+// Solo en modo Urbano. Nunca se mezcla con pasajeros: el reparto es un "viaje" (svc "paquete") y mientras dura no llega nada más.
+const PQ_SIZE={sobre:{n:"Sobre",ic:"✉️",base:3.5},caja:{n:"Caja",ic:"📦",base:5},bulto:{n:"Bulto grande",ic:"🧳",base:8}};
+const PQ_FARE={km:.75,frag:1.5,urgX:1.3,urgFix:2,ret:.5,resch:.6,min:4};   // tarifas de ejemplo (simuladas)
+const PQ_ZONE=1.5;   // km: varios envíos solo si las recogidas están así de cerca (misma zona)
+const PQ_HANDLE=2;   // min estimados por parada (recoger / entregar)
+const PQ_SHOPS=[
+  {k:"ropa",tags:["shop:clothes","shop:shoes"],w:16,c:[["Ropa (pedido online)","caja",0],["Zapatos","caja",0],["Prenda arreglada","sobre",0]]},
+  {k:"elec",tags:["shop:electronics","shop:mobile_phone","shop:computer"],w:12,c:[["Móvil reparado","caja",1],["Portátil","caja",1],["Accesorios electrónicos","sobre",0],["Monitor","bulto",1]]},
+  {k:"flor",tags:["shop:florist"],w:7,c:[["Ramo de flores","caja",1],["Planta en maceta","bulto",1]]},
+  {k:"pan",tags:["shop:bakery","shop:pastry"],w:8,c:[["Tarta por encargo","caja",1],["Bandeja de pasteles","caja",1]]},
+  {k:"libro",tags:["shop:books","shop:stationery"],w:7,c:[["Libros","caja",0],["Material de papelería","caja",0]]},
+  {k:"farm",tags:["amenity:pharmacy"],w:9,c:[["Pedido de farmacia","sobre",0],["Productos de parafarmacia","caja",0]]},
+  {k:"ofi",tags:["office:company","office:lawyer","office:estate_agent"],w:10,c:[["Documentación firmada","sobre",0],["Contrato original","sobre",0],["Llaves de un piso","sobre",0]]},
+  {k:"hogar",tags:["shop:hardware","shop:doityourself","shop:furniture"],w:8,c:[["Herramientas","caja",0],["Lámpara","bulto",1],["Mueble pequeño desmontado","bulto",0]]},
+  {k:"super",tags:["shop:supermarket","shop:convenience"],w:9,c:[["Compra a domicilio","bulto",0],["Pedido de alimentación","caja",0]]},
+  {k:"regalo",tags:["shop:gift","shop:toys","shop:jewelry"],w:6,c:[["Regalo envuelto","caja",1],["Juguete","caja",0],["Joya (sobre acolchado)","sobre",0]]}];
+const PQ_PRIV=[["Artículo de segunda mano vendido entre particulares","caja",0],["Vajilla de segunda mano","caja",1],["Bicicleta infantil","bulto",0],["Llaves olvidadas","sobre",0],["Documentos","sobre",0]];
+const PQ_NIGHT={farm:[["Medicamentos urgentes","sobre",0],["Leche infantil y medicamento","caja",0],["Pedido urgente de farmacia","sobre",0]],
+  shop:[["Pedido urgente de tienda 24 h","caja",0],["Pañales y productos básicos","caja",0],["Agua y alimentos","bulto",0]]};
+const PQ_ST={pend:"Por recoger",car:"En el coche",ok:"Entregado con código",vecino:"Entregado a un vecino",porteria:"Dejado en portería",retPend:"Volviendo al remitente",ret:"Devuelto al remitente",resch:"Entrega reprogramada"};
+const pqDone=J=>["ok","vecino","porteria","ret","resch"].includes(J.st);
+const pqOk=J=>["ok","vecino","porteria"].includes(J.st);
+const pqPaid=J=>pqOk(J)?J.price:J.st==="ret"?r2(J.price*(1+PQ_FARE.ret)):J.st==="resch"?r2(J.price*PQ_FARE.resch):0;
+let pqT=null,pqTick=null;const pqUsed=[];
+const pqS=()=>S.settings.pq||(S.settings.pq={on:true,day:3.5,night:15});
+function pqIsNight(n){n=n||simNow();return n.h>=22||n.h<7;}
+function pqCity(pt){const c=nearestCity(pt||S.driver,12);return c&&(c.pop||0)>=50000?c:null;}
+// Probabilidad de que la próxima solicitud sea de paquetería (modelo simulado, ajustable)
+function pqChance(){const P=pqS();
+  if(FORCE&&FORCE.pq!=null)return FORCE.pq?1:0;
+  if(FORCE||window.NO_PQ)return 0;   // pruebas automáticas deterministas
+  if(!P.on||S.settings.svc!=="urbano"||(typeof PUBX!=="undefined"&&PUBX))return 0;
+  const night=pqIsNight(),n=+(night?P.night:P.day);if(!(n>0))return 0;
+  return Math.min(1,1/n)*(pqCity()?1:(night?.5:.4));}
+function pqSay(n){return n<=1?"un envío":n+" envíos";}
+// --- Lugares reales ---
+const PQ_POI=new Map(),PQ_24=new Map();
+async function pqPOI(c,rKm,tags){const key=cellOf(c,.03)+"|"+tags.join(",");let L=PQ_POI.get(key);
+  if(!L){try{L=await fetchPOIs(c,Math.max(1,rKm),[[tags,1]]);PQ_POI.set(key,L);}catch(e){L=[];}}
+  let cand=L.filter(p=>hav(c,[p.lat,p.lon])<=rKm*1.2&&!pqUsed.includes(p.name));
+  if(!cand.length)cand=L.filter(p=>hav(c,[p.lat,p.lon])<=rKm*1.2);
+  if(!cand.length)return null;const p=Object.assign({},pick(cand));pqUsed.push(p.name);if(pqUsed.length>10)pqUsed.shift();return p;}
+// Dirección real con número (portal de OSM) cerca de c
+async function pqRev(c,rKm,minKm){for(let a=0;a<5;a++){const q=randInCircle(c,rKm);if(minKm&&hav(c,q)<minKm)continue;
+    try{const j=await photon(`/reverse?lat=${q[0].toFixed(6)}&lon=${q[1].toFixed(6)}&layer=house&limit=1`),f=(j.features||[])[0];if(!f)continue;
+      const p=f.properties,g=f.geometry.coordinates;if(!p.street||!p.housenumber||hav(q,[g[1],g[0]])>.4)continue;
+      return {name:addrLine(p),detail:area(p),lat:g[1],lon:g[0],kind:"addr",src:"Photon"};}catch(e){}}
+  return null;}
+// Noche: farmacias y tiendas con opening_hours=24/7 en OpenStreetMap
+async function pq24(c,rKm){const key=cellOf(c,.05);if(PQ_24.has(key))return PQ_24.get(key);
+  const a=`(around:${Math.round(rKm*1000)},${c[0].toFixed(5)},${c[1].toFixed(5)})`;
+  const q=`[out:json][timeout:12];(nwr["name"]["amenity"="pharmacy"]["opening_hours"="24/7"]${a};nwr["name"]["shop"~"^(convenience|supermarket)$"]["opening_hours"="24/7"]${a};);out center 60;`;
+  for(const u of OVERPASS){try{const r=await fetchT(u+"?data="+encodeURIComponent(q),12000);if(!r.ok)continue;const j=await r.json(),L=[];
+      for(const e of j.elements||[]){const t=e.tags||{},lat=e.lat??(e.center&&e.center.lat),lon=e.lon??(e.center&&e.center.lon);if(!t.name||lat==null)continue;const v=t.amenity||t.shop;
+        L.push({name:t.name,cat:OSM_ES[v]||"",detail:[t["addr:street"]?t["addr:street"]+(t["addr:housenumber"]?", "+t["addr:housenumber"]:""):"",t["addr:city"]||""].filter(Boolean).join(" · "),lat,lon,kind:"poi",src:"Overpass",tag:(t.amenity?"amenity:":"shop:")+v,h24:true});}
+      PQ_24.set(key,L);return L;}catch(e){}}
+  return null;}
+const pqStaff=()=>makePerson({edad:rndI(20,62)});
+async function pqPickup(c,rKm,night){
+  if(night){let L=null;if(!(FORCE&&FORCE.pqNo24))try{L=await pq24(c,Math.max(3,rKm*1.5));}catch(e){}
+    const fr=L?L.filter(x=>!pqUsed.includes(x.name)):[];let p=fr.length?Object.assign({},pick(fr)):L&&L.length?Object.assign({},pick(L)):null,h="Abierto 24 h según OpenStreetMap";
+    if(!p){p=await pqPOI(c,Math.max(rKm,3),["amenity:pharmacy"]);h="Farmacia real (OSM) · de guardia esta noche: simulado";}
+    if(!p){p=await pqPOI(c,Math.max(rKm,3),["shop:convenience","shop:supermarket"]);h="Tienda real (OSM) · abierta de noche: simulado";}
+    if(!p)return null;pqUsed.push(p.name);p.hours=h;const farm=/pharmacy/.test(p.tag||"")||p.cat==="Farmacia";
+    return {place:p,snd:pqStaff(),kind:"night",shop:p.name,cat:farm?"farm":"super",content:pick(farm?PQ_NIGHT.farm:PQ_NIGHT.shop)};}
+  const priv=FORCE&&FORCE.pqPriv!=null?!!FORCE.pqPriv:Math.random()<.28;
+  if(priv){const a=await pqRev(c,rKm);if(a)return {place:a,snd:makePerson(),kind:"priv",content:pick(PQ_PRIV)};}
+  for(let t=0;t<3;t++){const K=wpick(PQ_SHOPS.map(s=>[s,s.w])),p=await pqPOI(c,rKm,K.tags);if(p)return {place:p,snd:pqStaff(),kind:"shop",shop:p.name,cat:K.k,content:pick(K.c)};}
+  const a=await pqRev(c,rKm);return a?{place:a,snd:makePerson(),kind:"priv",content:pick(PQ_PRIV)}:null;}
+function pqJob(pu,i,night){let [desc,size,frag]=pu.content;if(FORCE&&FORCE.pqSize)size=FORCE.pqSize;if(size==="bulto"&&bootCap()<2)size="caja";
+  if(FORCE&&FORCE.pqFrag!=null)frag=FORCE.pqFrag;
+  return {id:i,size,frag:!!frag,desc,snd:pu.snd,sk:pu.sk,shop:pu.shop||"",pkind:pu.kind,rcp:makePerson(),code:String(rndI(1000,9999)),pu:pu.place,de:null,st:"pend",score:0,exc:0,why:[],tip:0,dmg:false,urg:!!night};}
+function pqOrder(pos,stops){const out=[],L=stops.slice();let cur=pos;while(L.length){let b=0,bd=1e9;L.forEach((s,i)=>{const d=hav(cur,s.pt);if(d<bd){bd=d;b=i;}});const s=L.splice(b,1)[0];out.push(s);cur=s.pt;}return out;}
+// Rellena geometría, km y minutos de cada parada (una sola petición OSRM)
+async function pqRoute(from,seq){let R=null;try{R=await osrmRoute([from].concat(seq.map(s=>s.pt)));}catch(e){R=null;}
+  seq.forEach((s,i)=>{const a=i?seq[i-1].pt:from;if(R&&R.legs&&R.legs[i]){s.km=R.legs[i].km;s.min=R.legs[i].s*1.2/60;s.geo=R.geo[i];s.routed=true;}
+    else{s.km=hav(a,s.pt)*ROAD;s.min=s.km/22*60;s.geo=[a,s.pt];s.routed=false;}});
+  return !!R;}
+function pqRecalc(r){const rest=r.seq.slice(1);r.pickupDist=r.seq[0].km||0;r.pickupMin=r.seq[0].min||0;r.km=r2(rest.reduce((a,s)=>a+(s.km||0),0));r.min=rest.reduce((a,s)=>a+(s.min||0)+PQ_HANDLE,0);
+  r.routed=r.seq.every(s=>s.routed!==false);r.to=r.seq[r.seq.length-1].place.name;r.de=r.seq[r.seq.length-1].place;r.dest=r.seq[r.seq.length-1].pt;
+  const all=[];rest.forEach(s=>(s.geo||[]).forEach(p=>all.push(p)));r.route={toPickup:[],trip:decimate(all,300)};}
+async function pqMakeRequest(){
+  const st=S.settings,pos=S.driver.slice(),night=FORCE&&FORCE.pqNight!=null?!!FORCE.pqNight:pqIsNight(),city=pqCity(pos);
+  const R=Math.max(1.5,Math.min(+st.radius||4,city?5:8));
+  let n=1;if(FORCE&&FORCE.pqN)n=FORCE.pqN;else if(!night&&Math.random()<(city?.45:.2))n=wpick([[2,60],[3,30],[4,10]]);
+  const p0=await pqPickup(pos,Math.min(R,3),night);if(!p0)return null;p0.sk="s0";const pus=[p0];
+  for(let i=1;i<n;i++){let p=null;const c0=[p0.place.lat,p0.place.lon];
+    if(p0.kind!=="priv"&&(FORCE&&FORCE.pqSame!=null?FORCE.pqSame:Math.random()<.45)){const K=PQ_SHOPS.find(s=>s.k===p0.cat);p=Object.assign({},p0,{content:K?pick(K.c):p0.content});}
+    else{p=await pqPickup(c0,PQ_ZONE,false);if(p&&hav(c0,[p.place.lat,p.place.lon])>PQ_ZONE*1.25)p=null;if(p)p.sk="s"+i;}
+    if(!p)break;pus.push(p);}
+  const jobs=pus.map((p,i)=>pqJob(p,i,night)),nw=simNow(),rush=nw.dow<=5&&((nw.h>=7&&nw.h<10)||(nw.h>=17&&nw.h<20));
+  const seenS=new Set();jobs.forEach(J=>{if(!seenS.has(J.sk)){seenS.add(J.sk);assignTemp(J.snd,{rush});}assignTemp(J.rcp,{rush});});
+  await Promise.all(jobs.map(async J=>{const c=[J.pu.lat,J.pu.lon],rd=night?Math.max(3,Math.min(6,R+1)):R;let d=null;
+    if(!night&&Math.random()<.15){d=await pqPOI(c,rd,["office:company"]);if(d&&hav(c,[d.lat,d.lon])<.4)d=null;if(d)d.biz=true;}
+    if(!d)d=await pqRev(c,rd,.5);
+    if(!d){const q=randInCircle(c,rd);d=(await reverseAddr(q))||honestLabel(q);}J.de=d;}));
+  const puS=[];jobs.forEach((J,j)=>{let s=puS.find(x=>x.place.name===J.pu.name&&hav(x.pt,[J.pu.lat,J.pu.lon])<.05);if(!s){s={t:"pu",js:[],place:J.pu,pt:[J.pu.lat,J.pu.lon]};puS.push(s);}s.js.push(j);});
+  const pu=pqOrder(pos,puS),de=pqOrder(pu[pu.length-1].pt,jobs.map((J,j)=>({t:"de",js:[j],place:J.de,pt:[J.de.lat,J.de.lon]}))),seq=pu.concat(de);
+  await pqRoute(pos,seq);
+  let t=0;seq.forEach(s=>{t+=s.min;s.eta=t;t+=PQ_HANDLE;});
+  jobs.forEach(J=>{const a=seq.findIndex(s=>s.t==="pu"&&s.js.includes(J.id)),b=seq.findIndex(s=>s.t==="de"&&s.js.includes(J.id));
+    J.etaDe=seq[b].eta;J.km=r2(jobs.length===1?seq.slice(a+1,b+1).reduce((x,s)=>x+s.km,0):hav([J.pu.lat,J.pu.lon],[J.de.lat,J.de.lon])*ROAD);
+    J.price=r2(Math.max(PQ_FARE.min,PQ_SIZE[J.size].base+J.km*PQ_FARE.km+(J.frag?PQ_FARE.frag:0))*(night?PQ_FARE.urgX:1)+(night?PQ_FARE.urgFix:0));});
+  const r={svc:"paquete",night,urb:!!city,city:city?city.n:st.place,jobs,seq,price:r2(jobs.reduce((a,J)=>a+J.price,0)),pickup:seq[0].pt,pu:seq[0].place,from:seq[0].place.name,fromCity:st.place,
+    name:jobs[0].snd.name,per:jobs[0].snd,seats:0,pts:[],comps:[],bookings:[],surge:1,cat:"std",veh:null,rating:4.8};
+  pqRecalc(r);r.fareBase=r.price;return r;}
+// --- Tarjetas ---
+const pqIc=s=>s.t==="pu"?"🟢 Recogida":s.t==="ret"?"↩️ Devolución":"🔴 Entrega";
+function pqJobHTML(J,full){const S0=PQ_SIZE[J.size],T=t=>`${TEMPS[tempOf(t)].ic} ${esc(tempName(t))}`;
+  return `<div class="pqjob"><div class="h"><span>${S0.ic} ${S0.n}${J.frag?' · <span class="frag">⚠️ Frágil</span>':""}${J.urg?' · 🌙 urgente':""}</span><span>${eur(J.price)}</span></div>
+    <div class="w">${esc(J.desc)}${J.km!=null?" · "+num1(J.km)+" km":""}${full?` · <b>${PQ_ST[J.st]}</b>`:""}</div>
+    <div class="w">📤 Remitente: <b>${esc(J.snd.name)}</b>${J.shop?" · "+esc(J.shop):J.pkind==="priv"?" · particular":""} · ${T(J.snd)}</div>
+    <div class="w">📥 Destinatario: <b>${esc(J.rcp.name)}</b>, ${J.rcp.edad} años${J.de&&J.de.biz?" · en su trabajo":""} · ${T(J.rcp)}</div></div>`;}
+function pqStopHTML(r,s,i,k){const p=s.place,det=[p.cat,p.detail,p.hours].filter(Boolean).join(" · "),cls=k==null?"":i<k?" pqdone":i===k?" pqcur":"";
+  return `<div class="pl${cls}"><span class="pk">${pqIc(s)} ${i+1}</span><div class="pv"><div class="pn">${esc(p.name)} <span class="tsim">${s.js.map(j=>"#"+(j+1)).join(" ")}</span></div>
+    <div class="pd"><span class="pdt">${esc(det)}${s.km!=null?" · "+num1(s.km)+" km":""}</span><a href="${gmaps(p)}" target="_blank" rel="noopener">Ver en Google Maps</a></div></div></div>`;}
+function pqDraw(r,k){layerReq.clearLayers();
+  r.seq.forEach((s,i)=>{if(i<k||!s.geo)return;L.polyline(s.geo,{color:i===k?"#21d07a":"#a371f7",weight:i===k?5:4,opacity:.9,dashArray:s.routed===false?"6 8":null}).addTo(layerReq);});
+  r.seq.forEach((s,i)=>L.marker(s.pt,{icon:L.divIcon({className:"",html:`<div class="pq-ic ${i<k?"done":s.t}">${s.t==="pu"?"📦":s.t==="ret"?"↩":"📍"}${i+1}</div>`,iconSize:[40,24],iconAnchor:[20,12]}),zIndexOffset:i===k?800:400})
+    .bindTooltip(esc((s.t==="pu"?"Recogida: ":s.t==="ret"?"Devolución: ":"Entrega: ")+(s.place.name.length>28?s.place.name.slice(0,27)+"…":s.place.name)),{permanent:i>=k,direction:i%2?"bottom":"top",offset:[0,i%2?10:-10],className:"stoptip"}).addTo(layerReq));}
+function pqBounds(r,k){const pts=[S.driver];r.seq.forEach((s,i)=>{if(i>=k)(s.geo||[s.pt]).forEach((p,m,a)=>{if(m%4===0||m===a.length-1)pts.push(p);});});return L.latLngBounds(pts);}
+function pqReqShow(r){layerReq.clearLayers();pqDraw(r,0);map.fitBounds(pqBounds(r,0),fitPad());const n=r.jobs.length;
+  $("overlay").innerHTML=`<div class="req pqreq" id="pqReq">
+    <div class="top"><span class="tag pqtag">📦 Paquetería${r.night?" · 🌙 urgente":""} · ${n} envío${n>1?"s":""}${n>1?" · misma zona":""}</span><span class="sub" id="cdTxt">${S.settings.acceptSec?S.settings.acceptSec+" s":"Sin límite"}</span></div>
+    <div class="price">${lvlBadgeHTML()}${eur(r.price)}</div>
+    <div class="netline" id="netEst">${netEstHTML(r)}</div>
+    <div class="sub">Tarifa de ejemplo por envío: tamaño + distancia${r.jobs.some(J=>J.frag)?" + frágil":""}${r.night?" · urgente nocturno":""} (simulada)</div>
+    <div class="sub">${num1(r.km)} km · ${fmtMin(r.min)} <span class="${r.routed?"rok":"rno"}">${routeLabel(r)}</span> · recogida a ${num1(r.pickupDist)} km · ${fmtMin(r.pickupMin)}</div>
+    ${r.jobs.map(J=>pqJobHTML(J)).join("")}
+    <div class="route pqstops">${r.seq.map((s,i)=>pqStopHTML(r,s,i,null)).join("")}</div>
+    ${zbeHTML(r)}
+    <div class="sub pqnote">${r.urb?"Zona urbana ("+esc(r.city)+")":"Fuera de ciudad"} · ${r.night?"de noche solo hay pedidos urgentes de farmacias y tiendas 24 h":"de día"} · envíos, personas y códigos simulados; lugares reales (OSM)</div>
+    ${S.settings.acceptSec?'<div class="bar"><i id="cdBar"></i></div>':""}
+    <div class="acts"><button class="btn no" id="bNo">Rechazar</button><button class="btn ok" id="bOk">Aceptar envío${n>1?"s":""}</button></div></div>`;
+  $("bOk").onclick=accept;$("bNo").onclick=()=>{lvlEv("rej");toast("Solicitud rechazada");dismiss();};
+  setStatus("Nueva solicitud de paquetería");clearInterval(cdT);
+  const T=(+S.settings.acceptSec||0)*1000,t0=Date.now();let warned=T<=10000;
+  startReqLoop("pq",T);vozCancel("req");say("pq",VOZT.pqReq(r),{tag:"req",after:"pq"});alertUser(null,"📦 Nueva solicitud de paquetería",`${eur(r.price)} · ${pqSay(n)} · ${r.from}`);
+  if(T>0)cdT=setInterval(()=>{const left=T-(Date.now()-t0);
+    if(!warned&&left<=10000){warned=true;stopReqLoop();playSound("warn",{rep:Math.max(1,Math.ceil(left/1000)),every:1});say("expira",VOZT.expira(Math.ceil(left/1000)),{tag:"req",after:"warn"});}
+    if(left<=0){lvlEv("rej");toast("Solicitud caducada");dismiss();return;}
+    $("cdTxt").textContent=Math.ceil(left/1000)+" s";$("cdBar").style.width=(100*left/T)+"%";
+    $("cdBar").style.background=left<Math.min(10000,T*.25)?"var(--bad)":"var(--warn)";},200);}
+// --- Imprevistos planificados (frecuencia: Ajustes › Imprevistos) ---
+function pqPlan(r){if(FORCE&&FORCE.pqEv)return FORCE.pqEv.map(e=>Object.assign({st:"plan",j:0,arr:null,d:15},e));
+  const p=EV_FREQ[evS().freq]||0,out=[];if(!p||Math.random()>=p)return out;const n=Math.random()<.25?2:1;
+  for(let i=0;i<n;i++){const fr=r.jobs.filter(J=>J.frag).map(J=>J.id),ty=wpick([["ausente",30],["direccion",14],["hora",20]].concat(fr.length?[["fragil",22]]:[]));
+    const j=ty==="fragil"?pick(fr):rndI(0,r.jobs.length-1);if(out.some(e=>e.j===j&&(e.type===ty||(ty!=="fragil"&&e.type!=="fragil"))))continue;
+    out.push({type:ty,j,st:"plan",arr:ty==="ausente"?(Math.random()<.65?rnd(2,8):null):null,d:ty==="hora"?rndI(10,30):null});}
+  return out;}
+const pqStopOf=(r,j,t)=>r.seq.findIndex(s=>s.t===(t||"de")&&s.js.includes(j));
+const pqSave=()=>{if(trip){S.trip=trip;save();}};
+function pqEvReady(e){const T=trip,J=T.r.jobs[e.j];return !!J&&J.st==="car"&&!J.hora&&!J.alt&&T.pq.at!==pqStopOf(T.r,e.j)&&!(T.inc&&(T.inc.cur!=null||T.inc.dlg));}
+function pqArm(){clearTimeout(pqT);const T=trip;if(!T||!T.pq||T.pq.ev||T.pq.wait||animating)return;
+  const e=T.pq.plan.find(e=>e.st==="plan"&&(e.type==="hora"||e.type==="fragil")&&pqEvReady(e));if(!e)return;
+  pqT=setTimeout(()=>{if(trip!==T||T.pq.ev||T.pq.wait||animating||!pqEvReady(e))return;pqFire(e);},FORCE&&FORCE.evDelay!=null?FORCE.evDelay:rnd(4000,12000));}
+function pqHoraMsg(J,d){const n=J.rcp.nom;return {paciente:`Hola, soy ${n}. Perdona, al final no llego a casa hasta dentro de unos ${d} minutos. ¿Te importa esperar o dejarlo en portería?`,
+  prisa:`Hola, me ha surgido algo y no llego hasta dentro de ${d} minutos. ¿Puedes esperarme?`,exigente:`Soy ${n}. No estaré en casa hasta dentro de ${d} minutos; la entrega tiene que ser después.`,
+  simpatico:`¡Hola! Soy ${n} 😊 Me retraso unos ${d} minutos, ¿me esperas o lo dejas en portería?`,normal:`Hola, soy ${n}. Llegaré a casa en unos ${d} minutos. ¿Puedes esperar o dejarlo en portería?`}[tempOf(J.rcp)];}
+function pqFire(e){const T=trip,J=T.r.jobs[e.j];e.st="active";
+  if(e.type==="hora"){T.pq.ev={type:"hora",j:J.id,d:e.d,msg:pqHoraMsg(J,e.d)};evLog("🕒",`${J.rcp.name} avisa de un cambio de hora (+${e.d} min)`);
+    alertUser("tarde","🕒 Cambio de hora en una entrega",J.rcp.name,"🕒");say("tarde",`Cambio de hora. ${J.rcp.nom} no estará hasta dentro de ${minSay(e.d)}. ¿Esperas, portería o reprogramas?`,{after:"tarde"});}
+  else{T.pq.ev={type:"fragil",j:J.id,min:rndI(3,6)};evLog("⚠️",`Firme en mal estado con un paquete frágil (${J.desc})`);
+    alertUser("atasco","⚠️ Paquete frágil: tramo en mal estado",J.desc,"⚠️");say("imprev",`Tramo en mal estado por delante y llevas un paquete frágil. ¿Vas con cuidado?`,{after:"atasco"});}
+  pqSave();pqShow(false);}
+function pqEvDone(){const P=trip.pq,e=P.plan.find(x=>x.st==="active");if(e)e.st="done";P.ev=null;}
+function pqEndWait(T){const w=T.pq.wait;if(!w)return;(T.pw||(T.pw=[])).push([w.t0,Date.now()]);T.pq.wait=null;clearInterval(pqTick);}
+// --- Pantalla del reparto ---
+function pqPunct(){const T=trip;if(!T||!tScale())return "";const r=T.r,P=T.pq,s=r.seq.slice(P.k).find(x=>x.t==="de");if(!s)return "";const J=r.jobs[s.js[0]],now=Date.now();
+  const A=driveMin(T,T.acceptedAt,now)+stopMinIn(T,T.acceptedAt,now),E=J.etaDe+(J.exc||0)+excIn(T,T.acceptedAt,now),tol=Math.max(3,E*.15);
+  return `envío #${J.id+1}: ${A<60?Math.round(A)+" min":fmtMin(A)} de ${fmtMin(E)} previstos${A>E+tol?' <b style="color:var(--bad)">retraso</b>':""}`;}
+function pqCodeHTML(J){return `<div class="evp pqcodebox" id="pqCodeBox"><div class="evh">🔐 Código de entrega · #${J.id+1}</div>
+  <div class="evq">“Hola, soy ${esc(J.rcp.nom)}. El código es ${J.code}.”<span class="evwho"> — ${esc(J.rcp.name)} · destinatario (simulado)</span></div>
+  <div class="pqcode"><input id="pqCode" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="····" aria-label="Código de entrega"><button class="btn ok" id="bPqOk">✅ Confirmar entrega</button></div>
+  <div class="sub" id="pqCodeMsg">Pide el código al destinatario y escríbelo para confirmar la entrega.</div></div>`;}
+function pqEvHTML(){const T=trip,P=T.pq,e=P.ev,w=P.wait;if(!e&&!w)return "";
+  if(e&&e.loading)return `<div class="evp" id="pqEv"><div class="evh"><span class="spin sm"></span> ${esc(e.title||"Un momento…")}</div><div class="sub">Buscando dirección real y ruta…</div></div>`;
+  const J=T.r.jobs[(e||w).j],B=(id,cls,t,dis)=>`<button class="btn ${cls}" id="${id}"${dis?" disabled":""}>${t}</button>`,
+    q=(t,p,role)=>`<div class="evq">“${esc(t)}”<span class="evwho"> — ${esc(p.name)} · ${role}</span></div>`,
+    clock=w?`<div class="evwait"><b id="pqClock">0:00</b><span> min esperando</span></div><div class="sub" id="pqWaitInfo">${w.nc?"📵 No contesta al teléfono.":w.kind==="hora"?"Llega en unos "+Math.ceil(w.arr)+" min (simulado).":"Le has llamado; esperas en la puerta."}</div><div class="sub">${w.spm>=60?"Tiempo real.":"Espera acelerada: 1 min = "+w.spm+" s reales."} No cuenta como retraso tuyo.</div>`:"";
+  let h="";
+  switch(e?e.type:"wait"){
+    case "ausente":h=`<div class="evh">🔔 Nadie abre en ${esc(J.de.name)} ${SIM}</div><div class="sub">${esc(J.rcp.name)} no responde al timbre.</div>${clock}
+      <div class="evacts">${w?"":B("pqCall","ok","📞 Llamar y esperar")}${B("pqVec","no","🏠 Dejar con un vecino",e.noVec)}${B("pqRet","no","↩️ Devolver al remitente")}${B("pqResch","no","📅 Reprogramar")}</div>`;break;
+    case "direccion":h=`<div class="evh">❓ Dirección incorrecta ${SIM}</div>${q(e.msg,J.rcp,"destinatario")}
+      ${e.nd?`<div class="pl"><span class="pk">📍 Nueva dirección</span><div class="pv"><div class="pn">${esc(e.nd.name)}</div><div class="pd"><span class="pdt">${esc(e.nd.detail||"")}</span><a href="${gmaps(e.nd)}" target="_blank" rel="noopener">Ver en Google Maps</a></div></div></div>`:""}
+      <div class="evacts">${e.nd?B("pqNew","ok",`➡️ Ir a la nueva dirección (+${num1(e.km)} km, ~${fmtMin(e.min)})`):""}${B("pqRet","no","↩️ Devolver al remitente")}${e.nd?"":B("pqResch","no","📅 Reprogramar")}</div>`;break;
+    case "hora":h=`<div class="evh">🕒 Cambio de hora ${SIM}</div>${q(e.msg,J.rcp,"destinatario")}
+      <div class="evacts">${B("pqWaitOk","ok","⏳ Vale, esperaré al llegar")}${B("pqPort","no","🏢 Dejar en portería / vecino")}${B("pqResch","no","📅 Reprogramar")}</div>`;break;
+    case "fragil":h=`<div class="evh">⚠️ Paquete frágil: tramo en mal estado ${SIM}</div><div class="sub">Baches u obras por delante (simulado). Llevas: <b>${esc(J.desc)}</b>.</div>
+      <div class="evacts">${B("pqSlow","ok",`🐢 Ir con cuidado (+${e.min} min)`)}${B("pqFast","no","➡️ Seguir a ritmo normal")}</div>`;break;
+    default:h=`<div class="evh">⏳ Esperando a ${esc(J.rcp.nom)} ${SIM}</div>${clock}<div class="evacts">${B("pqPort","no","🏢 Dejar en portería / vecino")}${B("pqResch","no","📅 Reprogramar")}</div>`;}
+  return `<div class="evp" id="pqEv">${h}</div>`;}
+function pqShow(fit){const T=trip,r=T.r;if(!T.pq)T.pq={k:0,at:null,ev:null,wait:null,plan:[]};const P=T.pq;clearTimeout(sumT);
+  {const ae=document.activeElement;if(ae&&$("overlay").contains(ae)&&ae.matches("input,textarea,select")&&ae.id!=="pqCode"){incR=true;try{ae.blur();}finally{incR=false;}}}
+  const k=P.k,s=r.seq[k],e=P.ev,stp=trip.inc&&trip.inc.cur!=null,here=!!s&&P.at===k,N=r.seq.length,nDone=r.jobs.filter(pqDone).length;
+  const d=e?' disabled title="Resuelve primero el imprevisto"':stp?' disabled title="Reanuda primero la marcha"':P.wait?" disabled":"";
+  pqDraw(r,k);if(fit)map.fitBounds(pqBounds(r,k),fitPad());
+  let main="";if(s){if(s.t==="pu")main=`<button class="btn ok" id="bPqPick"${d}>📦 Paquete${s.js.length>1?"s":""} recogido${s.js.length>1?"s ("+s.js.length+")":""}</button>`;
+    else if(!here)main=`<button class="btn ok" id="bPqGo"${d}>📍 Llegada a ${s.t==="ret"?"la devolución":"la entrega"}</button>`;
+    else if(s.t==="ret")main=`<button class="btn ok" id="bPqRet"${d}>↩️ Devuelto al remitente</button>`;}
+  const cj=s?s.js.map(j=>r.jobs[j]):[],code=s&&s.t==="de"&&here&&!e&&!P.wait?pqCodeHTML(cj[0]):"";
+  const x=expCalc(r.price,r.pickupDist+r.km,r.svc,r);
+  $("overlay").innerHTML=`<div class="trip pqtrip">
+    <div class="top" style="display:flex;justify-content:space-between;align-items:center"><span class="tag" style="font-size:11px;padding:3px 8px;border-radius:20px;background:#251a3a;color:#c9a7ff;border:1px solid #a371f7">● Reparto en curso${r.night?" · 🌙":""}</span><span class="sub">⏱ <b id="tElapsed" style="color:var(--txt)">00:00</b>${tScale()?` · <span id="tPunct" title="Puntualidad (simulada) de la próxima entrega">${pqPunct()}</span>`:""}</span></div>
+    <div class="phase" style="margin-top:8px">${s?(k+1)+"/"+N+" · "+(s.t==="pu"?"Ve a recoger: ":s.t==="ret"?(here?"En el remitente: ":"Devuelve al remitente: "):here?"En la entrega: ":"Ve a entregar: ")+esc(s.place.name):"Reparto completado"}</div>
+    ${pqEvHTML()}${incBoxHTML()}${code}
+    ${cj.map(J=>pqJobHTML(J,true)).join("")}
+    <details class="pqall"${N<=3?" open":""}><summary>Ruta: ${N} paradas · ${nDone}/${r.jobs.length} envíos completados</summary><div class="route pqstops">${r.seq.map((q,i)=>pqStopHTML(r,q,i,k)).join("")}</div></details>
+    ${zbeHTML(r,true)}
+    <div class="row"><span>Trayecto <span class="${r.routed?"rok":"rno"}">${routeLabel(r)}</span></span><span>${num1(r.km)} km · ${fmtMin(r.min)}${(()=>{const m=onboardStopMin(trip);return m>=.5?` <span style="color:var(--warn)">+ ${fmtMin(m)} de paradas tuyas</span>`:"";})()}</span></div>
+    <div class="row"><span>Comisión (${x.pct.toLocaleString("es-ES")} %) · energía (${num1(x.kmTot)} km)</span><span>−${eur(x.com)} · −${eur(x.energy)}</span></div>
+    <div class="row"><span>Neto estimado</span><span style="color:var(--acc);font-weight:700">${eur(x.net)}</span></div>
+    <div class="row"><span>Tarifa simulada (bruto, ${pqSay(r.jobs.length)})</span><span style="font-weight:800;font-size:15px;color:var(--acc)">${eur(r.price)}</span></div>
+    <div class="acts">${main}
+      <div style="display:flex;gap:8px">${trip.inc&&(trip.inc.cur!=null||trip.inc.dlg)?"":`<button class="btn incb" id="bInc" title="Avisar al remitente o al destinatario de una parada tuya"${incCanOpen()?"":` disabled title="${e||P.wait?"Resuelve primero el imprevisto":"No disponible ahora"}"`}>📣 Comunicar incidencia</button>`}
+      <button class="btn cancel" id="bCancel">Cancelar reparto</button></div></div></div>`;
+  setStatus(stp?"Parado (parada tuya)":"Reparto en curso");
+  clearInterval(elT);const upd=()=>{const t=Math.floor((Date.now()-trip.acceptedAt)/1000),el=$("tElapsed");
+    if(el)el.textContent=(t>=3600?Math.floor(t/3600)+":":"")+String(Math.floor(t/60)%60).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
+    const tp=$("tPunct");if(tp&&trip)tp.innerHTML=pqPunct();};
+  upd();elT=setInterval(upd,1000);
+  incWire();pqWire();pqArm();}
+function pqWire(){const P=trip.pq,on=(id,f)=>{const b=$(id);if(b)b.onclick=f;};
+  on("bPqPick",pqPick);on("bPqGo",pqArrive);on("bPqRet",pqRetDone);on("bPqOk",pqConfirm);on("bCancel",cancelTrip);on("bInc",incOpen);
+  if($("pqCode"))$("pqCode").onkeydown=e=>{if(e.key==="Enter")pqConfirm();};
+  on("pqCall",pqCall);on("pqVec",pqVec);on("pqRet",pqReturn);on("pqResch",pqResch);on("pqNew",pqNewAddr);on("pqWaitOk",pqHoraWait);on("pqPort",pqPort);on("pqSlow",()=>pqFrag(true));on("pqFast",()=>pqFrag(false));
+  clearInterval(pqTick);if(P.wait){pqTick=setInterval(pqWaitTick,250);pqWaitTick();}}
+const pqBusy=()=>!trip||!trip.pq||animating||(trip.inc&&trip.inc.cur!=null);
+function pqMove(s,done){const from=car.getLatLng(),pts=(s.geo||[]).slice();if(pts.length)pts[0]=[from.lat,from.lng];if(trip.inc)trip.inc.dlg=null;
+  S.driver=s.pt.slice();pqSave();lockTripButtons();
+  animateAlong(pts.length>1?pts:[[from.lat,from.lng],s.pt],2000,()=>{car.setLatLng(s.pt);if(!trip)return;done();});}
+function pqPick(){if(pqBusy()||trip.pq.ev||trip.pq.wait)return;const T=trip,r=T.r,P=T.pq,s=r.seq[P.k];if(!s||s.t!=="pu")return;
+  pqMove(s,()=>{s.js.forEach(j=>{const J=r.jobs[j];J.st="car";J.puAt=Date.now();});if(T.phase!==2){T.phase=2;T.pickedAt=T.arrivedAt=Date.now();}
+    evLog("📦",`Recogido en ${s.place.name}: ${s.js.map(j=>PQ_SIZE[r.jobs[j].size].n.toLowerCase()+(r.jobs[j].frag?" frágil":"")).join(", ")}`);
+    P.k++;P.at=null;toast(`📦 Recogido${s.js.length>1?"s "+s.js.length+" paquetes":""} en ${s.place.name}`);pqSave();pqShow(false);});}
+function pqCodeAnnounce(J){say("pq",`Entrega a ${J.rcp.nom}. Código de entrega: ${J.code.split("").join(" ")}.`,{after:"llega"});}
+function pqArrive(){if(pqBusy()||trip.pq.ev||trip.pq.wait)return;const T=trip,r=T.r,P=T.pq,s=r.seq[P.k];if(!s||s.t==="pu"||P.at===P.k)return;
+  pqMove(s,()=>{P.at=P.k;s.arrAt=Date.now();
+    if(s.t==="ret"){toast(`📍 Has llegado a ${s.place.name}`);pqSave();pqShow(false);return;}
+    const J=r.jobs[s.js[0]];
+    if(J.alt==="porteria"){pqDeliver(J,"porteria");return;}
+    if(J.hora){const arr=(J.hora.t0+J.hora.d*J.hora.spm*1000-Date.now())/1000/J.hora.spm;
+      if(arr>.2){P.wait={j:J.id,t0:Date.now(),spm:J.hora.spm,arr,kind:"hora"};toast(`⏳ ${J.rcp.nom} llega en unos ${Math.ceil(arr)} min`);pqSave();pqShow(false);return;}}
+    const e=P.plan.find(e=>e.st==="plan"&&e.j===J.id&&(e.type==="ausente"||e.type==="direccion"));
+    if(e){e.st="active";
+      if(e.type==="ausente"){P.ev={type:"ausente",j:J.id,arr:e.arr};evLog("🔔",`Nadie abre en ${J.de.name}`);alertUser("nocontesta","🔔 Nadie abre en la entrega",J.rcp.name,"🔔");
+        say("imprev",`Nadie abre en la entrega de ${J.rcp.nom}. Puedes llamar y esperar, dejarlo con un vecino, devolverlo o reprogramar.`,{after:"nocontesta"});pqSave();pqShow(false);return;}
+      pqDirEv(J);return;}
+    toast(`📍 En la entrega: ${J.de.name}`);pqCodeAnnounce(J);pqSave();pqShow(false);});}
+async function pqDirEv(J){const T=trip,P=T.pq,ev={type:"direccion",j:J.id,loading:true,title:J.rcp.nom+" avisa de un error en la dirección…"};P.ev=ev;pqShow(false);
+  alertUser("cambio","❓ Dirección incorrecta",J.rcp.name,"❓");
+  const from=[J.de.lat,J.de.lon],nd=FORCE&&FORCE.pqNoAddr?null:await pqRev(from,1.2,.3);if(trip!==T||P.ev!==ev)return;
+  if(nd){let R=null;try{R=await osrmRoute([S.driver,[nd.lat,nd.lon]]);}catch(e){}if(trip!==T||P.ev!==ev)return;
+    ev.nd=nd;ev.km=R&&R.legs[0]?R.legs[0].km:hav(S.driver,[nd.lat,nd.lon])*ROAD;ev.min=R&&R.legs[0]?R.legs[0].s*1.2/60:ev.km/22*60;
+    ev.msg={exigente:`La dirección del pedido está mal: es ${nd.name}. Venga aquí, por favor.`,prisa:`¡Perdona! Me equivoqué: es ${nd.name}. ¿Puedes venir rápido?`,simpatico:`¡Ay, perdona! 😅 Puse mal la dirección: es ${nd.name}.`}[tempOf(J.rcp)]||`¡Perdona! Me equivoqué al poner la dirección. Es ${nd.name}.`;}
+  else ev.msg="Hola, la dirección no es correcta… (no contesta más: no se ha podido obtener otra dirección real)";
+  ev.loading=false;evLog("❓",`Dirección incorrecta en la entrega de ${J.rcp.name}`);say("imprev",`Dirección incorrecta. ${ev.msg}`,{after:"cambio"});pqSave();pqShow(false);}
+function pqNewAddr(){const T=trip,P=T.pq,e=P.ev;if(!e||!e.nd)return;const J=T.r.jobs[e.j],s=T.r.seq[P.k];
+  J.de=e.nd;s.place=e.nd;s.pt=[e.nd.lat,e.nd.lon];J.exc+=e.min+PQ_HANDLE;J.score+=.2;J.why.push("dir");evLog("➡️",`Vas a la nueva dirección: ${e.nd.name}`);
+  pqEvDone();P.at=null;pqReroute("Calculando ruta a la nueva dirección…");}
+async function pqReroute(msg){const T=trip,r=T.r,P=T.pq;P.ev={type:"route",loading:true,title:msg||"Recalculando la ruta…"};pqShow(false);
+  const rest=r.seq.slice(P.k);if(rest.length)await pqRoute(S.driver.slice(),rest);if(trip!==T)return;
+  P.ev=null;pqRecalc(r);pqSave();if(P.k>=r.seq.length)return pqFinish();pqShow(true);}
+function pqCall(){const T=trip,P=T.pq,e=P.ev;if(!e||P.wait)return;const J=T.r.jobs[e.j];P.wait={j:J.id,t0:Date.now(),spm:secMin(),arr:e.arr,kind:"ausente"};
+  evLog("📞",`Llamas a ${J.rcp.name} y esperas`);pqSave();pqShow(false);}
+function pqWaitTick(){const T=trip;if(!T||!T.pq||!T.pq.wait)return clearInterval(pqTick);const w=T.pq.wait,m=(Date.now()-w.t0)/1000/w.spm,c=$("pqClock");if(c)c.textContent=fmtWait(m);
+  if(w.arr!=null&&m>=w.arr){const J=T.r.jobs[w.j];pqEndWait(T);J.waited=r2(m);if(w.kind==="ausente"){J.why.push("espera");J.score+=.15;}pqEvDone();
+    evLog("🚪",`${J.rcp.name} llega tras ${Math.max(1,Math.round(m))} min de espera`);alertUser("llega","🚪 "+J.rcp.nom+" ya está aquí",J.de.name,"🚪");
+    say("tarde",`${J.rcp.nom} ya está aquí.`,{after:"llega"});pqCodeAnnounce(J);pqSave();pqShow(false);return;}
+  if(w.arr==null&&m>=4&&!w.nc){w.nc=1;playSound("nocontesta");const i=$("pqWaitInfo");if(i)i.textContent="📵 No contesta al teléfono.";toast("📵 "+T.r.jobs[w.j].rcp.nom+" no contesta");say("tarde",`${T.r.jobs[w.j].rcp.nom} no contesta al teléfono.`);pqSave();}}
+function pqVec(){const T=trip,P=T.pq,x=P.ev||P.wait;if(!x||animating)return;const J=T.r.jobs[x.j];
+  if(!(FORCE&&FORCE.pqVec!=null?FORCE.pqVec:Math.random()<.75)){if(P.ev)P.ev.noVec=true;toast("🚪 Ningún vecino puede recogerlo ahora");pqSave();pqShow(false);return;}
+  pqEndWait(T);J.score+=({paciente:.05,simpatico:.05,normal:-.05,prisa:-.1,exigente:-.35})[tempOf(J.snd)]||0;pqEvDone();pqDeliver(J,"vecino");}
+function pqPort(){const T=trip,P=T.pq,x=P.ev||P.wait;if(!x)return;const J=T.r.jobs[x.j];
+  if(tempOf(J.snd)==="exigente")J.score-=.15;
+  if(P.at===P.k&&T.r.seq[P.k]&&T.r.seq[P.k].js.includes(J.id)){pqEndWait(T);pqEvDone();pqDeliver(J,"porteria");return;}
+  J.alt="porteria";pqEvDone();evLog("🏢",`${J.rcp.nom} acepta que se deje en portería / con un vecino`);toast("🏢 Lo dejarás en portería al llegar");pqSave();pqShow(false);}
+function pqHoraWait(){const T=trip,P=T.pq,e=P.ev;if(!e||e.type!=="hora")return;const J=T.r.jobs[e.j];J.hora={t0:Date.now(),d:e.d,spm:secMin()};J.score+=.08;J.why.push("hora");
+  evLog("🕒",`Esperarás a ${J.rcp.nom} al llegar (~${e.d} min)`);pqEvDone();toast(`⏳ Esperarás a ${J.rcp.nom}`);pqSave();pqShow(false);}
+function pqFrag(slow){const T=trip,P=T.pq,e=P.ev;if(!e||e.type!=="fragil")return;const J=T.r.jobs[e.j];
+  if(slow){J.careful=true;T.r.jobs.forEach(x=>{if(x.st==="car")x.exc+=e.min;});evLog("🐢",`Vas con cuidado con ${J.desc} (+${e.min} min, avisado)`);}
+  else{J.dmg=FORCE&&FORCE.pqDmg!=null?!!FORCE.pqDmg:Math.random()<.35;evLog("➡️",`Sigues a ritmo normal con ${J.desc}`);}
+  pqEvDone();pqSave();pqShow(false);}
+function pqTipFor(T,J){if(!pqOk(J)||J.st!=="ok"||J.dmg)return 0;
+  if(FORCE&&FORCE.pqTip!=null)return +FORCE.pqTip||0;
+  const TT=TEMPS[tempOf(J.rcp)],s=.5+TT.b+gauss()*.3+(J.waited?.15:0)+(J.urg?.2:0);
+  if(Math.random()>=Math.max(0,Math.min(.45,.08+.3*s)))return 0;return pick([1,1,1.5,2,2,3])+(tempOf(J.rcp)==="simpatico"?1:0);}
+function pqDeliver(J,how){const T=trip,P=T.pq;J.st=how;J.deAt=Date.now();
+  if(J.dmg)evLog("💥",`${J.desc}: ha llegado dañado (simulado)`);
+  evLog(how==="ok"?"✅":how==="vecino"?"🏠":"🏢",`${how==="ok"?"Entregado con código":how==="vecino"?"Entregado a un vecino":"Dejado en portería"} · ${J.rcp.name} · ${J.de.name}`);
+  const tip=pqTipFor(T,J);if(tip){J.tip=tip;T.ev.money.tip=r2((T.ev.money.tip||0)+tip);evLog("💶",`Propina de ${J.rcp.nom}: ${eur(tip)} (simulada)`);playSound("propina");say("propina",VOZT.propina(J.rcp.nom,tip));}
+  const idx=pqStopOf(T.r,J.id);if(idx===P.k){P.k++;P.at=null;}
+  P.ev=null;P.wait=null;
+  toast((J.dmg?"💥 Entregado, pero dañado":how==="ok"?"✅ Entregado a "+J.rcp.nom:how==="vecino"?"🏠 Entregado a un vecino":"🏢 Dejado en portería")+(tip?" · propina "+eur(tip):""));
+  if(P.k>=T.r.seq.length)return pqFinish();pqSave();pqShow(false);}
+function pqConfirm(){const T=trip;if(pqBusy())return;const P=T.pq,s=T.r.seq[P.k];if(!s||s.t!=="de"||P.at!==P.k||P.ev||P.wait)return;const J=T.r.jobs[s.js[0]],v=(($("pqCode")||{}).value||"").replace(/\D/g,"");
+  if(v!==J.code){const m=$("pqCodeMsg"),el=$("pqCode");if(m)m.innerHTML='<b style="color:var(--bad)">Código incorrecto.</b> Vuelve a pedírselo al destinatario.';if(el){el.value="";try{el.focus();}catch(_){}}return;}
+  pqDeliver(J,"ok");}
+function pqReturn(){const T=trip,P=T.pq,x=P.ev||P.wait;if(!x||animating)return;const J=T.r.jobs[x.j],r=T.r;
+  pqEndWait(T);J.st="retPend";J.why.push("ret");pqEvDone();evLog("↩️",`El envío de ${J.snd.name} vuelve al remitente`);
+  const idx=pqStopOf(r,J.id);if(idx===P.k){P.k++;P.at=null;}else if(idx>P.k)r.seq.splice(idx,1);
+  r.seq.push({t:"ret",js:[J.id],place:J.pu,pt:[J.pu.lat,J.pu.lon]});pqReroute("Calculando la vuelta al remitente…");}
+function pqRetDone(){if(pqBusy())return;const T=trip,P=T.pq,s=T.r.seq[P.k];if(!s||s.t!=="ret"||P.at!==P.k)return;
+  s.js.forEach(j=>{const J=T.r.jobs[j];J.st="ret";J.deAt=Date.now();evLog("↩️",`Devuelto a ${J.snd.name} en ${s.place.name}`);});
+  P.k++;P.at=null;toast("↩️ Devuelto al remitente");if(P.k>=T.r.seq.length)return pqFinish();pqSave();pqShow(false);}
+function pqResch(){const T=trip,P=T.pq,x=P.ev||P.wait;if(!x||animating)return;const J=T.r.jobs[x.j],r=T.r;
+  pqEndWait(T);J.st="resch";J.deAt=Date.now();pqEvDone();evLog("📅",`Entrega a ${J.rcp.name} reprogramada (el paquete se queda contigo; simulado)`);toast("📅 Entrega reprogramada");
+  const idx=pqStopOf(r,J.id);if(idx===P.k){P.k++;P.at=null;if(P.k>=r.seq.length)return pqFinish();pqSave();pqShow(false);return;}
+  if(idx>P.k){r.seq.splice(idx,1);if(P.k>=r.seq.length)return pqFinish();return pqReroute();}
+  pqSave();pqShow(false);}
+// --- Valoración del remitente (1–5★ + comentario, simulada) ---
+function pqJobSat(T,J,TT,now){let v=0;const R=[];
+  if(J.dmg){v-=2.2;R.push("dano");}else if(J.frag&&J.careful){v+=.12;R.push("cuidado");}
+  if(J.st==="ret"||J.st==="retPend"){v-=.3;R.push("ret");}else if(J.st==="resch"){v-=.45;R.push("resch");}else if(J.st==="vecino"){v-=TT.k*.12;R.push("vecino");}
+  else if(J.st==="car"||J.st==="pend"){v-=1.5;R.push("noent");}
+  v+=J.score||0;J.why.forEach(w=>{if(!R.includes(w))R.push(w);});
+  const end=J.deAt||now;
+  if(tScale()&&J.deAt&&J.etaDe!=null&&pqOk(J)){const A=driveMin(T,T.acceptedAt,end)+stopMinIn(T,T.acceptedAt,end),E=J.etaDe+(J.exc||0)+excIn(T,T.acceptedAt,end),tol=Math.max(3,E*.15);
+    if(A>E+tol){v-=TT.k*Math.min(2.4,.09*(A-E-tol))/Math.max(1,Math.sqrt(E/30));R.push("tarde");}else{v+=.05;R.push("puntual");}}
+  for(const s of stopsIn(T,T.acceptedAt,end)){const act=stopAct(s);if(s.canal==="sin"){v-=TT.k*(.3+.02*act);R.push("sinAvisar");}else{v-=TT.k*(.02+.01*s.ann);if(act-s.ann>3){v-=TT.k*.2;R.push("excede");}}}
+  return {v,R};}
+function pqComment(rate,R){const has=k=>R.includes(k);
+  if(has("dano"))return pick(["El paquete llegó dañado. Muy decepcionado.","Lo frágil hay que tratarlo con más cuidado: llegó roto."]);
+  if(rate>=5)return has("cuidado")?"Se nota que cuidó el paquete frágil. ¡Gracias!":has("dir")?"Gracias por ir a la dirección correcta sin problema.":has("espera")||has("hora")?"Gracias por esperar al destinatario. ¡Perfecto!":pick(["Entrega rápida y puntual. ¡Gracias!","Muy profesional, todo perfecto.","Todo llegó bien y a tiempo."]);
+  if(has("sinAvisar"))return "Se paró por el camino sin avisar a nadie.";
+  if(has("tarde"))return rate<=2?"Llegó con muchísimo retraso.":"Llegó, pero más tarde de lo previsto.";
+  if(has("noent"))return "El envío no se llegó a entregar.";
+  if(has("resch"))return "Al final no se pudo entregar; habrá que repetir.";
+  if(has("ret"))return "El envío volvió sin entregar. Una pena, aunque no fue culpa suya.";
+  if(has("vecino"))return rate>=4?"Lo dejó con un vecino, correcto.":"Lo dejó con un vecino sin consultarme.";
+  if(has("excede"))return "Avisó de la parada, pero tardó más de lo dicho.";
+  return rate>=4?pick(["Correcto, buen servicio.","Bien, sin problemas."]):rate===3?"Regular.":"No quedé satisfecho con el envío.";}
+function pqRateAll(T,now){const G={};T.r.jobs.forEach(J=>{(G[J.sk]||(G[J.sk]=[])).push(J);});
+  return Object.entries(G).map(([k,L])=>{const p=L[0].snd,TT=TEMPS[tempOf(p)],noR=FORCE&&FORCE.noRnd;let sat=.75+TT.b+(noR?0:gauss()*.33);const R=[];
+    L.forEach(J=>{const x=pqJobSat(T,J,TT,now);sat+=x.v/L.length;x.R.forEach(w=>{if(!R.includes(w))R.push(w);});});
+    if(FORCE&&FORCE.sat!=null)sat=FORCE.sat;
+    const rate=sat>=.45?5:sat>=-.35?4:sat>=-1.2?3:sat>=-2.1?2:1;
+    return {key:k,n:p.nom,full:p.name+(L[0].shop?" ("+L[0].shop+")":""),rate,sat:r2(sat),temp:tempOf(p),comment:pqComment(rate,R),R};});}
+const pqPaxTxt=r=>r.jobs.map(J=>`#${J.id+1} ${PQ_SIZE[J.size].n.toLowerCase()}${J.frag?" frágil":""}: ${J.snd.name}${J.shop?" ("+J.shop+")":""} → ${J.rcp.name}`).join(" · ");
+const pqHistPq=r=>({n:r.jobs.length,ok:r.jobs.filter(pqOk).length,night:!!r.night,jobs:r.jobs.map(J=>({size:J.size,frag:J.frag,desc:J.desc,st:J.st,dmg:!!J.dmg,price:J.price,paid:pqPaid(J),tip:J.tip||0,snd:J.snd.name,shop:J.shop||"",rcp:J.rcp.name,from:J.pu.name,to:J.de.name}))});
+function pqFinish(){const T=trip;if(!T)return;const r=T.r,ev=T.ev||evNew(),now=Date.now();clearTimeout(pqT);clearInterval(pqTick);if(T.inc){if(T.inc.cur!=null)incClose();T.inc.dlg=null;}
+  const RT=pqRateAll(T,now);T.ratings=RT;
+  const rate=RT.length?Math.max(1,Math.min(5,Math.round(RT.reduce((a,x)=>a+x.rate,0)/RT.length))):null;
+  const gross=r2(r.jobs.reduce((a,J)=>a+pqPaid(J),0)),tip=r2(r.jobs.reduce((a,J)=>a+(J.tip||0),0)),nOk=r.jobs.filter(pqOk).length;
+  r.quote=r.quote||r.price;r.price=gross;pqRecalc(r);
+  const kmTot=r.pickupDist+r.km,ex=expCalc(gross,kmTot,"paquete",r);ex.tip=tip;ex.net+=tip;
+  S.stats.tips=(S.stats.tips||0)+tip;S.stats.earn+=gross+tip;S.stats.trips++;S.stats.km+=kmTot;S.stats.pq=(S.stats.pq||0)+nOk;
+  RT.forEach(x=>{S.stats.rateSum+=x.rate;S.stats.rateN++;});pushRates(RT.map(x=>x.rate));
+  S.stats.net+=ex.net;S.stats.com+=ex.com;S.stats.energy+=ex.energy;
+  historyEntry(r,"ok",rate,ex);
+  Object.assign(S.history[0],{pax:pqPaxTxt(r),via:r.seq.length>2?r.seq.slice(1,-1).map(s=>s.place.name).join(", "):"",gross:r2(gross+tip),comment:RT[0]?RT[0].comment:null,sat:RT[0]?RT[0].sat:null,
+    rates:RT.length>1?RT.map(x=>({n:x.full,rate:x.rate,comment:x.comment,temp:x.temp})):null,temp:RT[0]?RT[0].temp:null,pq:pqHistPq(r),per:null});
+  const last=r.seq[r.seq.length-1].pt.slice(),log=ev.log.slice();S.settings.center=last;S.driver=last.slice();
+  stopTripUI();save();car.setLatLng(last);renderStats();syncUI();drawZone(true);
+  pqSummary({r,ex,tip,rate,RT,log,nOk,gross});idleStatus();playSound("fin");if(tip)playSound("propina",{delay:.75});
+  toast(`🏁 Reparto terminado: ${nOk}/${r.jobs.length} entregados · +${eur(gross+tip)}${rate?" · "+rate+"★":""}`);
+  say("fin",VOZT.pqFin(r,RT,nOk,gross+tip),{after:"fin"});}
+function pqSummary(o){const r=o.r,ex=o.ex;clearTimeout(sumT);
+  $("overlay").innerHTML=`<div class="trip tsum" id="tSum"><div class="evh" style="font-size:15px">🏁 Reparto terminado</div>
+    <div class="sub">${o.nOk}/${r.jobs.length} envíos entregados · ${esc(r.from)} → ${esc(r.to)}</div>
+    ${r.jobs.map(J=>`<div class="row"><span>${PQ_SIZE[J.size].ic} #${J.id+1} ${esc(J.rcp.name)} · ${PQ_ST[J.st]||J.st}${J.dmg?" · 💥 dañado":""}</span><span>${eur(pqPaid(J))}</span></div>`).join("")}
+    <div class="row"><span>💶 Propinas ${SIM}</span><span>${o.tip?`<b style="color:var(--acc)">+${eur(o.tip)}</b>`:"sin propina"}</span></div>
+    <div class="row"><span>Comisión · energía</span><span>−${eur(ex.com)} · −${eur(ex.energy)}</span></div>
+    <div class="row"><span>Neto del reparto</span><span style="color:${ex.net<0?"var(--bad)":"var(--acc)"};font-weight:800;font-size:15px">${eur(ex.net)}</span></div>
+    ${o.RT.map((x,i)=>`<div class="row"><span>Valoración de ${esc(x.full)} <span class="tsim">(remitente · ${TEMPS[x.temp].ic} ${esc(TEMPS[x.temp].n.toLowerCase())})</span></span><span${i?"":' id="sumStars"'}>${"★".repeat(x.rate)}${"☆".repeat(5-x.rate)}</span></div><div class="evq"${i?"":' id="sumCom"'}>“${esc(x.comment)}”</div>`).join("")}
+    <div class="sub" style="margin-top:6px;color:var(--txt)">Imprevistos y paradas</div>${evLogHTML(o.log)}
+    <div class="acts"><button class="btn ok" id="bSum">Seguir conduciendo</button></div></div>`;
+  const close=()=>{clearTimeout(sumT);if($("tSum"))$("overlay").innerHTML="";if(!trip&&!curReq)scheduleReq(nextGap());};
+  $("bSum").onclick=close;sumT=setTimeout(()=>{if($("tSum"))close();},45000);}
+function pqCancel(){const T=trip;if(!T||animating)return;const r=T.r,P=T.pq;if(T.inc&&T.inc.cur!=null)incClose();if(T.inc)T.inc.dlg=null;clearTimeout(pqT);
+  pqEndWait(T);const kmDone=r.seq.slice(0,P.k).reduce((a,s)=>a+(s.km||0),0)+(P.at===P.k&&r.seq[P.k]?r.seq[P.k].km||0:0);
+  const gross=r2(r.jobs.reduce((a,J)=>a+(pqOk(J)?J.price:0),0)),tip=r2(r.jobs.reduce((a,J)=>a+(J.tip||0),0)),nOk=r.jobs.filter(pqOk).length,left=r.jobs.filter(J=>!pqDone(J)).length;
+  r.quote=r.quote||r.price;r.price=gross;
+  const ex=expCalc(gross,kmDone,"paquete",r);ex.tip=tip;ex.net+=tip;
+  S.stats.cancelled++;lvlEv("can");S.stats.km+=kmDone;S.stats.energy+=ex.energy;S.stats.com+=ex.com;S.stats.net+=ex.net;S.stats.earn+=gross+tip;S.stats.tips=(S.stats.tips||0)+tip;S.stats.pq=(S.stats.pq||0)+nOk;
+  if(T.ev)T.ev.log.push({ic:"✋",t:"Reparto cancelado por ti"+(left?` · ${pqSay(left)} sin entregar (vuelven al remitente, simulado)`:"")});
+  historyEntry(r,"cancelado",null,ex);Object.assign(S.history[0],{gross:r2(gross+tip),pax:pqPaxTxt(r),pq:pqHistPq(r),per:null});
+  S.settings.center=S.driver.slice();stopTripUI();save();renderStats();syncUI();drawZone(true);
+  toast(`Reparto cancelado${nOk?` · cobras ${pqSay(nOk)} ya entregado${nOk>1?"s":""}: ${eur(gross)}`:" (sin ganancias)"}`);
+  idleStatus();scheduleReq(nextGap());}
+// --- Chat de incidencias con remitentes y destinatarios ---
+function pqPaxList(r){const L=[];r.jobs.forEach((J,j)=>{let s=L.find(x=>x.key===J.sk);if(!s){s={key:J.sk,per:J.snd,n:J.snd.nom,full:J.snd.name,role:"remitente",kind:"s",js:[]};L.push(s);}s.js.push(j);
+  L.push({key:"r"+j,per:J.rcp,n:J.rcp.nom,full:J.rcp.name,role:"destinatario",kind:"r",js:[j]});});return L;}
+function pqPaxState(P){const T=trip,r=T.r,Q=T.pq||{};if(P.js.every(j=>pqDone(r.jobs[j])))return "gone";
+  const s=r.seq[Q.k];if(s&&Q.at===Q.k&&s.js.some(j=>P.js.includes(j))&&((s.t==="de")===(P.kind==="r")))return "on";
+  if(s&&s.t==="pu"&&P.kind==="s"&&s.js.some(j=>P.js.includes(j))&&Q.at===Q.k)return "on";
+  return "wait";}
+function pqIncPhrases(d,A,t,X,N){
+  if(d.canal==="persona")return [`${t("Perdona","Perdone","Perdonad")}, antes de seguir con el reparto tengo que parar ${X}. Unos ${N} minutos.`,`Aviso: paro ${X} unos ${N} minutos y sigo con la ruta.`];
+  return [`Hola, soy ${t("tu","su","vuestro")} repartidor. Tengo que parar ${X}; la entrega se retrasará unos ${N} minutos. ${t("Disculpa","Disculpe","Disculpad")} las molestias.`,
+    `Hola, ${t("te escribo","le escribo","os escribo")} por el envío: paro ${X} y sigo enseguida. Unos ${N} min de retraso, lo siento.`,
+    `Buenas, aviso de un pequeño retraso de unos ${N} minutos en el reparto: tengo que parar ${X}.`];}
+function pqIncReply(P,d,c){const T=tempOf(P.per),u=usted(P.per),tu=(a,b)=>u?b:a,N=d.min,snd=P.kind==="s",urg=trip.r.night;
+  if(c.unwarned)return snd?{prisa:"Hola, el seguimiento dice que el envío lleva un rato parado. ¿Pasa algo? Es urgente.",exigente:"El envío está parado en el mapa y nadie ha avisado. ¿Qué ocurre?",normal:"Hola, veo el envío parado en el seguimiento. ¿Va todo bien?",paciente:"Hola, ¿todo bien? Veo el envío parado. Sin prisa.",simpatico:"¡Hola! Veo el envío parado, ¿todo bien? 😊"}[T]
+    :{prisa:"Hola, estoy esperando el paquete y el reparto no se mueve… ¿Llega o no?",exigente:"¿Por qué está parado mi envío? Nadie me ha dicho nada.",normal:"Hola, el seguimiento dice que el reparto está parado. ¿Tardará mucho?",paciente:"Hola, veo que el reparto está parado. Aquí espero, sin problema.",simpatico:"¡Hola! ¿Todo bien con el reparto? 😊"}[T];
+  if(c.follow)return {prisa:`¿Cuánto falta? ${d.canal==="sin"?"Llevo un buen rato esperando.":"Dijiste "+N+" minutos."}`,exigente:`${d.canal==="sin"?"Esto ya es demasiado.":"Dijo "+N+" minutos y ya pasa de eso."} ¿Cuándo llega el envío?`,normal:"¿Falta mucho para la entrega?",paciente:"¿Todo bien? Solo pregunto.",simpatico:"¿Todo bien por ahí? 😊"}[T];
+  const R={paciente:snd?["Sin problema, gracias por avisar.","Vale, tranquilo. Que llegue bien."]:[`No ${tu("te preocupes","se preocupe")}, estaré en casa.`,"Sin problema, aquí espero."],
+    normal:snd?["Vale, gracias por avisar.","De acuerdo."]:["Vale, gracias por avisar.","Ok, estaré pendiente."],
+    prisa:urg?["Es un pedido urgente… por favor, no tardes.","Vale, pero lo necesito cuanto antes."]:snd?["Vale, pero el cliente lo espera pronto.","De acuerdo, pero no tardes mucho, por favor."]:["Uf, tengo que salir pronto. Date prisa, por favor.","Vale, pero no tardes, que me tengo que ir."],
+    exigente:snd?[`Espero que sean ${N} minutos y no más. El cliente está esperando.`,"No es lo ideal. Lo tendré en cuenta."]:[`Pues no me viene bien. Espero que sean ${N} minutos.`,"Vaya. Espero que llegue hoy."],
+    simpatico:snd?["¡Sin problema! Gracias por avisar 😊","¡Claro! Con calma 😊"]:["¡Sin problema! Aquí estoy 😊","¡Gracias por avisar! 😊"]};
+  return pick(R[T]);}
 // ---------- Hora, demanda y tarifa dinámica (modelo SIMULADO, inventado pero plausible) ----------
 const DIAS=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
 const LVL=["Baja","Media","Alta","Muy alta"];
@@ -2401,7 +2848,7 @@ function hmApply(){const f=$("hmFrom").value,t=$("hmTo").value,sv=$("hmSvc").val
 function hmRender(){const T=tripTot(HM.f),pages=Math.max(1,Math.ceil(HM.f.length/HM.per));HM.page=Math.min(HM.page,pages-1);
   $("hmTot").innerHTML=`<b>${T.n}</b> viaje${T.n===1?"":"s"} (${T.ok} completados, ${T.can} cancelados) · <b>${num1(T.km)} km</b> · bruto <b>${eur(T.gross)}</b> · propinas ${eur(T.tip)} · esperas/cancel. ${eur(T.fees)} · comisión −${eur(T.com)} · energía −${eur(T.energy)}${T.ferry?" · ferry −"+eur(T.ferry):""} · neto <b style="color:var(--acc)">${eur(T.net)}</b>`;
   const rows=HM.f.slice(HM.page*HM.per,(HM.page+1)*HM.per);
-  $("hmBody").innerHTML=rows.length?rows.map(x=>`<tr${x.status!=="ok"?' class="can"':""}><td>${fmtFecha(x.fecha)}</td><td>${esc(x.time||"")}</td><td>${x.svc==="urbano"?"🏙️ Urbano":"🛣️ Compartido"}</td><td>${esc(x.ciudad||"")}</td>
+  $("hmBody").innerHTML=rows.length?rows.map(x=>`<tr${x.status!=="ok"?' class="can"':""}><td>${fmtFecha(x.fecha)}</td><td>${esc(x.time||"")}</td><td>${svcIc(x.svc)} ${svcName(x.svc)}</td><td>${esc(x.ciudad||"")}</td>
     <td class="tr">${esc(x.from)} → ${esc(x.to)}${x.via?`<span class="m"> · vía ${esc(x.via)}</span>`:""}${(x.ev||[]).length?`<div class="m">${x.ev.map(e=>e.ic).join(" ")} ${esc(x.ev.map(e=>e.t).join(" · "))}</div>`:""}</td>
     <td class="tr">${esc(x.pax||"")}</td><td class="n">${num1(x.kmTot!=null?x.kmTot:x.km||0)}</td><td class="n">${eur(tripGross(x))}</td><td class="n">${x.tip?eur(x.tip):""}</td><td class="n"><b>${eur(x.net||0)}</b></td><td>${x.status==="ok"?"★"+x.rate+(x.rates&&x.rates.length>1?` <span class="m">(${x.rates.map(y=>y.rate+"★").join(" ")})</span>`:"")+(x.comment?`<div class="m" style="font-style:italic">“${esc(x.comment)}”</div>`:""):esc(x.status)}</td></tr>`).join("")
     :'<tr><td colspan="11" class="m" style="text-align:center;padding:18px">No hay viajes con estos filtros.</td></tr>';
@@ -2422,7 +2869,7 @@ async function exportData(){let trips=[];try{trips=await HS.all();}catch(e){toas
   download(JSON.stringify(o),`simulador-conductor-${p.ymd}.json`,"application/json");toast(`⬇️ Exportados ${trips.length} viajes y los ajustes`);}
 function csvOf(list){const n=v=>(+v||0).toFixed(2).replace(".",","),q=s=>{s=String(s==null?"":s);return /[";\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
   const H=["Fecha","Hora","Servicio","Ciudad","Origen","Destino","Vía","Pasajero","Km","Bruto (€)","Propina (€)","Esperas/cancelaciones (€)","Comisión (€)","Energía (€)","Ferry (€)","Neto (€)","Estado","Valoración","Comentario del pasajero","Paradas del conductor","Imprevistos","Vehículo","Turno","ID"];
-  const R=list.map(x=>[fmtFecha(x.fecha),x.time||"",x.svc==="urbano"?"Urbano":"Compartido",x.ciudad||"",x.from,x.to,x.via||"",x.pax||"",num1(x.kmTot!=null?x.kmTot:x.km||0),n(tripGross(x)),n(x.tip),n(x.fees),n(x.com),n(x.energy),n(x.ferry),n(x.net),x.status,x.rate||"",x.rates&&x.rates.length>1?x.rates.map(y=>y.n+" "+y.rate+"★: "+y.comment).join(" | "):(x.comment||""),
+  const R=list.map(x=>[fmtFecha(x.fecha),x.time||"",svcName(x.svc),x.ciudad||"",x.from,x.to,x.via||"",x.pax||"",num1(x.kmTot!=null?x.kmTot:x.km||0),n(tripGross(x)),n(x.tip),n(x.fees),n(x.com),n(x.energy),n(x.ferry),n(x.net),x.status,x.rate||"",x.rates&&x.rates.length>1?x.rates.map(y=>y.n+" "+y.rate+"★: "+y.comment).join(" | "):(x.comment||""),
     (x.inc||[]).map(y=>`${(INC_MOT[y.mot]||INC_MOT.otro).n}${y.txt?" ("+y.txt+")":""} · ${y.canal==="sin"?"sin avisar":y.canal} · ${y.canal==="sin"?"":y.ann+"/"}${y.act!=null?Math.round(y.act):"?"} min · ${y.abordo?"a bordo":"antes de recoger"}`).join(" | "),(x.ev||[]).map(e=>e.t).join(" | "),x.veh||"",x.shift||"",x.uid]);
   return "\ufeff"+[H].concat(R).map(r=>r.map(q).join(";")).join("\r\n");}
 $("hmCsv").onclick=()=>{download(csvOf(HM.f),`simulador-conductor-historial-${tzParts().ymd}.csv`,"text/csv;charset=utf-8");toast(`⬇️ CSV con ${HM.f.length} viajes (separador ;)`);};
@@ -2437,7 +2884,7 @@ function validateImport(o){
   if(o.version>EXPORT_VER)throw new Error(`El archivo es de una versión más nueva (v${o.version}); esta página admite hasta la v${EXPORT_VER}.`);
   if(o.version<1)throw new Error(`Versión de archivo no válida (v${o.version}).`);
   if(!Array.isArray(o.trips))throw new Error("Falta la lista de viajes ('trips').");
-  const bad=o.trips.findIndex(t=>!t||typeof t!=="object"||typeof t.uid!=="string"||!t.uid||(t.svc!=="urbano"&&t.svc!=="compartido"));
+  const bad=o.trips.findIndex(t=>!t||typeof t!=="object"||typeof t.uid!=="string"||!t.uid||(t.svc!=="urbano"&&t.svc!=="compartido"&&t.svc!=="paquete"));
   if(bad>=0)throw new Error(`El viaje nº ${bad+1} no es válido (falta el identificador 'uid' o el tipo de servicio).`);
   if(o.settings!=null&&(typeof o.settings!=="object"||Array.isArray(o.settings)))throw new Error("Los ajustes del archivo no son válidos.");
   return true;}
@@ -2457,7 +2904,7 @@ $("impMerge").onclick=async()=>{if(!IMP)return;try{const r=await HS.add(IMP.trip
   catch(e){impErr("No se pudieron guardar los viajes: "+e.message);}};
 $("impReplace").onclick=async()=>{if(!IMP)return;if(trip){impErr("Termina o cancela el viaje en curso antes de reemplazar los datos.");return;}const o=IMP;
   try{await HS.clear();const r=await HS.add(o.trips);goOffline();clearReq();
-    const d=defState(),st=o.settings||{};S.settings=Object.assign({},d.settings,st);["exp","sup","ev","snd","clock","voz"].forEach(k=>S.settings[k]=Object.assign({},d.settings[k],st[k]||{}));
+    const d=defState(),st=o.settings||{};S.settings=Object.assign({},d.settings,st);["exp","sup","ev","snd","clock","voz","pq"].forEach(k=>S.settings[k]=Object.assign({},d.settings[k],st[k]||{}));
     S.stats=o.day===today()&&o.stats?Object.assign({},d.stats,o.stats):d.stats;S.day=today();S.started=o.start||null;S.driver=o.driver||S.settings.center;S.trip=null;S.online=false;S.rates=Array.isArray(o.rates)?o.rates.filter(v=>v>=1&&v<=5).slice(-500):[];
     S.shift=o.shift&&typeof o.shift==="object"&&o.shift.id?o.shift:null;S.shifts=Array.isArray(o.shifts)?o.shifts.filter(x=>x&&x.id).slice(-200):[];S.lvl=o.lvl&&Array.isArray(o.lvl.ev)?o.lvl:{ev:[],last:"azul",warn:null};
     S.history=o.trips.slice().sort((a,b)=>b.ts-a.ts).slice(0,100).map(t=>{const c=Object.assign({},t);delete c.detail;delete c.id;return c;});
@@ -2470,9 +2917,9 @@ $("impReplace").onclick=async()=>{if(!IMP)return;if(trip){impErr("Termina o canc
 
 // ---------- Sonidos (Web Audio API, generados: funcionan sin archivos y desde file://) ----------
 const SND_KEYS=[["req","Nueva solicitud (repite)"],["bb","Reserva BlaBlaCar (repite)"],["warn","Se acaba el tiempo para aceptar"],["atasco","Atasco"],["cambio","Cambio de destino"],["parada","Parada extra"],
-  ["tarde","Pasajero llega tarde"],["llega","Pasajero llegó"],["nocontesta","No contesta"],["cancela","Cancelación / no se presenta"],["bbcancela","BlaBlaCar: reserva cancelada"],["ferry","Ferry / retraso"],["incEnv","Incidencia: aviso enviado"],["incResp","Incidencia: respuesta del pasajero"],["propina","Propina"],["fin","Viaje terminado"],["meta","Objetivo del turno cumplido"],["resumen","Resumen hablado del turno"],["nivel","Nivel y avisos de valoración"]];
+  ["tarde","Pasajero llega tarde"],["llega","Pasajero llegó"],["nocontesta","No contesta"],["cancela","Cancelación / no se presenta"],["bbcancela","BlaBlaCar: reserva cancelada"],["ferry","Ferry / retraso"],["incEnv","Incidencia: aviso enviado"],["incResp","Incidencia: respuesta del pasajero"],["propina","Propina"],["pq","Paquetería: nueva solicitud (repite)"],["fin","Viaje terminado"],["meta","Objetivo del turno cumplido"],["resumen","Resumen hablado del turno"],["nivel","Nivel y avisos de valoración"]];
 // [inicio s, frecuencia Hz, duración s, forma de onda, volumen, frecuencia final (glissando)]
-const SND_R={req:[[0,880,.12,"sine",.55],[.14,1320,.2,"sine",.55]],bb:[[0,660,.1,"triangle",.55],[.11,990,.1,"triangle",.55],[.22,1320,.22,"triangle",.5]],
+const SND_R={req:[[0,880,.12,"sine",.55],[.14,1320,.2,"sine",.55]],pq:[[0,392,.09,"square",.2],[.12,523,.09,"square",.2],[.24,784,.18,"triangle",.45]],bb:[[0,660,.1,"triangle",.55],[.11,990,.1,"triangle",.55],[.22,1320,.22,"triangle",.5]],
   warn:[[0,1000,.05,"square",.16]],atasco:[[0,220,.24,"sawtooth",.22,170],[.32,220,.24,"sawtooth",.22,170]],cambio:[[0,500,.35,"sine",.45,950],[.4,950,.14,"sine",.35]],
   parada:[[0,740,.15,"triangle",.5],[.18,587,.28,"triangle",.5]],tarde:[[0,523,.1,"sine",.4],[.2,523,.1,"sine",.4],[.4,523,.1,"sine",.4]],llega:[[0,784,.25,"sine",.5],[.26,659,.45,"sine",.5]],
   nocontesta:[[0,440,.15,"square",.14],[.18,330,.15,"square",.14],[.36,262,.32,"square",.14]],cancela:[[0,659,.15,"triangle",.45],[.17,523,.15,"triangle",.45],[.34,392,.38,"triangle",.45]],
@@ -2536,7 +2983,7 @@ syncSndUI();
 // ---------- Voz: avisos hablados (Web Speech API · speechSynthesis) ----------
 // Para jugar con el simulador oculto detrás del juego: primero suena el aviso y después se lee una frase corta en español.
 const VOZ_KEYS=[["req","Nueva solicitud / reserva"],["expira","Solicitud a punto de caducar"],["imprev","Atascos, cambios, paradas, cancel."],["tarde","Pasajero tarde, llega, no contesta"],
-  ["bb","BlaBlaCar: paradas, reservas, ferry"],["inc","Respuestas del pasajero (chat)"],["propina","Propinas"],["fin","Viaje terminado y valoración"],["turno","Turno, objetivos y nivel"],["resumen","Resumen del turno"]];
+  ["bb","BlaBlaCar: paradas, reservas, ferry"],["inc","Respuestas del pasajero (chat)"],["propina","Propinas"],["pq","Paquetería: solicitudes y entregas"],["fin","Viaje terminado y valoración"],["turno","Turno, objetivos y nivel"],["resumen","Resumen del turno"]];
 const VOZ_LOG=[];window.VOZ_LOG=VOZ_LOG; // registro para pruebas
 const VQ=[],VP=[];let vCur=null,vArmed=false,vT=null,vKeep=null;
 const vozS=()=>S.settings.voz;
@@ -2590,6 +3037,11 @@ const VOZT={
   parada_bb:(stop,down,up)=>`En ${stop}: ${[down.length?"baja "+down.join(" y "):"",up.length?"sube "+up.join(" y "):""].filter(Boolean).join(", ")||"parada"}.`,
   inc:(c,shared)=>`${shared?c.n:"El cliente"} ${c.kind==="follow"?"insiste":c.kind==="queja"?"dice":"responde"}: ${c.t}`,
   propina:(n,v)=>`${n} te ha dejado una propina de ${eurSay(v)}.`,
+  pqReq(r){const n=r.jobs.length,Q=vozS().quien!==false,J0=r.jobs[0];
+    const js=r.jobs.map(J=>`${PQ_SIZE[J.size].n.toLowerCase()}${J.frag?" frágil":""}`).join(", ");
+    const who=Q?` Remitente: ${J0.snd.nom}${J0.shop?", de "+J0.shop:""}. ${n===1?"Destinatario: "+J0.rcp.name+".":"Destinatarios: "+r.jobs.map(J=>J.rcp.nom).join(", ")+"."}`:"";
+    return `Nueva solicitud de paquetería${r.night?" urgente":""}: ${pqSay(n)}, ${js}.${who} Recogida en ${r.from}, a ${kmSay(r.pickupDist)}. Reparto de ${kmSay(r.km)}, unos ${minSay(r.min)}. ${eurSay(r.price)}.`;},
+  pqFin(r,RT,nOk,tot){return `Reparto terminado: ${nOk} de ${r.jobs.length} entregados, ${eurSay(tot)}. `+RT.map(x=>`${x.n} te ha valorado con ${x.rate===1?"una estrella":x.rate+" estrellas"}: ${x.comment}`).join(". ");},
   fin(r,RT,rate){if(RT&&RT.length>1)return `Viaje terminado. Valoraciones: ${RT.map(x=>x.n+", "+x.rate+(x.rate===1?" estrella":" estrellas")).join("; ")}.`;
     const M=RT&&RT[0];return `Viaje terminado. ${pnom(r)} te ha valorado con ${rate===1?"una estrella":rate+" estrellas"}${M&&M.comment?": "+M.comment:"."}`;}
 };
@@ -2665,6 +3117,7 @@ const VOZ_EJ={req:["req",()=>VOZT.req(EJ_REQ())],
   bb:["bb",()=>VOZT.parada_bb("Zaragoza",["Lucía"],["José"])],
   inc:["incResp",()=>VOZT.inc({t:"Vale, sin problema. Gracias por avisar.",kind:"resp"},false)],
   propina:["propina",()=>VOZT.propina("Lucía",2.5)],
+  pq:["pq",()=>VOZT.pqReq({night:false,from:"Mercado de San Miguel",pickupDist:0.8,km:2.4,min:11,price:7.30,jobs:[{size:"caja",frag:true,snd:{nom:"Marta"},shop:"",rcp:{nom:"Pedro",name:"Pedro Sánchez Gil"}}]})],
   fin:["fin",()=>"Viaje terminado. Lucía te ha valorado con 5 estrellas: Muy amable y puntual."],
   rating:["req",()=>"Pasajero con "+numSay(4.85,2)+" estrellas."],
   turno:["meta",()=>"Objetivo de ganancias cumplido: llevas 150 euros netos en este turno."],
@@ -2682,7 +3135,7 @@ $("vozStop").onclick=()=>vozCancel();
 if(SS()){try{SS().addEventListener?SS().addEventListener("voiceschanged",vozFill):(SS().onvoiceschanged=vozFill);}catch(e){}}
 syncVozUI();setTimeout(vozFill,600);setTimeout(vozFill,2500);
 // ---------- Móvil (Android) y app instalable (PWA) ----------
-const APP_VER="22.0";
+const APP_VER="23.0";
 const MQ_MOB=window.matchMedia("(max-width:899px),(max-height:520px) and (pointer:coarse)");
 function isMob(){return MQ_MOB.matches;}
 // Márgenes al encuadrar la ruta: en PC la tarjeta está a la izquierda; en móvil, abajo (vertical) o a la izquierda (horizontal)
@@ -2759,11 +3212,11 @@ const goalsS=()=>S.settings.goals||(S.settings.goals={net:150,trips:15,hours:8})
 const hmTxt=ms=>{const m=Math.round(ms/60000);return m>=60?Math.floor(m/60)+" h "+String(m%60).padStart(2,"0")+" min":m+" min";};
 // Totales de un turno a partir de los viajes marcados con su número (fijos: €/h de los ajustes × duración del turno)
 function shiftTot(sh){const L=sh?S.history.filter(e=>e.shift===sh.id):[],ms=sh?Math.max(0,(sh.end||Date.now())-sh.start):0,h=ms/3600000;
-  let gross=0,net=0,trips=0,km=0,rs=0,rn=0,can=0,tips=0;
-  for(const e of L){gross+=tripGross(e)||0;net+=+e.net||0;km+=+(e.kmTot!=null?e.kmTot:e.km)||0;tips+=+e.tip||0;
+  let gross=0,net=0,trips=0,km=0,rs=0,rn=0,can=0,tips=0,pq=0;
+  for(const e of L){gross+=tripGross(e)||0;if(e.pq)pq+=+e.pq.ok||0;net+=+e.net||0;km+=+(e.kmTot!=null?e.kmTot:e.km)||0;tips+=+e.tip||0;
     if(e.status==="ok"){trips++;const R=e.rates&&e.rates.length?e.rates.map(x=>+x.rate):(e.rate?[+e.rate]:[]);for(const v of R)if(v>=1){rs+=v;rn++;}}else can++;}
   const fix=(+S.settings.exp.fixH||0)*h;net-=fix;
-  return {ms,h,gross:r2(gross),net:r2(net),fix:r2(fix),trips,km:r2(km),rate:rn?rs/rn:null,rn,can,tips:r2(tips),eh:h>=1/60?r2(net/h):null};}
+  return {ms,h,gross:r2(gross),net:r2(net),fix:r2(fix),trips,km:r2(km),rate:rn?rs/rn:null,rn,can,tips:r2(tips),pq,eh:h>=1/60?r2(net/h):null};}
 function goalProg(sh,T){T=T||shiftTot(sh);const g=sh.goals||{};
   return [["net","Neto",T.net,+g.net||0,v=>eur(v)],["trips","Viajes",T.trips,+g.trips||0,v=>String(Math.round(v))],["hours","Horas",T.h,+g.hours||0,v=>hmTxt(v*3600000)]]
     .filter(x=>x[3]>0).map(([k,n,v,goal,f])=>({k,n,v,goal,f,p:Math.max(0,Math.min(1,v/goal))}));}
@@ -2789,13 +3242,13 @@ function shiftStart(){if(S.shift)return;const g=Object.assign({},goalsS());
   if(!online&&$("startBox").style.display==="none")goOnline();shiftUI();}
 function shiftEnd(){const sh=S.shift;if(!sh)return;if(trip){toast("⚠️ Termina primero el viaje en curso");return;}
   sh.end=Date.now();const T=shiftTot(sh);
-  const rec={id:sh.id,start:sh.start,end:sh.end,tz:tzId(),goals:sh.goals,hit:sh.hit,gross:T.gross,net:T.net,fix:T.fix,trips:T.trips,can:T.can,km:T.km,rate:T.rate==null?null:r2(T.rate),rn:T.rn,tips:T.tips,eh:T.eh};
+  const rec={id:sh.id,start:sh.start,end:sh.end,tz:tzId(),goals:sh.goals,hit:sh.hit,gross:T.gross,net:T.net,fix:T.fix,trips:T.trips,can:T.can,km:T.km,rate:T.rate==null?null:r2(T.rate),rn:T.rn,tips:T.tips,pq:T.pq,eh:T.eh};
   S.shifts=(S.shifts||[]).concat([rec]).slice(-200);S.shift=null;save();
   if(online)goOffline();shiftUI();showShiftSum(rec);
   say("turno",`Turno terminado: ${minSay(Math.max(1,Math.round((rec.end-rec.start)/60000)))}, ${numSay(rec.trips)} viajes y ${eurSay(rec.net)} netos.`);}
 function showShiftSum(x){const tz=x.tz||tzId(),a=tzParts(new Date(x.start),tz),b=tzParts(new Date(x.end),tz),G=goalProg({goals:x.goals},{net:x.net,trips:x.trips,h:(x.end-x.start)/3600000});
   $("shBody").innerHTML=`<div style="font-size:13px;margin-top:8px">${fmtFecha(a.ymd)} · de <b>${a.hm}</b> a <b>${b.hm}</b> (${tzLabel(tz)}) · duración <b>${hmTxt(x.end-x.start)}</b></div>
-    <div class="shsum"><div>Bruto<b>${eur(x.gross)}</b></div><div>Neto<b>${eur(x.net)}</b></div><div>Viajes<b>${x.trips}${x.can?` <small style="color:var(--mut)">(+${x.can} cancelados)</small>`:""}</b></div><div>Kilómetros<b>${num1(x.km)} km</b></div>
+    <div class="shsum"><div>Bruto<b>${eur(x.gross)}</b></div><div>Neto<b>${eur(x.net)}</b></div><div>Viajes<b>${x.trips}${x.can?` <small style="color:var(--mut)">(+${x.can} cancelados)</small>`:""}${x.pq?` <small style="color:var(--mut)">· 📦 ${x.pq} envíos</small>`:""}</b></div><div>Kilómetros<b>${num1(x.km)} km</b></div>
     <div>€ por hora (neto)<b>${x.eh!=null?eur(x.eh):"–"}</b></div><div>Valoración media<b>${x.rate?num1(x.rate)+" ★ ("+x.rn+")":"–"}</b></div></div>
     <div class="hint" style="margin:0">${G.length?"Objetivos: "+G.map(g=>`${g.p>=1?"✅":"❌"} ${g.n} ${g.f(g.v)} / ${g.f(g.goal)}`).join(" · "):"Sin objetivos."}${x.fix?" · Neto con "+eur(x.fix)+" de gastos fijos.":""}</div>
     <div class="hint">Turno ${esc(x.id)} · datos simulados.</div>`;
@@ -2825,13 +3278,13 @@ function svgRows(D,o){o=o||{};const W=560,rh=24,H=Math.max(1,D.length)*rh+6,pl=1
   return s+"</svg>";}
 async function chartsData(){let L=[];try{L=await HS.all();}catch(e){L=S.history.slice();}
   const N=CH.days,base=new Date(today()+"T12:00:00Z"),days=[];for(let k=N-1;k>=0;k--)days.push(new Date(base.getTime()-k*864e5).toISOString().slice(0,10));
-  const P=L.filter(x=>x.fecha&&x.fecha>=days[0]&&x.fecha<=days[N-1]),byD={},byC={},byS={urbano:{v:0,n:0},compartido:{v:0,n:0}};
+  const P=L.filter(x=>x.fecha&&x.fecha>=days[0]&&x.fecha<=days[N-1]),byD={},byC={},byS={urbano:{v:0,n:0},compartido:{v:0,n:0},paquete:{v:0,n:0}};
   for(const x of P){byD[x.fecha]=(byD[x.fecha]||0)+(+x.net||0);const c=x.ciudad||"¿?";(byC[c]=byC[c]||{v:0,n:0}).v+=+x.net||0;if(x.status==="ok")byC[c].n++;
     const s=byS[x.svc];if(s){s.v+=+x.net||0;if(x.status==="ok")s.n++;}}
   const sh=(S.shifts||[]).slice();if(S.shift){const T=shiftTot(S.shift);sh.push({start:S.shift.start,end:Date.now(),net:T.net,tz:tzId()});}
   const eh={};for(const x of sh){const d=tzParts(new Date(x.start),x.tz).ymd;if(d<days[0])continue;const o=eh[d]=eh[d]||{net:0,h:0};o.net+=+x.net||0;o.h+=(x.end-x.start)/3600000;}
   return {N,n:P.length,day:days.map(d=>({l:ddmm(d),v:r2(byD[d]||0)})),city:Object.entries(byC).sort((a,b)=>b[1].v-a[1].v).slice(0,8).map(([l,o])=>({l,v:r2(o.v),x:o.n+" viajes"})),
-    svc:[{l:"🏙️ Urbano",v:r2(byS.urbano.v),x:byS.urbano.n+" viajes",c:"#21d07a"},{l:"🛣️ Compartido",v:r2(byS.compartido.v),x:byS.compartido.n+" viajes",c:"#d29922"}],
+    svc:[{l:"🏙️ Urbano",v:r2(byS.urbano.v),x:byS.urbano.n+" viajes",c:"#21d07a"},{l:"🛣️ Compartido",v:r2(byS.compartido.v),x:byS.compartido.n+" viajes",c:"#d29922"},{l:"📦 Paquetería",v:r2(byS.paquete.v),x:byS.paquete.n+" repartos",c:"#a371f7"}],
     eh:days.map(d=>({l:ddmm(d),v:eh[d]&&eh[d].h>=1/60?r2(eh[d].net/eh[d].h):0})),ehN:Object.keys(eh).length};}
 async function chartsRender(){const D=await chartsData(),e0=v=>Math.round(v)+" €",e2=v=>eur(v);
   document.querySelectorAll("#chartModal [data-cd]").forEach(b=>b.classList.toggle("on",+b.dataset.cd===CH.days));
@@ -3077,7 +3530,7 @@ function lvlUI(){const s=lvlStats(),L=s.lv,b=$("lvlBadge");if(!b)return s;
   b.className="lvlb "+L.k;b.textContent=L.ic+" "+L.n;const m=$("mLvl");m.className="lvlb "+L.k;m.textContent=L.ic;m.title="Nivel "+L.n+" (simulado)";
   $("lvlTxt").textContent=`${s.pts} pts · acept. ${Math.round(s.acc)} % · cancel. ${Math.round(s.can)} %`;
   $("lvlTxt").title=lvlNeed(s)+" Puntos de los últimos 14 días.";
-  $("lvlRules").innerHTML=`<p style="margin:6px 0">Puntos de los <b>últimos 14 días</b>: 1 por viaje urbano completado, 3 por viaje compartido. Además hay que cumplir la valoración media (tus últimas 500), la tasa de aceptación (últimas 100 solicitudes; las caducadas cuentan como rechazadas; rechazar una mascota no cuenta) y la de cancelación (tus cancelaciones sobre los últimos 100 viajes aceptados).</p>
+  $("lvlRules").innerHTML=`<p style="margin:6px 0">Puntos de los <b>últimos 14 días</b>: 1 por viaje urbano completado, 3 por viaje compartido y 1 por cada envío de paquetería entregado. Además hay que cumplir la valoración media (tus últimas 500), la tasa de aceptación (últimas 100 solicitudes; las caducadas cuentan como rechazadas; rechazar una mascota no cuenta) y la de cancelación (tus cancelaciones sobre los últimos 100 viajes aceptados).</p>
     <table><tr><th>Nivel</th><th>Puntos</th><th>Valor.</th><th>Acept.</th><th>Cancel.</th></tr>${LVLS.map(x=>`<tr${x.k===L.k?' style="color:var(--txt);font-weight:700"':""}><td>${x.ic} ${x.n}</td><td>${x.pts}</td><td>${x.rate?"≥ "+num2(x.rate):"–"}</td><td>${x.acc?"≥ "+x.acc+" %":"–"}</td><td>${x.can<100?"≤ "+x.can+" %":"–"}</td></tr>`).join("")}</table>
     <p style="margin:4px 0"><b>Ventajas (${L.n}):</b> ${L.b} ${lvlNeed(s)}</p>
     <p style="margin:4px 0">Avisos de valoración: por debajo de 4,7 (aviso) y de 4,6 (riesgo), con al menos 5 valoraciones.</p>
@@ -3101,6 +3554,7 @@ function resumenTxt(){const sh=S.shift;
   if(!sh){const s=S.stats,n=s.net-fixedCost();return `Sin turno activo. Hoy llevas ${numSay(s.trips)} viaje${s.trips===1?"":"s"} y ${eurSay(n)} netos.`+(drvAvg()?` Tu valoración media es ${numSay(drvAvg(),2)}.`:"");}
   const T=shiftTot(sh),P=goalProg(sh,T),nm={net:"ganancias",trips:"viajes",hours:"horas"};
   let t=`Resumen del turno: ${minSay(Math.round(T.ms/60000))}, ${numSay(T.trips)} viaje${T.trips===1?"":"s"} y ${eurSay(T.net)} netos.`;
+  if(T.pq)t+=` Paquetería: ${T.pq===1?"un envío entregado":numSay(T.pq)+" envíos entregados"}.`;
   if(T.rate)t+=` Valoración media ${numSay(T.rate,1)}.`;
   if(P.length)t+=" Objetivos: "+P.map(x=>x.p>=1?nm[x.k]+" cumplido":nm[x.k]+" al "+Math.round(x.p*100)+" por ciento").join(", ")+".";
   return t;}
