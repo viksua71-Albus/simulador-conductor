@@ -253,7 +253,7 @@ body.rain #rainFx{display:block}
 .needg{display:inline-flex;gap:2px;align-items:stretch}
 .needx{font-size:13px;padding:4px 8px;border-radius:10px;border:1px solid var(--line);background:#161b22;color:var(--mut);cursor:pointer;min-height:34px}
 .needx.on,.needb.no{border-color:var(--warn);color:var(--warn);background:#2d2308}
-.needh{font-size:11px;color:var(--mut);margin-top:4px}
+.needh{font-size:11px;color:var(--mut);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ctx{font-size:12px;margin:6px 0 0;padding:5px 8px;border-radius:8px;background:#121820;border:1px solid var(--line)}
 .ctx.evt{border-color:#7a3fb0;color:#e2c2ff;background:#22142f}.ctx.reg{border-color:#2f6d4a;color:#bfeed2;background:#10241a}.ctx.rain{border-color:#2a5d8f;color:#a9d2ff;background:#0f1d2c}
 .tsim{color:var(--mut);font-style:normal;font-size:11px}
@@ -3378,7 +3378,7 @@ function needsHTML(r){const N=r.needs||[];if(!N.length)return "";
 const NEED_DEC=["musica","temp","prisa","maleta"]; // peticiones que se pueden rechazar con educación
 function needsTripHTML(r){const N=(r.needs||[]);if(!N.length)return "";const D=trip.nd||{};
   const bt=n=>{const v=D[n.k],c=NEED_DEC.includes(n.k);return `<span class="needg"><button class="needb${v===true?" on":v==="no"?" no":""}" data-nk="${n.k}" title="${esc(needTxt(n))}">${needBtnTxt(n.k,v)}</button>${c?`<button class="needx${v==="no"?" on":""}" data-nx="${n.k}" title="Rechazar con educación: explicas al pasajero por qué no puedes (penaliza menos que ignorarlo)">✋</button>`:""}</span>`;};
-  return `<div class="needs">${N.map(n=>NEED[n.k].b?bt(n):`<span class="nd pet">${n.ic} ${esc(n.t)}</span>`).join("")}${N.some(n=>n.fit===false)?`<span class="nd bad">🧳 No cabe todo en el maletero</span>`:""}</div>${N.some(n=>NEED_DEC.includes(n.k))?'<div class="needh">✅ = lo haces · ✋ = lo rechazas con educación (penaliza menos que ignorarlo; a algunos no les importa) · sin pulsar = lo ignoras</div>':""}`;}
+  return `<div class="needs">${N.map(n=>NEED[n.k].b?bt(n):`<span class="nd pet">${n.ic} ${esc(n.t)}</span>`).join("")}${N.some(n=>n.fit===false)?`<span class="nd bad">🧳 No cabe todo en el maletero</span>`:""}</div>${N.some(n=>NEED_DEC.includes(n.k))?'<div class="needh" title="✅ = lo haces · ✋ = lo rechazas con educación (penaliza menos que ignorarlo; a algunos no les importa) · sin pulsar = lo ignoras">✅ hacer · ✋ rechazar con educación · nada = ignorar</div>':""}`;}
 const needBtnTxt=(k,v)=>(v===true?"✅":v==="no"?"✋ No:":NEED[k].ic)+" "+NEED[k].b;
 const DEC_TXT={musica:["Lo siento, por normas del vehículo no conecto móviles; si quieres te pongo la radio.","Perdona, prefiero no conectar teléfonos al coche. ¿Te pongo alguna emisora?"],
   temp:["Perdona, el climatizador ya está al máximo que va bien; te bajo un poco la ventanilla si quieres.","Lo siento, lo tengo regulado así por el cristal empañado; en cuanto se aclare lo cambio."],
