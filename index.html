@@ -243,6 +243,41 @@ button:disabled{opacity:.55;cursor:default}
   #app{padding-bottom:48px}#panel{bottom:48px}
   #mBar{left:auto;width:min(420px,60%)}
 }
+
+#rainBtn{position:absolute;top:12px;right:12px;z-index:1000;background:rgba(22,27,34,.94);color:var(--mut);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+#rainBtn.on{color:#9fd0ff;border-color:#3aa0ff;background:rgba(16,40,70,.95)}
+#rainFx{position:absolute;inset:0;z-index:500;pointer-events:none;display:none;opacity:.55;background-image:repeating-linear-gradient(105deg,rgba(170,205,255,.0) 0 7px,rgba(190,220,255,.7) 7px 8.5px,rgba(170,205,255,0) 8px 23px);background-size:46px 46px;animation:rainmv .45s linear infinite}
+body.rain #rainFx{display:block}
+@keyframes rainmv{from{background-position:0 0}to{background-position:-12px 46px}}
+@media (prefers-reduced-motion:reduce){#rainFx{animation:none}}
+.needg{display:inline-flex;gap:2px;align-items:stretch}
+.needx{font-size:13px;padding:4px 8px;border-radius:10px;border:1px solid var(--line);background:#161b22;color:var(--mut);cursor:pointer;min-height:34px}
+.needx.on,.needb.no{border-color:var(--warn);color:var(--warn);background:#2d2308}
+.needh{font-size:11px;color:var(--mut);margin-top:4px}
+.ctx{font-size:12px;margin:6px 0 0;padding:5px 8px;border-radius:8px;background:#121820;border:1px solid var(--line)}
+.ctx.evt{border-color:#7a3fb0;color:#e2c2ff;background:#22142f}.ctx.reg{border-color:#2f6d4a;color:#bfeed2;background:#10241a}.ctx.rain{border-color:#2a5d8f;color:#a9d2ff;background:#0f1d2c}
+.tsim{color:var(--mut);font-style:normal;font-size:11px}
+.evmk{display:flex;align-items:center;justify-content:center;background:rgba(30,16,44,.9);border:2px solid #c264ff;border-radius:50%;font-size:13px;opacity:.75}
+.evmk.on{font-size:19px;opacity:1;box-shadow:0 0 0 4px rgba(194,100,255,.35);animation:evpulse 1.6s ease-in-out infinite}
+@keyframes evpulse{50%{box-shadow:0 0 0 9px rgba(194,100,255,.12)}}
+.evtl .evr{margin:3px 0;color:var(--txt)}.evtl .evr.salida{color:#e2c2ff}.evtl .m{margin-top:5px}
+#achToast{position:absolute;top:58px;left:50%;transform:translateX(-50%);z-index:1150;background:#2a2208;border:1px solid #d4a514;color:#ffe08a;padding:10px 16px;border-radius:12px;display:none;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.5);text-align:center;max-width:90%}
+.achg{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px;overflow-y:auto;max-height:65vh}
+.ach{display:flex;gap:8px;background:#121820;border:1px solid var(--line);border-radius:10px;padding:8px;opacity:.75}
+.ach.on{opacity:1;border-color:#d4a514;background:#231d0a}
+.ach .ai{font-size:24px;line-height:1;filter:grayscale(1)}.ach.on .ai{filter:none}
+.ach .at{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:12px}.ach .at span{color:var(--mut);font-size:11px}
+.ach .bar{height:5px;background:#0b0e12;border-radius:3px;overflow:hidden;margin-top:3px}.ach .bar i{display:block;height:100%;background:#d4a514}
+.ach .ap{color:var(--txt)!important}
+.regbox{margin:0 0 10px;font-size:12px}.regbox summary{cursor:pointer;color:var(--mut);padding:4px 0}
+.regr{display:flex;flex-direction:column;padding:4px 0;border-bottom:1px solid var(--line)}.regr span:last-child{color:var(--mut);font-size:11px}
+@media (max-width:899px),(max-height:520px) and (pointer:coarse){
+  #rainBtn{top:8px;right:8px;min-height:44px;min-width:44px;padding:8px 10px}
+  #rainBtn span{display:none}
+  #achToast{position:fixed;top:64px;z-index:2650}
+  .achg{grid-template-columns:1fr;max-height:none}
+  .needx{min-height:44px;min-width:44px}
+}
 </style>
 </head>
 <body>
@@ -1328,6 +1363,7 @@ async function makeRequest(){
       const fp=FORCE&&FORCE.puHub,fd=FORCE&&FORCE.deHub;
       if(air&&air.d<=st.radius&&(fp==="air"||(!fp&&Math.random()<.2)))pu={pt:air.c,place:hubPlace(air,"air")};
       else if(sta&&hav(pos,sta.c)<=st.radius&&(fp==="st"||(!fp&&Math.random()<.14)))pu={pt:sta.c,place:hubPlace(sta,"st")};
+      if(!pu){const ez=evtPickPu(pos,st.radius);if(ez)pu=ez;}
       if(!pu)pu=await genEnd(pos,st.radius,pf.pu,pf.puP);
       if(air&&air.d<=35&&hav(pu.pt,air.c)>1.5&&(fd==="air"||(!fd&&Math.random()<.1+.04*lb)))de={pt:air.c,place:hubPlace(air,"air")};
       else if(sta&&hav(pos,sta.c)<=st.radius+1&&hav(pu.pt,sta.c)>.8&&(fd==="st"||(!fd&&Math.random()<.08)))de={pt:sta.c,place:hubPlace(sta,"st")};
@@ -1335,7 +1371,7 @@ async function makeRequest(){
     }else{pu=PUBX?{pt:PUBX.meet.pt,place:PUBX.meet.place}:await genEnd(pos,st.radius,POI_GROUPS,.5);de=await genEnd(dst.c,4,CITY_GROUPS,.75);}
     return {pu,de};
   };
-  const lim=e=>e.place?(e.place.hub?450:150):300;
+  const lim=e=>e.place?(e.place.hub||e.place.evt?450:150):300;
   let P=await genPts(),R=null,R2=null,routed=false;
   // Hasta 4 intentos: POI a >150 m de la carretera o dirección a >300 m (parque, mar…) -> se generan otros
   for(let att=0;att<4;att++){
@@ -1363,7 +1399,7 @@ async function makeRequest(){
       }
     }
   }
-  const grp=PUBX?{booker:PUBX.B[0].per,comps:PUBX.B[0].comps||[]}:seatsSh>1?makeGroup(seatsSh):{booker:makePerson(),comps:[]};
+  const grp=PUBX?{booker:PUBX.B[0].per,comps:PUBX.B[0].comps||[]}:seatsSh>1?makeGroup(seatsSh):{booker:(isU&&regBooker(pos))||makePerson(),comps:[]};
   const per=grp.booker,comps=grp.comps,name=per.name;
   let pickup,dest,km,pickupDist,min,pickupMin,route,segKm,segMin,pts=[];
   if(routed){
@@ -1465,7 +1501,7 @@ async function newRequest(){
     <div class="sub">${isU?"":eur(r.perSeat)+" por plaza · "}${num1(r.km)} km · ${fmtMin(r.min)} <span class="${r.routed?"rok":"rno"}">${routeLabel(r)}</span></div>
     <div class="sub">Recogida a ${num1(r.pickupDist)} km · ${fmtMin(r.pickupMin)}</div>
     <div class="pax"><div class="avatar">${r.name[0]}</div><div><div><b>${r.name}</b></div><div class="sub">★ ${r.rating.toFixed(2).replace(".",",")} · pasajero ficticio</div></div></div>
-    ${paxBlock(r)}${needsHTML(r)}
+    ${paxBlock(r)}${ctxHTML(r)}${needsHTML(r)}
     <div class="route">${placeHTML(r,"pu")}${stopsHTML(r)}${placeHTML(r,"de")}</div>
     ${bookingsHTML(r)}${ferryHTML(r)}${supHTML(r)}${zbeHTML(r)}
     ${S.settings.acceptSec?'<div class="bar"><i id="cdBar"></i></div>':""}
@@ -1536,13 +1572,13 @@ function nextLegIdx(r){return Math.min((trip.si||1)-1,r.route.segs.length-1);}
 function planEvents(r){
   const ev=evNew();
   if(FORCE&&FORCE.ev!==undefined){[].concat(FORCE.ev||[]).forEach(x=>{const e=evPrep(r,typeof x==="string"?{type:x}:Object.assign({},x));if(e)ev.plan.push(e);});return ev;}
-  const P=EV_FREQ[evS().freq]||0;if(!P||Math.random()>=P)return ev;
+  const rain=rainOn(),P=Math.min(.95,(EV_FREQ[evS().freq]||0)*(rain?1.3:1));if(!P||Math.random()>=P)return ev;
   let n=Math.random()<P*.45?2:1;
   const isU=r.svc==="urbano",per=r.per||{},lvl=r.demand||0,pf=popFactor(),kids=hasKids(r),old=isOld(per);
   const ups=(r.pts||[]).map((s,i)=>i+1).filter(k=>r.pts[k-1].kind==="stop"&&evAt(r,k).up.length);
-  const W=isU?{atasco:1.4*(1+lvl*.6)*Math.min(1.6,Math.max(.6,pf)),cambio:1.5,parada:1.2+(kids?1.5:0)+(old?1:0),
-      tarde:1.6+(old?1.5:0)+(kids?1.2:0)+(per.fisica==="Movilidad reducida"?1:0),cancela:1+(lvl>=2?.6:0)}
-    :{atasco:1.5,bbCancela:(r.bookings||[]).some(b=>!b.main)?1.6:0,bbTarde:ups.length?1.8:0,ferry:r.ferry?3:0};
+  const W=isU?{atasco:1.4*(1+lvl*.6)*Math.min(1.6,Math.max(.6,pf))*(rain?1.6:1),cambio:1.5,parada:1.2+(kids?1.5:0)+(old?1:0),
+      tarde:(1.6+(old?1.5:0)+(kids?1.2:0)+(per.fisica==="Movilidad reducida"?1:0))*(rain?1.4:1),cancela:1+(lvl>=2?.6:0)}
+    :{atasco:1.5*(rain?1.5:1),bbCancela:(r.bookings||[]).some(b=>!b.main)?1.6:0,bbTarde:ups.length?1.8:0,ferry:r.ferry?3:0};
   while(n-->0){const c=Object.entries(W).filter(([k,w])=>w>0&&!ev.plan.some(e=>e.type===k));if(!c.length)break;
     const e=evPrep(r,{type:wpick(c.map(([k,w])=>[k,w]))});if(e)ev.plan.push(e);}
   if(ev.plan.some(e=>e.type==="cancela"))ev.plan=ev.plan.filter(e=>e.type==="cancela"); // si cancela, no hay más
@@ -1778,7 +1814,7 @@ function evEndEarly(r,ex,fee,km,pt,status,title){const ev=trip.ev;
 function calcTip(r,ev,rate,sat){if(r.svc!=="urbano")return 0;if(rate!=null&&rate<=2)return 0;
   if(FORCE&&FORCE.tip!=null)return FORCE.tip===true?Math.max(1,Math.round(r.price*.2)/2):+FORCE.tip||0;
   const p=r.per||{},pr0=p.prof||"",rich=/Médic|Abogad|Notari|Arquitect|Director|Ingenier|Empresari|Piloto|Dentist|Consultor|Juez|Jueza|Directiv|Gerente/.test(pr0);
-  let pr=.12+(rich?.08:0)+(p.edad>=65?.05:0)+(pr0.startsWith("Estudiante")||p.edad<23?-.06:0)+(ev.score||0)*.1+(rate===5?.04:rate<=3?-.08:0)+(r.cat==="comfort"||r.cat==="xl"?.05:0)+(r.surge>=1.5?-.04:0)+(sat!=null?Math.max(-.1,Math.min(.06,(sat-.75)*.08)):0);
+  let pr=.12+(rich?.08:0)+(p.edad>=65?.05:0)+(pr0.startsWith("Estudiante")||p.edad<23?-.06:0)+(ev.score||0)*.1+(rate===5?.04:rate<=3?-.08:0)+(r.cat==="comfort"||r.cat==="xl"?.05:0)+(r.surge>=1.5?-.04:0)+(sat!=null?Math.max(-.1,Math.min(.06,(sat-.75)*.08)):0)+needTipAdj(r)+(p.regId?regAdj(p.regId).tip:0)+(r.rain?.03:0);
   pr=Math.max(0,Math.min(.8,pr));if(Math.random()>=pr)return 0;
   let a=r.price*rnd(.05,.15);if(p.edad>=65)a=Math.max(a,pick([1,2,2]));a=Math.max(1,Math.round(a*2)/2)+((ev.score||0)>=1?.5:0);return Math.min(a,20);}
 
@@ -2045,7 +2081,7 @@ function incWire(){clearInterval(incTick);const I=trip&&trip.inc;if(!I)return;
 
 // ---------- Valoración del pasajero (SIMULADA): puntualidad, retraso, tus paradas, imprevistos y carácter ----------
 function rateOne(T,P,endAt){
-  const r=T.r,tp=tempOf(P.per),TT=TEMPS[tp],k=TT.k,stA=T.stopAt||{},NP=(r.pts||[]).length,segs=r.segMin||[],sumSeg=(a,b)=>segs.slice(a,b).reduce((x,y)=>x+y,0);
+  const r=T.r,tp=tempOf(P.per),TT=TEMPS[tp],rg=P.per&&P.per.regId?regAdj(P.per.regId):null,k=TT.k*(rg?rg.k:1),stA=T.stopAt||{},NP=(r.pts||[]).length,segs=r.segMin||[],sumSeg=(a,b)=>segs.slice(a,b).reduce((x,y)=>x+y,0);
   const arrT=P.f===0?(T.arrivedAt||T.pickedAt||T.acceptedAt):(stA[P.f]||endAt),boardT=P.f===0?(T.pickedAt||arrT):arrT,dropT=P.t>=NP+1?endAt:(stA[P.t]||endAt);
   const stops=((T.inc&&T.inc.list)||[]).filter(s=>s.end);
   const noR=FORCE&&FORCE.noRnd;let sat=.75+TT.b+(noR?0:gauss()*.33);const R=[];
@@ -2063,7 +2099,8 @@ function rateOne(T,P,endAt){
     if(s.canal!=="sin"){pen=onb?k*mf*(.08+.02*Math.min(s.ann,s.act)):k*(.03+.02*s.ann);if(tp==="paciente"||tp==="simpatico")pen*=.5;if(over)pen+=k*.35;}
     else pen=onb?k*mf*(1+.04*s.act):k*(.55+.02*s.act);
     sat-=pen;R.push({w:-pen,k:s.canal==="sin"?"unwarned":over?"over":"warned",s,onb});}
-  if((r.needs||[]).length&&(r.svc==="urbano"||P.main)){const D=T.nd||{};for(const n of r.needs){const w=needW(n,D[n.k],k);if(w){sat+=w;R.push({w,k:"need",n,done:!!D[n.k]});}}}
+  if((r.needs||[]).length&&(r.svc==="urbano"||P.main)){const D=T.nd||{},DR=T.ndr||{};for(const n of r.needs){const dv=D[n.k],dec=dv==="no"?(DR[n.k]||{mind:true}):null,w=needW(n,dv===true,k,dec,tp);if(w){sat+=w;R.push({w,k:"need",n,done:dv===true,dec});}}}
+  if(rg&&rg.b){sat+=rg.b;R.push({w:rg.b,k:"reg",g:rg.g});}
   const es=(T.ev&&T.ev.score)||0;if(es){sat+=.3*es;R.push({w:.3*es,k:"ev"});}
   const rate=sat>=.45?5:sat>=-.35?4:sat>=-1.2?3:sat>=-2.1?2:1;
   return {key:P.key,n:P.n,full:P.full,temp:tp,rate,sat:r2(sat),lateP:lateP==null?null:Math.round(lateP*10)/10,lateT:lateT==null?null:Math.round(lateT*10)/10,comment:rateComment(rate,R,P,T,arrT)};}
@@ -2083,7 +2120,8 @@ function rateComment(rate,R,P,T,arrT){
       /rechazad/.test(log)?"no quiso hacer lo que le pedí":"";
     case "mood":return rate>=4?"":pick(["no sé, no me terminó de convencer","correcto, sin más"]);
     case "early":return "llegó incluso antes de lo previsto";
-    case "need":return needComment(x);}return "";};
+    case "need":return needComment(x);
+    case "reg":return regComment(x);}return "";};
   const neg=R.filter(x=>x.w<0).sort((a,b)=>a.w-b.w),pos=R.filter(x=>x.w>0).sort((a,b)=>b.w-a.w);
   let parts=(rate>=5?pos.concat(neg.filter(x=>x.k==="warned")):neg.concat(pos)).map(txt).filter(Boolean);
   parts=[...new Set(parts)].slice(0,2);
@@ -2124,7 +2162,7 @@ function showTrip(fit){
     <div class="phase" style="margin-top:8px">${p1?"1/"+(NP+2)+(trip.atPickup?" · En el punto de recogida":" · Ve a recoger al pasajero"):atStop?(si+1)+"/"+(NP+2)+" · "+(r.pts[si-1].kind==="stop"?"Siguiente parada: ":r.pts[si-1].kind==="extra"?"Parada extra: ":r.pts[si-1].kind==="ferryA"?"Ve al puerto: ":"En el ferry hacia ")+esc(r.pts[si-1].n):(NP+2)+"/"+(NP+2)+" · Lleva al pasajero a su destino"}</div>
     ${evBoxHTML(r)}${incBoxHTML()}
     <div class="pax" style="margin:6px 0"><div class="avatar">${r.name[0]}</div><div><b>${r.name}</b>${r.seats>1?" (+"+(r.seats-1)+")":""}<div class="sub">★ ${r.rating.toFixed(2).replace(".",",")} · pasajero ficticio</div></div></div>
-    ${paxBlock(r)}${needsTripHTML(r)}
+    ${paxBlock(r)}${ctxHTML(r)}${needsTripHTML(r)}
     <div class="route" style="margin:4px 0">${placeHTML(r,"pu","a "+num1(r.pickupDist)+" km"+(r.pickupMin!=null?", "+fmtMin(r.pickupMin):""))}${stopsHTML(r,p1?null:si)}${placeHTML(r,"de")}</div>
     ${bookingsHTML(r)}${ferryHTML(r)}${supHTML(r)}${zbeHTML(r,true)}
     <div class="row"><span>Trayecto <span class="${r.routed?"rok":"rno"}">${routeLabel(r)}</span></span><span>${num1(r.km)} km · ${fmtMin(r.min)}${(()=>{const m=onboardStopMin(trip);return m>=.5?` <span style="color:var(--warn)">+ ${fmtMin(m)} de paradas tuyas</span>`:"";})()}</span></div>
@@ -2291,9 +2329,9 @@ async function pqPickup(c,rKm,night){
     if(!p)return null;pqUsed.push(p.name);p.hours=h;const farm=/pharmacy/.test(p.tag||"")||p.cat==="Farmacia";
     return {place:p,snd:pqStaff(),kind:"night",shop:p.name,cat:farm?"farm":"super",content:pick(farm?PQ_NIGHT.farm:PQ_NIGHT.shop)};}
   const priv=FORCE&&FORCE.pqPriv!=null?!!FORCE.pqPriv:Math.random()<.28;
-  if(priv){const a=await pqRev(c,rKm);if(a)return {place:a,snd:makePerson(),kind:"priv",content:pick(PQ_PRIV)};}
+  if(priv){const a=await pqRev(c,rKm);if(a)return {place:a,snd:regSnd(c)||makePerson(),kind:"priv",content:pick(PQ_PRIV)};}
   for(let t=0;t<3;t++){const K=wpick(PQ_SHOPS.map(s=>[s,s.w])),p=await pqPOI(c,rKm,K.tags);if(p)return {place:p,snd:pqStaff(),kind:"shop",shop:p.name,cat:K.k,content:pick(K.c)};}
-  const a=await pqRev(c,rKm);return a?{place:a,snd:makePerson(),kind:"priv",content:pick(PQ_PRIV)}:null;}
+  const a=await pqRev(c,rKm);return a?{place:a,snd:regSnd(c)||makePerson(),kind:"priv",content:pick(PQ_PRIV)}:null;}
 function pqJob(pu,i,night){let [desc,size,frag]=pu.content;if(FORCE&&FORCE.pqSize)size=FORCE.pqSize;if(size==="bulto"&&bootCap()<2)size="caja";
   if(FORCE&&FORCE.pqFrag!=null)frag=FORCE.pqFrag;
   return {id:i,size,frag:!!frag,desc,snd:pu.snd,sk:pu.sk,shop:pu.shop||"",pkind:pu.kind,rcp:makePerson(),code:String(rndI(1000,9999)),pu:pu.place,de:null,st:"pend",score:0,exc:0,why:[],tip:0,dmg:false,urg:!!night};}
@@ -2336,7 +2374,7 @@ const pqIc=s=>s.t==="pu"?"🟢 Recogida":s.t==="ret"?"↩️ Devolución":"🔴 
 function pqJobHTML(J,full){const S0=PQ_SIZE[J.size],T=t=>`${TEMPS[tempOf(t)].ic} ${esc(tempName(t))}`;
   return `<div class="pqjob"><div class="h"><span>${S0.ic} ${S0.n}${J.frag?' · <span class="frag">⚠️ Frágil</span>':""}${J.urg?' · 🌙 urgente':""}</span><span>${eur(J.price)}</span></div>
     <div class="w">${esc(J.desc)}${J.km!=null?" · "+num1(J.km)+" km":""}${full?` · <b>${PQ_ST[J.st]}</b>`:""}</div>
-    <div class="w">📤 Remitente: <b>${esc(J.snd.name)}</b>${J.shop?" · "+esc(J.shop):J.pkind==="priv"?" · particular":""} · ${T(J.snd)}</div>
+    <div class="w">📤 Remitente: <b>${esc(J.snd.name)}</b>${J.shop?" · "+esc(J.shop):J.pkind==="priv"?" · particular":""} · ${T(J.snd)}</div>${J.snd.regId?regLineHTML(J.snd.regId,"pq"):""}
     <div class="w">📥 Destinatario: <b>${esc(J.rcp.name)}</b>, ${J.rcp.edad} años${J.de&&J.de.biz?" · en su trabajo":""} · ${T(J.rcp)}</div></div>`;}
 function pqStopHTML(r,s,i,k){const p=s.place,det=[p.cat,p.detail,p.hours].filter(Boolean).join(" · "),cls=k==null?"":i<k?" pqdone":i===k?" pqcur":"";
   return `<div class="pl${cls}"><span class="pk">${pqIc(s)} ${i+1}</span><div class="pv"><div class="pn">${esc(p.name)} <span class="tsim">${s.js.map(j=>"#"+(j+1)).join(" ")}</span></div>
@@ -2561,6 +2599,7 @@ function pqComment(rate,R){const has=k=>R.includes(k);
 function pqRateAll(T,now){const G={};T.r.jobs.forEach(J=>{(G[J.sk]||(G[J.sk]=[])).push(J);});
   return Object.entries(G).map(([k,L])=>{const p=L[0].snd,TT=TEMPS[tempOf(p)],noR=FORCE&&FORCE.noRnd;let sat=.75+TT.b+(noR?0:gauss()*.33);const R=[];
     L.forEach(J=>{const x=pqJobSat(T,J,TT,now);sat+=x.v/L.length;x.R.forEach(w=>{if(!R.includes(w))R.push(w);});});
+    if(p.regId)sat+=regAdj(p.regId).b;
     if(FORCE&&FORCE.sat!=null)sat=FORCE.sat;
     const rate=sat>=.45?5:sat>=-.35?4:sat>=-1.2?3:sat>=-2.1?2:1;
     return {key:k,n:p.nom,full:p.name+(L[0].shop?" ("+L[0].shop+")":""),rate,sat:r2(sat),temp:tempOf(p),comment:pqComment(rate,R),R};});}
@@ -2865,6 +2904,7 @@ function download(text,name,type){const b=new Blob([text],{type}),u=URL.createOb
 async function exportData(){let trips=[];try{trips=await HS.all();}catch(e){toast("⚠️ No se pudo leer el historial para exportar");return;}
   const p=tzParts(),o={app:"simulador-conductor",version:EXPORT_VER,exportedAt:new Date().toISOString(),exportedAtLocal:p.ymd+" "+p.hm+" "+tzLabel(tzId()),timeZone:tzId(),
     settings:S.settings,stats:S.stats,day:S.day,vehicle:S.settings.vehicle||null,start:S.started||null,driver:S.driver,rates:(S.rates||[]).slice(),recentNames:RECENT_N.slice(),shift:S.shift||null,shifts:(S.shifts||[]).slice(),lvl:S.lvl||null,
+    pub:S.pub||null,trip:S.trip||null,regs:(S.regs||[]).slice(),ach:S.ach||null,evts:S.evts||null,
     poiCache:$("hmPoi").checked?POOL:null,trips};
   download(JSON.stringify(o),`simulador-conductor-${p.ymd}.json`,"application/json");toast(`⬇️ Exportados ${trips.length} viajes y los ajustes`);}
 function csvOf(list){const n=v=>(+v||0).toFixed(2).replace(".",","),q=s=>{s=String(s==null?"":s);return /[";\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
@@ -2894,7 +2934,7 @@ $("impFile").onchange=async()=>{const f=$("impFile").files[0];if(!f)return;$("im
   IMP=o;const fs=o.trips.map(t=>t.fecha).filter(Boolean).sort();
   $("impSum").innerHTML=`<div><b>${esc(f.name)}</b> · versión ${o.version} · exportado ${esc(o.exportedAtLocal||o.exportedAt||"¿?")}</div>
     <div style="margin-top:6px"><b>${o.trips.length}</b> viaje${o.trips.length===1?"":"s"}${fs.length?` · del ${fmtFecha(fs[0])} al ${fmtFecha(fs[fs.length-1])}`:""}</div>
-    <div class="m">${o.settings?"Incluye ajustes":"Sin ajustes"}${o.stats?", estadísticas de "+fmtFecha(o.day):""}${o.poiCache?", caché de lugares":""}${o.recentNames?", "+o.recentNames.length+" nombres recientes":""}.</div>
+    <div class="m">${o.settings?"Incluye ajustes":"Sin ajustes"}${o.stats?", estadísticas de "+fmtFecha(o.day):""}${o.poiCache?", caché de lugares":""}${o.recentNames?", "+o.recentNames.length+" nombres recientes":""}${o.trip&&o.trip.r?", un viaje en curso":""}${o.pub&&Array.isArray(o.pub.B)?", un viaje publicado ("+o.pub.B.length+" reservas)":""}${Array.isArray(o.regs)&&o.regs.length?", "+o.regs.length+" clientes habituales":""}${o.ach&&o.ach.u?", "+Object.keys(o.ach.u).length+" logros":""}.</div>
     <div class="m" style="margin-top:6px"><b>Reemplazar todo</b>: borra tu historial y ajustes y usa los del archivo. <b>Combinar</b>: añade solo los viajes que no tienes (por uid) y conserva tus ajustes.</div>`;
   $("impErr").textContent="";$("impModal").hidden=false;};
 function impErr(m){$("impSum").innerHTML="";$("impErr").textContent="❌ "+m;$("impModal").hidden=false;$("impReplace").disabled=$("impMerge").disabled=true;}
@@ -2904,8 +2944,10 @@ $("impMerge").onclick=async()=>{if(!IMP)return;try{const r=await HS.add(IMP.trip
   catch(e){impErr("No se pudieron guardar los viajes: "+e.message);}};
 $("impReplace").onclick=async()=>{if(!IMP)return;if(trip){impErr("Termina o cancela el viaje en curso antes de reemplazar los datos.");return;}const o=IMP;
   try{await HS.clear();const r=await HS.add(o.trips);goOffline();clearReq();
-    const d=defState(),st=o.settings||{};S.settings=Object.assign({},d.settings,st);["exp","sup","ev","snd","clock","voz","pq"].forEach(k=>S.settings[k]=Object.assign({},d.settings[k],st[k]||{}));
-    S.stats=o.day===today()&&o.stats?Object.assign({},d.stats,o.stats):d.stats;S.day=today();S.started=o.start||null;S.driver=o.driver||S.settings.center;S.trip=null;S.online=false;S.rates=Array.isArray(o.rates)?o.rates.filter(v=>v>=1&&v<=5).slice(-500):[];
+    const d=defState(),st=o.settings||{};S.settings=Object.assign({},d.settings,st);["exp","sup","ev","snd","clock","voz","pq","evt"].forEach(k=>S.settings[k]=Object.assign({},d.settings[k]||{},st[k]||{}));S.settings.rain=!!st.rain;
+    S.stats=o.day===today()&&o.stats?Object.assign({},d.stats,o.stats):d.stats;S.day=today();S.started=o.start||null;S.driver=o.driver||S.settings.center;S.trip=o.trip&&typeof o.trip==="object"&&o.trip.r&&o.trip.phase?o.trip:null;S.online=false;
+    S.pub=o.pub&&typeof o.pub==="object"&&Array.isArray(o.pub.B)?o.pub:null;S.regs=Array.isArray(o.regs)?o.regs.filter(g=>g&&g.id&&g.per).slice(0,REG_MAX):[];
+    S.ach=o.ach&&typeof o.ach==="object"&&o.ach.u?Object.assign({u:{},c:{}},o.ach,{init:false}):{u:{},c:{},init:false};S.evts=o.evts&&typeof o.evts==="object"?o.evts:{ann:[]};S.rates=Array.isArray(o.rates)?o.rates.filter(v=>v>=1&&v<=5).slice(-500):[];
     S.shift=o.shift&&typeof o.shift==="object"&&o.shift.id?o.shift:null;S.shifts=Array.isArray(o.shifts)?o.shifts.filter(x=>x&&x.id).slice(-200):[];S.lvl=o.lvl&&Array.isArray(o.lvl.ev)?o.lvl:{ev:[],last:"azul",warn:null};
     S.history=o.trips.slice().sort((a,b)=>b.ts-a.ts).slice(0,100).map(t=>{const c=Object.assign({},t);delete c.detail;delete c.id;return c;});
     if(Array.isArray(o.recentNames))try{localStorage.setItem(NAME_LS,JSON.stringify(o.recentNames.slice(-1000)));}catch(e){}
@@ -2917,7 +2959,7 @@ $("impReplace").onclick=async()=>{if(!IMP)return;if(trip){impErr("Termina o canc
 
 // ---------- Sonidos (Web Audio API, generados: funcionan sin archivos y desde file://) ----------
 const SND_KEYS=[["req","Nueva solicitud (repite)"],["bb","Reserva BlaBlaCar (repite)"],["warn","Se acaba el tiempo para aceptar"],["atasco","Atasco"],["cambio","Cambio de destino"],["parada","Parada extra"],
-  ["tarde","Pasajero llega tarde"],["llega","Pasajero llegó"],["nocontesta","No contesta"],["cancela","Cancelación / no se presenta"],["bbcancela","BlaBlaCar: reserva cancelada"],["ferry","Ferry / retraso"],["incEnv","Incidencia: aviso enviado"],["incResp","Incidencia: respuesta del pasajero"],["propina","Propina"],["pq","Paquetería: nueva solicitud (repite)"],["fin","Viaje terminado"],["meta","Objetivo del turno cumplido"],["resumen","Resumen hablado del turno"],["nivel","Nivel y avisos de valoración"]];
+  ["tarde","Pasajero llega tarde"],["llega","Pasajero llegó"],["nocontesta","No contesta"],["cancela","Cancelación / no se presenta"],["bbcancela","BlaBlaCar: reserva cancelada"],["ferry","Ferry / retraso"],["incEnv","Incidencia: aviso enviado"],["incResp","Incidencia: respuesta del pasajero"],["propina","Propina"],["pq","Paquetería: nueva solicitud (repite)"],["fin","Viaje terminado"],["meta","Objetivo del turno cumplido"],["resumen","Resumen hablado del turno"],["nivel","Nivel y avisos de valoración"],["evento","Evento: salida de partido/concierto (simulado)"],["logro","Logro desbloqueado"]];
 // [inicio s, frecuencia Hz, duración s, forma de onda, volumen, frecuencia final (glissando)]
 const SND_R={req:[[0,880,.12,"sine",.55],[.14,1320,.2,"sine",.55]],pq:[[0,392,.09,"square",.2],[.12,523,.09,"square",.2],[.24,784,.18,"triangle",.45]],bb:[[0,660,.1,"triangle",.55],[.11,990,.1,"triangle",.55],[.22,1320,.22,"triangle",.5]],
   warn:[[0,1000,.05,"square",.16]],atasco:[[0,220,.24,"sawtooth",.22,170],[.32,220,.24,"sawtooth",.22,170]],cambio:[[0,500,.35,"sine",.45,950],[.4,950,.14,"sine",.35]],
@@ -2927,7 +2969,7 @@ const SND_R={req:[[0,880,.12,"sine",.55],[.14,1320,.2,"sine",.55]],pq:[[0,392,.0
   incEnv:[[0,520,.16,"sine",.42,1040],[.18,1040,.1,"sine",.3]],incResp:[[0,784,.08,"triangle",.5],[.1,1175,.2,"triangle",.5]],
   propina:[[0,1568,.08,"sine",.4],[.08,2093,.25,"sine",.4],[.2,2637,.4,"sine",.25]],fin:[[0,523,.12,"sine",.45],[.12,659,.12,"sine",.45],[.24,784,.12,"sine",.45],[.36,1047,.45,"sine",.45]],
   meta:[[0,784,.1,"triangle",.5],[.1,988,.1,"triangle",.5],[.2,1175,.1,"triangle",.5],[.3,1568,.5,"triangle",.5],[.3,1175,.5,"sine",.25]],
-  resumen:[[0,523,.16,"sine",.35],[.2,784,.3,"sine",.35]],nivel:[[0,880,.14,"square",.14],[.2,659,.14,"square",.14],[.4,880,.14,"square",.14],[.6,659,.3,"square",.14]]};
+  resumen:[[0,523,.16,"sine",.35],[.2,784,.3,"sine",.35]],nivel:[[0,880,.14,"square",.14],[.2,659,.14,"square",.14],[.4,880,.14,"square",.14],[.6,659,.3,"square",.14]],evento:[[0,523,.12,"sawtooth",.25],[.13,659,.12,"sawtooth",.25],[.26,784,.12,"sawtooth",.25],[.4,1047,.35,"triangle",.45]],logro:[[0,784,.1,"triangle",.4],[.1,988,.1,"triangle",.4],[.2,1175,.1,"triangle",.4],[.32,1568,.45,"sine",.5]]};
 const SND_LOG=[];window.SND_LOG=SND_LOG; // registro para pruebas
 let actx=null,master=null,reqSeq=null;
 function audioUnlock(){try{if(!actx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return;actx=new C();master=actx.createGain();master.connect(actx.destination);sndVol();}
@@ -2983,7 +3025,7 @@ syncSndUI();
 // ---------- Voz: avisos hablados (Web Speech API · speechSynthesis) ----------
 // Para jugar con el simulador oculto detrás del juego: primero suena el aviso y después se lee una frase corta en español.
 const VOZ_KEYS=[["req","Nueva solicitud / reserva"],["expira","Solicitud a punto de caducar"],["imprev","Atascos, cambios, paradas, cancel."],["tarde","Pasajero tarde, llega, no contesta"],
-  ["bb","BlaBlaCar: paradas, reservas, ferry"],["inc","Respuestas del pasajero (chat)"],["propina","Propinas"],["pq","Paquetería: solicitudes y entregas"],["fin","Viaje terminado y valoración"],["turno","Turno, objetivos y nivel"],["resumen","Resumen del turno"]];
+  ["bb","BlaBlaCar: paradas, reservas, ferry"],["inc","Respuestas del pasajero (chat)"],["propina","Propinas"],["pq","Paquetería: solicitudes y entregas"],["fin","Viaje terminado y valoración"],["turno","Turno, objetivos y nivel"],["resumen","Resumen del turno"],["evento","Eventos (simulados)"],["lluvia","Lluvia en el juego"],["logro","Logros"]];
 const VOZ_LOG=[];window.VOZ_LOG=VOZ_LOG; // registro para pruebas
 const VQ=[],VP=[];let vCur=null,vArmed=false,vT=null,vKeep=null;
 const vozS=()=>S.settings.voz;
@@ -3135,7 +3177,7 @@ $("vozStop").onclick=()=>vozCancel();
 if(SS()){try{SS().addEventListener?SS().addEventListener("voiceschanged",vozFill):(SS().onvoiceschanged=vozFill);}catch(e){}}
 syncVozUI();setTimeout(vozFill,600);setTimeout(vozFill,2500);
 // ---------- Móvil (Android) y app instalable (PWA) ----------
-const APP_VER="23.0";
+const APP_VER="24.0";
 const MQ_MOB=window.matchMedia("(max-width:899px),(max-height:520px) and (pointer:coarse)");
 function isMob(){return MQ_MOB.matches;}
 // Márgenes al encuadrar la ruta: en PC la tarjeta está a la izquierda; en móvil, abajo (vertical) o a la izquierda (horizontal)
@@ -3333,15 +3375,41 @@ function genNeeds(r){let out;
 const needTxt=n=>n.t+((n.k==="maleta"||n.k==="silla")&&n.fit===false?` · ⚠️ no cabe en tu maletero (caben ~${n.cap} maletas grandes, estimación)`:"");
 function needsHTML(r){const N=r.needs||[];if(!N.length)return "";
   return `<div class="needs" title="Peticiones simuladas del pasajero">${N.map(n=>`<span class="nd${(n.fit===false)?" bad":n.k==="mascota"?" pet":""}">${n.ic} ${esc(needTxt(n))}</span>`).join("")}</div>${N.some(n=>n.k==="mascota")?'<button class="btn no petno" id="bNoPet">🐾 Rechazar por la mascota (sin penalización)</button>':""}`;}
+const NEED_DEC=["musica","temp","prisa","maleta"]; // peticiones que se pueden rechazar con educación
 function needsTripHTML(r){const N=(r.needs||[]);if(!N.length)return "";const D=trip.nd||{};
-  return `<div class="needs">${N.map(n=>NEED[n.k].b?`<button class="needb${D[n.k]?" on":""}" data-nk="${n.k}" title="${esc(needTxt(n))}">${D[n.k]?"✅":n.ic} ${NEED[n.k].b}</button>`:`<span class="nd pet">${n.ic} ${esc(n.t)}</span>`).join("")}${N.some(n=>n.fit===false)?`<span class="nd bad">🧳 No cabe todo en el maletero</span>`:""}</div>`;}
-function needsWire(){document.querySelectorAll(".trip .needb").forEach(b=>b.onclick=()=>{if(!trip)return;const k=b.dataset.nk;trip.nd=trip.nd||{};trip.nd[k]=!trip.nd[k];S.trip=trip;save();
-  b.classList.toggle("on",trip.nd[k]);b.textContent=(trip.nd[k]?"✅":NEED[k].ic)+" "+NEED[k].b;toast(trip.nd[k]?"✅ "+NEED[k].b:"Deshecho: "+NEED[k].b.toLowerCase());});}
-function needW(n,done,k){const N=NEED[n.k];if(!N)return 0;k=k||1;
+  const bt=n=>{const v=D[n.k],c=NEED_DEC.includes(n.k);return `<span class="needg"><button class="needb${v===true?" on":v==="no"?" no":""}" data-nk="${n.k}" title="${esc(needTxt(n))}">${needBtnTxt(n.k,v)}</button>${c?`<button class="needx${v==="no"?" on":""}" data-nx="${n.k}" title="Rechazar con educación: explicas al pasajero por qué no puedes (penaliza menos que ignorarlo)">✋</button>`:""}</span>`;};
+  return `<div class="needs">${N.map(n=>NEED[n.k].b?bt(n):`<span class="nd pet">${n.ic} ${esc(n.t)}</span>`).join("")}${N.some(n=>n.fit===false)?`<span class="nd bad">🧳 No cabe todo en el maletero</span>`:""}</div>${N.some(n=>NEED_DEC.includes(n.k))?'<div class="needh">✅ = lo haces · ✋ = lo rechazas con educación (penaliza menos que ignorarlo; a algunos no les importa) · sin pulsar = lo ignoras</div>':""}`;}
+const needBtnTxt=(k,v)=>(v===true?"✅":v==="no"?"✋ No:":NEED[k].ic)+" "+NEED[k].b;
+const DEC_TXT={musica:["Lo siento, por normas del vehículo no conecto móviles; si quieres te pongo la radio.","Perdona, prefiero no conectar teléfonos al coche. ¿Te pongo alguna emisora?"],
+  temp:["Perdona, el climatizador ya está al máximo que va bien; te bajo un poco la ventanilla si quieres.","Lo siento, lo tengo regulado así por el cristal empañado; en cuanto se aclare lo cambio."],
+  prisa:["Entiendo la prisa, pero voy a respetar los límites; voy por la ruta que marca el navegador.","Lo siento, no puedo correr más; iré por la ruta normal sin entretenerme."],
+  maleta:["Perdona, tengo la espalda fastidiada y no puedo cargar peso; te abro el maletero.","Lo siento, no puedo levantar las maletas por una lesión; te dejo el maletero abierto."]};
+const DEC_MIND={paciente:.3,simpatico:.35,normal:.55,prisa:.75,exigente:.85},DEC_F={paciente:.15,simpatico:.2,normal:.35,prisa:.5,exigente:.6};
+function decReply(k,mind,p){const u=usted(p||{});
+  if(!mind)return pick(k==="prisa"?[u?"Tiene razón, mejor llegar bien.":"Tienes razón, mejor llegar bien.","Vale, sin problema, gracias por avisar."]:k==="maleta"?[u?"No se preocupe, ya las meto yo.":"No te preocupes, ya las meto yo.","Tranquilo, puedo yo sola con ellas."]:[u?"No pasa nada, gracias por explicármelo.":"No pasa nada, gracias por explicármelo.","Vale, sin problema."]);
+  return pick(k==="prisa"?["Bueno… pero es que llego tarde de verdad.","Ya, ya… a ver si llegamos."]:k==="maleta"?["Vaya… pues tendré que cargarlas yo.","Ah… bueno, ya me apaño."]:k==="musica"?["Vaya, qué pena… bueno.","Bueno, vale."]:["Bueno… si no hay más remedio.","Vale…"]);}
+function needsWire(){document.querySelectorAll(".trip .needb").forEach(b=>b.onclick=()=>{if(!trip)return;const k=b.dataset.nk;trip.nd=trip.nd||{};trip.nd[k]=trip.nd[k]===true?false:true;S.trip=trip;save();
+    needRefresh(k);toast(trip.nd[k]===true?"✅ "+NEED[k].b:"Deshecho: "+NEED[k].b.toLowerCase());});
+  document.querySelectorAll(".trip .needx").forEach(b=>b.onclick=()=>{if(!trip)return;const k=b.dataset.nx;trip.nd=trip.nd||{};trip.ndr=trip.ndr||{};
+    if(trip.nd[k]==="no"){trip.nd[k]=false;S.trip=trip;save();needRefresh(k);toast("Deshecho el rechazo: "+NEED[k].b.toLowerCase());return;}
+    const p=trip.r.per||{},tp=tempOf(p),noR=FORCE&&FORCE.noRnd,mind=FORCE&&FORCE.decMind!=null?!!FORCE.decMind:noR?true:Math.random()<(DEC_MIND[tp]||.5);
+    const my=pick(DEC_TXT[k]||["Lo siento, no puedo."]),rp=decReply(k,mind,p),nm=p.nom||(trip.r.name||"").split(" ")[0]||"Pasajero";
+    trip.nd[k]="no";trip.ndr[k]={mind,my,reply:rp,at:Date.now()};
+    if(trip.ev&&trip.ev.log)trip.ev.log.push({ic:"✋",t:`Rechazas con educación «${NEED[k].b.toLowerCase()}»: «${my}» — ${nm}: «${rp}»`});
+    S.trip=trip;save();needRefresh(k);toast(`✋ Tú: «${my}» · 💬 ${nm}: «${rp}»`);say("inc",`${nm} responde: ${rp}`,{tag:"dec"});});}
+function needRefresh(k){const v=trip.nd[k],b=document.querySelector(`.trip .needb[data-nk="${k}"]`),x=document.querySelector(`.trip .needx[data-nx="${k}"]`);
+  if(b){b.classList.toggle("on",v===true);b.classList.toggle("no",v==="no");b.textContent=needBtnTxt(k,v);}if(x)x.classList.toggle("on",v==="no");}
+function needTipAdj(r){if(!trip||trip.r!==r||!(r.needs||[]).length)return 0;const D=trip.nd||{},DR=trip.ndr||{};let a=0;
+  for(const n of r.needs){if(!NEED[n.k].b)continue;const v=D[n.k];a+=v===true?.02:v==="no"?((DR[n.k]||{}).mind===false?0:-.02):-.05;}return Math.max(-.12,Math.min(.06,a));}
+function needW(n,done,k,dec,tp){const N=NEED[n.k];if(!N)return 0;k=k||1;
   if((n.k==="maleta"||n.k==="silla")&&n.fit===false)return -1.4*k;
-  if(n.k==="mascota")return N.ok;return done?N.ok:N.no*k;}
+  if(n.k==="mascota")return N.ok;if(done)return N.ok;
+  if(dec)return dec.mind===false?.02:N.no*k*(DEC_F[tp]||.35);
+  return N.no*k;}
 function needComment(x){const n=x.n,d=x.done;
   if((n.k==="maleta"||n.k==="silla")&&n.fit===false)return n.k==="silla"?"la silla de ruedas no cabía en el maletero":"mis maletas no cabían en el maletero";
+  if(x.dec){const W={musica:"poner mi música",temp:"cambiar la temperatura",prisa:"ir más deprisa",maleta:"ayudarme con las maletas"}[n.k]||"lo que pedí";
+    return x.dec.mind===false?`me explicó con educación que no podía ${W}; lo entiendo`:`no pudo ${W}, aunque me lo explicó con educación`;}
   switch(n.k){case "maleta":return d?"me ayudó con las maletas":"no me ayudó con las maletas";
     case "mascota":return pick(["aceptó a mi mascota sin problema","muy amable con mi mascota"]);
     case "sillita":return d?"esperó y ayudó a montar la sillita del niño":"no ayudó con la sillita del niño";
@@ -3577,6 +3645,266 @@ $("tzSel").value=S.settings.tz||"madrid";
 $("tzSel").onchange=()=>{S.settings.tz=$("tzSel").value;save();updateClock.k=null;updateClock();renderStats();toast("Zona horaria: "+$("tzSel").selectedOptions[0].text);};
 // El contenedor del mapa no debe desplazarse (el foco de un botón de la tarjeta podía moverlo)
 {const mp=document.getElementById("map");mp.addEventListener("scroll",()=>{if(mp.scrollTop||mp.scrollLeft){mp.scrollTop=0;mp.scrollLeft=0;}});}
+// ================= v24: lluvia en el juego, eventos simulados en recintos reales, clientes habituales y logros =================
+// Modo pruebas antiguas (NO_PQ / NO24): sin eventos programados ni clientes habituales aleatorios, y logros silenciosos.
+const Q24=()=>!!(window.NO_PQ||window.NO24)&&!window.V24;
+function rainOn(){return !!(S.settings&&S.settings.rain);}
+const evtS=()=>S.settings.evt||(S.settings.evt={on:true});
+const regsS=()=>Array.isArray(S.regs)?S.regs:(S.regs=[]);
+const evtsS=()=>(S.evts&&Array.isArray(S.evts.ann))?S.evts:(S.evts={ann:[]});
+const REG_MAX=40,ACH_C0=()=>({trips:0,km:0,pq:0,night:0,week:0,streak:0,bestStreak:0,bbFull:0,evt:0,rain:0,bestShift:0,regMax:0,rw:[]});
+const achS=()=>{if(!S.ach||typeof S.ach!=="object")S.ach={u:{},c:ACH_C0(),init:false};if(!S.ach.u)S.ach.u={};S.ach.c=Object.assign(ACH_C0(),S.ach.c||{});return S.ach;};
+S.settings.rain=!!S.settings.rain;evtS();regsS();evtsS();achS();
+// ---------- Interfaz: botón de lluvia, efecto, aviso de logros, panel de logros y lista de habituales ----------
+mapEl.insertAdjacentHTML("beforeend",'<div id="rainFx" aria-hidden="true"></div><button id="rainBtn" title="Avisa al simulador de que en el juego (ETS2) está lloviendo: más solicitudes, tarifa dinámica algo más alta y algún retraso más. No usa datos meteorológicos reales.">🌧️ <span id="rainBtnT">¿Llueve en el juego?</span></button><div id="achToast"></div>');
+L.DomEvent.disableClickPropagation($("rainBtn"));
+[...document.querySelectorAll(".hint")].find(h=>h.textContent.startsWith("Modelo de demanda inventado")).insertAdjacentHTML("afterend",
+  `<label class="ck" style="margin-top:8px"><input type="checkbox" id="rainChk"> 🌧️ Llueve en el juego</label><div class="hint" id="rainTxt" hidden></div>
+   <label class="ck" style="margin-top:6px"><input type="checkbox" id="evtOn"> 🎟️ Eventos simulados en recintos reales</label><div class="hint evtl" id="evtList"></div>`);
+$("btnCharts2").insertAdjacentHTML("afterend",'<button class="mbtn" id="btnAch" title="Logros y progreso">🏅 Logros <b id="achN">0</b></button>');
+$("btnCharts2").closest(".rowb").insertAdjacentHTML("afterend",'<details id="regBox" class="regbox"><summary>🤝 Clientes habituales (<b id="regN">0</b>)</summary><div id="regList" class="regl"></div><div class="hint">Personas simuladas que vuelven a pedirte viaje (o a enviarte paquetes). Cuanto mejor las trataste, más repiten y más paciencia y propina tienen; si la experiencia fue mala, vuelven menos y son más exigentes.</div></details>');
+document.body.insertAdjacentHTML("beforeend",`<div class="modal" id="achModal" hidden><div class="mbox small"><div class="mhead"><h2>🏅 Logros</h2><button class="mbtn" id="achClose">Cerrar ✕</button></div>
+  <div id="achBody" class="achg"></div><div class="mfoot"><span class="hint" style="margin:0">Se calculan con todo tu historial (también los viajes anteriores a esta versión). Los viajes y pasajeros son simulados.</span></div></div></div>`);
+{const h=[...document.querySelectorAll("#secSnd .hint")].pop();if(h)h.insertAdjacentHTML("afterend",'<div class="hint" id="decHint"><b>Peticiones del pasajero:</b> durante el viaje pulsa la petición si la cumples (✅). Con <b>✋</b> la <b>rechazas con educación</b> (música, temperatura, prisa, maletas): explicas el motivo, el pasajero contesta en el chat y penaliza mucho menos que ignorarla; a algunos (según su carácter) ni les importa. Si no pulsas nada, se considera ignorada y penaliza como siempre (valoración y propina).</div>');}
+
+// ---------- 🌧️ Lluvia en el juego (la decide el usuario; no hay datos meteorológicos reales) ----------
+function rainUI(){const on=rainOn();document.body.classList.toggle("rain",on);$("rainBtn").classList.toggle("on",on);$("rainBtnT").textContent=on?"Llueve en el juego":"¿Llueve en el juego?";
+  $("rainChk").checked=on;$("rainTxt").hidden=!on;$("rainTxt").innerHTML=on?"🌧️ <b>Lloviendo (en el juego)</b>: más solicitudes (≈ +25 %), tarifa dinámica +0,1 y algo más de atascos y retrasos. Efecto simulado.":"";}
+function rainSet(on){S.settings.rain=!!on;save();rainUI();updateClock();computeHot();
+  const t=on?"Lluvia activada en el juego: habrá más solicitudes, la tarifa dinámica sube un poco y puede haber más atascos y retrasos.":"Lluvia desactivada: la demanda vuelve a la normalidad.";
+  toast((on?"🌧️ ":"🌤️ ")+t);vozArm();say("lluvia",t,{tag:"lluvia"});}
+$("rainBtn").onclick=()=>rainSet(!rainOn());$("rainChk").onchange=e=>rainSet(e.target.checked);
+
+// ---------- 🎟️ Eventos simulados en recintos REALES (estadios, teatros, salas, recintos feriales) ----------
+const EVT_T={futbol:{ic:"⚽",n:"partido de fútbol",fin:"termina el partido de fútbol"},basket:{ic:"🏀",n:"partido de baloncesto",fin:"termina el partido de baloncesto"},
+  concierto:{ic:"🎤",n:"concierto",fin:"acaba el concierto"},teatro:{ic:"🎭",n:"función de teatro",fin:"termina la función de teatro"},musical:{ic:"🎭",n:"musical",fin:"termina el musical"},
+  feria:{ic:"🎪",n:"feria",fin:"cierra la feria"},congreso:{ic:"🏛️",n:"congreso",fin:"termina la jornada del congreso"}};
+const EVT_CAT={stadium:"Estadio",arena:"Pabellón / arena",theatre:"Teatro",music:"Sala de conciertos / auditorio",expo:"Recinto ferial / congresos"};
+const EVT_LS="simConductorEvtV";let EVV=(()=>{try{return JSON.parse(localStorage.getItem(EVT_LS))||{};}catch(e){return {};}})();
+let EVT_FORCED=[],evtLoading=false;const evtTried=new Set();
+const evtKey=()=>cellOf(S.settings.center,.05)+"|"+Math.round(S.settings.radius||5);
+const evtVenues=()=>(EVV[evtKey()]||{}).list||[];
+function evtKind(t,nm){if(/plaza de toros|polideportivo|paraninfo|piscina|frontón|campo de f[uú]tbol|^pista|instalaci/i.test(nm))return null;
+  if(t.leisure==="stadium")return /arena|palacio|pabell|wizink|pavell/i.test(nm)?"arena":"stadium";
+  if(t.leisure==="sports_centre")return /palacio|pabell[oó]n|arena|pavell|wizink|coliseum/i.test(nm)?"arena":null;
+  const a=t.amenity;if(a==="theatre")return "theatre";if(a==="concert_hall"||a==="music_venue")return "music";
+  if(a==="arts_centre")return /teatr/i.test(nm)?"theatre":/auditori|palau|sala|m[uú]sica|concierto/i.test(nm)?"music":null;
+  if(a==="exhibition_centre"||a==="conference_centre")return /^(pabell[oó]n|hall|nave|sala|espacio) ?\d/i.test(nm)?null:"expo";
+  if(a==="events_venue")return /boda|banquete|celebraci|finca|restaurante|catering|sal[oó]n de/i.test(nm)?null:/feria|ifema|recinto|exposici|congres|fira|palacio/i.test(nm)?"expo":/auditori|sala|arena/i.test(nm)?"music":null;
+  return null;}
+function evtPickVenues(L,c){const by={};L.forEach(v=>{v.d=hav(c,[v.lat,v.lon]);});
+  const seen=new Set(),U=L.filter(v=>{const k=v.name.toLowerCase();if(seen.has(k))return false;seen.add(k);return true;});
+  const top=(kind,n,pref)=>U.filter(v=>v.kind===kind).sort((a,b)=>((pref&&!pref.test(a.name))-(pref&&!pref.test(b.name)))||a.d-b.d).slice(0,n);
+  const SP=/estadi|stadium|coliseum|metropolitano|bernab|camp nou|mestalla|riazor|anoeta|sánchez-pizjuán|san mam|benito villamar[ií]n|la rosaleda|balaídos|zorrilla|el sadar|mendizorroza|la cerámica|son moix|gran canaria|heliodoro/i;
+  const rk=v=>SP.test(v.name)?(/estadi|stadium/i.test(v.name)&&!/bernab|metropolitano|camp nou|mestalla/i.test(v.name)?1:0):2;
+  let st=U.filter(v=>v.kind==="stadium").sort((a,b)=>rk(a)-rk(b)||a.d-b.d).slice(0,3);if(st.some(v=>rk(v)<2))st=st.filter(v=>rk(v)<2).slice(0,2);
+  return [].concat(st,top("arena",2,/palacio|arena|wizink/i),top("theatre",4),top("music",3),top("expo",2,/recinto|ifema|feria|fira|palacio|congres/i)).map(v=>({id:v.id,name:v.name,lat:+v.lat.toFixed(6),lon:+v.lon.toFixed(6),kind:v.kind,tag:v.tag,src:v.src}));}
+async function evtFetch(c,R){const a=`(around:${Math.round(R*1000)},${c[0].toFixed(5)},${c[1].toFixed(5)})`;
+  const q=`[out:json][timeout:15];(nwr["name"]["leisure"="stadium"]${a};nwr["name"]["amenity"~"^(theatre|arts_centre|events_venue|concert_hall|music_venue|exhibition_centre|conference_centre)$"]${a};nwr["name"]["leisure"="sports_centre"]["name"~"Palacio|Pabell|Arena|Pavell|WiZink",i]${a};);out center 150;`;
+  for(const u of OVERPASS){try{const r=await fetchT(u+"?data="+encodeURIComponent(q),10000);if(!r.ok)continue;const j=await r.json(),L=[];
+      for(const e of j.elements||[]){const t=e.tags||{},lat=e.lat??(e.center&&e.center.lat),lon=e.lon??(e.center&&e.center.lon);if(!t.name||lat==null)continue;
+        const k=evtKind(t,t.name);if(k)L.push({id:e.type[0]+e.id,name:t.name,lat,lon,kind:k,tag:t.leisure?"leisure:"+t.leisure:"amenity:"+t.amenity,src:"Overpass"});}
+      return {list:evtPickVenues(L,c),src:"Overpass"};}catch(e){}}
+  {const G=[["leisure:stadium"],["amenity:theatre"],["amenity:concert_hall","amenity:music_venue","amenity:arts_centre"],["amenity:exhibition_centre","amenity:conference_centre","amenity:events_venue"]],L=[];
+   for(const tags of G){try{const j=await photon(`/reverse?lat=${c[0].toFixed(5)}&lon=${c[1].toFixed(5)}&radius=${Math.min(R,12)}&limit=15&`+tags.map(t=>"osm_tag="+encodeURIComponent(t)).join("&"));
+      for(const f of j.features||[]){const q=f.properties||{},g=f.geometry.coordinates;if(!q.name)continue;const t={[q.osm_key]:q.osm_value},k=evtKind(t,q.name);
+        if(k)L.push({id:"p"+(q.osm_id||q.name),name:q.name,lat:g[1],lon:g[0],kind:k,tag:q.osm_key+":"+q.osm_value,src:"Photon"});}}catch(e){}}
+   if(L.length)return {list:evtPickVenues(L,c),src:"Photon"};}
+  const L=[];for(const k in POOL)for(const p of POOL[k]){if(hav(c,[p.lat,p.lon])>R)continue;const [ok,ov]=String(p.tag||"").split(":"),kd=evtKind({[ok]:ov},p.name);
+    if(kd)L.push({id:"c"+p.name+p.lat.toFixed(4),name:p.name,lat:p.lat,lon:p.lon,kind:kd,tag:p.tag,src:p.src||"OSM"});}
+  return {list:evtPickVenues(L,c),src:L.length?"caché":"ninguno"};}
+async function evtLoad(){const k=evtKey(),E=EVV[k];if(E&&Date.now()-E.at<(E.list.length?7:1)*864e5)return;
+  if(Q24()||evtLoading||evtTried.has(k)||!S.settings.center)return;evtTried.add(k);evtLoading=true;evtUI();
+  try{const c=S.settings.center.slice(),R=Math.min(15,Math.max(5,(S.settings.radius||5)*1.3)),o=await evtFetch(c,R);
+    EVV[k]={at:Date.now(),list:o.list,src:o.src};const ks=Object.keys(EVV);if(ks.length>12)ks.sort((a,b)=>EVV[a].at-EVV[b].at).slice(0,ks.length-12).forEach(x=>delete EVV[x]);
+    try{localStorage.setItem(EVT_LS,JSON.stringify(EVV));}catch(e){}}
+  finally{evtLoading=false;evtTick.sig=null;evtTick();}}
+// Programación inventada pero verosímil: semilla por recinto + semana + día (estable al recargar)
+function srand(str){let h=1779033703^str.length;for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19;}
+  return ()=>{h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);h^=h>>>16;return (h>>>0)/4294967296;};}
+function evtWeek(){const t=simNow();if(!t.real)return 0;const p=tzParts(),[y,m,d]=p.ymd.split("-").map(Number);return Math.floor((Date.UTC(y,m-1,d)/864e5+3)/7);}
+function evtGen(v,d,wk){const R=srand(v.id+"|"+wk+"|"+d),we=d>=6,P=a=>a[Math.floor(R()*a.length)],m=(h,mm)=>h*60+(mm||0);let e=null;
+  switch(v.kind){
+    case "stadium":if(we?R()<.55:(d===2||d===3)&&R()<.15)e={t:"futbol",s:we?P([m(14),m(16,15),m(18,30),m(21)]):m(21),dur:115};
+      else if((d===5||d===6)&&R()<.06)e={t:"concierto",s:m(21,30),dur:165};break;
+    case "arena":if(we&&R()<.4)e={t:"basket",s:P([m(12,30),m(18),m(20,45)]),dur:120};else if(d>=4&&d<=6&&R()<.3)e={t:"concierto",s:m(21),dur:150};break;
+    case "theatre":if(d>=3&&R()<.6)e=d===7?{t:R()<.3?"musical":"teatro",s:m(18),dur:R()<.5?105:130}:{t:R()<.3?"musical":"teatro",s:P([m(20),m(20,30)]),dur:R()<.5?105:140};break;
+    case "music":if(d>=4&&R()<.5)e={t:"concierto",s:P([m(21),m(21,30),m(22)]),dur:P([120,150])};break;
+    case "expo":if(d>=5&&R()<.4)e={t:"feria",s:m(10),dur:P([540,600])};else if(d>=2&&d<=4&&R()<.25)e={t:"congreso",s:m(9),dur:570};break;}
+  if(!e)return null;e.id=v.id+"@"+wk+"-"+d;e.v=v;e.d=d;e.win=(e.t==="feria"||e.t==="congreso")?45:60;return e;}
+const hhmm=x=>{x=((Math.round(x)%1440)+1440)%1440;return String(Math.floor(x/60)).padStart(2,"0")+":"+String(x%60).padStart(2,"0");};
+// Estado de cada evento respecto a «ahora» (minutos relativos): prox / curso / salida (zona caliente) / fin
+function evtState(e,nowMin){const st=e.rel!=null?e.rel:e.s-nowMin-(e.yest?1440:0),en=st+e.dur;
+  e.relS=st;e.relE=en;e.st=st>0?"prox":en>0?"curso":-en<e.win?"salida":"fin";e.left=e.st==="salida"?Math.round(e.win+en):null;return e;}
+function evtAll(){if(evtS().on===false||S.settings.svc!=="urbano")return [];const t=simNow(),now=t.h*60+t.m,out=[];
+  if(!Q24()){const wk=evtWeek(),pd=t.dow===1?7:t.dow-1,pwk=t.real&&t.dow===1?wk-1:wk;
+    for(const v of evtVenues()){const a=evtGen(v,t.dow,wk);if(a)out.push(evtState(a,now));const b=evtGen(v,pd,pwk);if(b){b.yest=true;evtState(b,now);if(b.st==="salida")out.push(b);}}}
+  const nt=Date.now();EVT_FORCED=EVT_FORCED.filter(e=>nt-e.endTs<(e.win+5)*60000);
+  for(const e of EVT_FORCED){e.rel=(e.startTs-nt)/60000;e.s=now+e.rel;out.push(evtState(e,now));}
+  return out.sort((a,b)=>a.relS-b.relS);}
+const evtActive=()=>evtAll().filter(e=>e.st==="salida");
+function evtZoneAt(pt){return evtActive().find(e=>hav(pt,[e.v.lat,e.v.lon])<=.9)||null;}
+function evtNear(pos){const R=Math.max(3,(S.settings.radius||5)*1.3);return evtActive().filter(e=>hav(pos,[e.v.lat,e.v.lon])<=R);}
+function evtPickPu(pos,rad){const A=evtNear(pos);if(!A.length)return null;const pr=FORCE?(FORCE.evPu?1:0):.45;if(Math.random()>=pr)return null;
+  const e=pick(A),v=e.v,T=EVT_T[e.t];
+  return {pt:randInCircle([v.lat,v.lon],.12),place:{name:v.name,cat:EVT_CAT[v.kind]||"Recinto",detail:"salida del "+T.n+" (evento simulado)",lat:v.lat,lon:v.lon,kind:"poi",src:v.src||"OSM",evt:e.id,evtT:e.t}};}
+function evtSayTxt(e){const T=EVT_T[e.t];return `Evento simulado: ${T.fin} en ${e.v.name}. Durante ${e.left!=null&&e.left<60?"unos "+minSay(e.left):"la próxima hora"} habrá mucha demanda en la zona y la tarifa dinámica será más alta.`;}
+const EVT_EJ=()=>({t:"futbol",v:{name:"Estadio Metropolitano"},left:60});
+function evtAnnounce(e){const T=EVT_T[e.t],t=evtSayTxt(e);playSound("evento");
+  toast(`${T.ic} Evento simulado: ${T.fin} en ${e.v.name} · alta demanda ~${e.left||e.win} min`);
+  attention(`${T.ic} Fin de evento (simulado)`,T.ic);notify(`${T.ic} ${cap1(T.fin)} (simulado)`,`${e.v.name} (lugar real) · alta demanda y tarifa dinámica más alta durante ~${e.left||e.win} min`);
+  say("evento",t,{tag:"evento",after:"evento"});}
+function evtTick(){if(!S.settings||!S.settings.center)return;if(evtS().on!==false&&S.settings.svc==="urbano")evtLoad();
+  const A=evtAll(),sig=A.map(e=>e.id+":"+e.st).join("|");
+  if(sig!==evtTick.sig){evtTick.sig=sig;computeHot();const ev=evtsS();
+    for(const e of A)if(e.st==="salida"&&!ev.ann.includes(e.id)){ev.ann.push(e.id);ev.ann=ev.ann.slice(-60);save();evtAnnounce(e);}}
+  evtUI(A);}
+function evtUI(A){const el=$("evtList");if(!el)return;$("evtOn").checked=evtS().on!==false;A=A||evtAll();let h;
+  if(evtS().on===false)h="Desactivados.";
+  else if(S.settings.svc!=="urbano")h="Solo en el servicio urbano.";
+  else{const vs=evtVenues(),E=EVV[evtKey()];
+    const L=A.filter(e=>e.st!=="fin").slice(0,6).map(e=>{const T=EVT_T[e.t],s=hhmm(e.s),f=hhmm(e.s+e.dur);
+      return `<div class="evr ${e.st}">${T.ic} <b>${s}</b> ${esc(cap1(T.n))} · ${esc(e.v.name)} — ${e.st==="salida"?`<b>salida: alta demanda (quedan ${e.left} min)</b>`:e.st==="curso"?"en curso, termina ~"+f:"empieza a las "+s}</div>`;}).join("");
+    h=L||(Q24()&&!EVT_FORCED.length?"":evtLoading?"Buscando recintos reales cerca (estadios, teatros, salas)…":E&&!vs.length?"No se han encontrado recintos reales cerca: sin eventos.":vs.length?`Hoy no hay más eventos en los ${vs.length} recintos reales de la zona.`:"Buscando recintos…");
+    h+=`<div class="m">Programación <b>inventada</b> (no es la real); los recintos son lugares reales de OpenStreetMap${vs.length?" ("+vs.length+")":""}. Al terminar un evento: zona caliente, más solicitudes desde allí y tarifa dinámica más alta.</div>`;}
+  if(el.innerHTML!==h)el.innerHTML=h;}
+$("evtOn").onchange=e=>{evtS().on=e.target.checked;save();evtTick.sig=null;evtTick();toast(e.target.checked?"🎟️ Eventos simulados activados":"Eventos simulados desactivados");};
+function evtDraw(){if(S.settings.svc!=="urbano")return;const A=evtAll().filter(e=>e.st!=="fin");
+  for(const e of A){const T=EVT_T[e.t],v=e.v,c=[v.lat,v.lon],act=e.st==="salida";
+    const tip=`${T.ic} <b>${esc(cap1(T.n))}</b> · evento <b>simulado (lugar real)</b><br>${esc(v.name)} (${esc(EVT_CAT[v.kind]||"recinto")}, OpenStreetMap)<br>${hhmm(e.s)}–${hhmm(e.s+e.dur)}`+(act?`<br>🔥 Salida del público: alta demanda y tarifa dinámica más alta (quedan ${e.left} min)`:e.st==="curso"?"<br>En curso":"<br>Hoy");
+    if(act){hotZones.push({c,r:.9,ev:e.id});L.circle(c,{radius:900,color:"#c264ff",weight:2,fillColor:"#c264ff",fillOpacity:.24,dashArray:"6 6"}).bindTooltip(tip).addTo(hotLayer).bringToBack();}
+    L.marker(c,{icon:L.divIcon({className:"evmk"+(act?" on":""),html:`<span>${T.ic}</span>`,iconSize:act?[34,34]:[24,24],iconAnchor:act?[17,17]:[12,12]}),zIndexOffset:act?400:100}).bindTooltip(tip).addTo(hotLayer);}}
+{const _ch=computeHot;computeHot=function(){const v=_ch.apply(this,arguments);try{evtDraw();}catch(e){console.error(e);}return v;};}
+{const _sf=surgeFor;surgeFor=function(pt){const s=_sf(pt);let x=s.x;const ez=evtZoneAt(pt),rn=rainOn();
+  if(ez){x=Math.max(x+.3,1.4);s.hot=true;s.evt=ez.id;}if(rn){x+=.1;s.rain=true;}
+  if(ez||rn)s.x=Math.min(ez?2.5:2.1,Math.max(1,Math.round(x*10)/10));return s;};}
+{const _ng=nextGap;nextGap=function(){let g=_ng();if(rainOn())g/=1.25;if(evtNear(S.driver||S.settings.center).length)g/=1.35;return g;};}
+{const _uc=updateClock;updateClock=function(){const v=_uc.apply(this,arguments);try{const st=$("surgeTxt"),x=[];
+    if(S.settings.svc==="urbano"){if(rainOn())x.push("🌧️ lluvia: +0,1");if(evtActive().length)x.push("🎟️ salida de evento: hasta x2,5 en su zona");}
+    if(x.length)st.textContent+=" · "+x.join(" · ");}catch(e){}return v;};}
+
+// ---------- Clientes habituales (personas simuladas que repiten) ----------
+const regGet=id=>regsS().find(g=>g.id===id)||null;
+const regAvg=g=>g&&g.rn?g.sum/g.rn:null;
+function regW(g){const a=regAvg(g);return a==null?.08:a>=4.5?1:a>=4?.6:a>=3?.25:.08;}
+function regTemp(g){let t=g.per.temp||"normal";const a=regAvg(g);
+  if(a!=null&&a>=4.6&&t==="exigente")t="normal";else if(a!=null&&a<3.5){if(t==="paciente"||t==="simpatico")t="normal";else if(t==="normal")t="exigente";}return t;}
+function regAdj(id){const g=regGet(id);if(!g)return {b:0,k:1,tip:0,g:null};const a=regAvg(g);
+  if(a==null)return {b:-.15,k:1.2,tip:-.05,g};
+  return a>=4.5?{b:.1+.02*Math.min(5,g.n),k:.85,tip:.08,g}:a>=4?{b:.05,k:.95,tip:.03,g}:a>=3?{b:-.1,k:1.15,tip:-.03,g}:{b:-.25,k:1.3,tip:-.08,g};}
+function regCands(pos,kind){return regsS().filter(g=>g.kind===kind&&(!g.pt||hav(g.pt,pos)<=Math.max(25,(S.settings.radius||5)*2)));}
+function regChoose(pos,kind){const L=regCands(pos,kind);
+  if(FORCE&&FORCE.reg){const g=FORCE.reg===true?L[0]:regsS().find(x=>x.id===FORCE.reg);return g||null;}
+  if(FORCE||Q24()||!L.length)return null;const now=Date.now();if(now-(regChoose.last||0)<120000)return null;
+  const W=L.filter(g=>!g.last||now-g.last.ts>15*60000).map(g=>[g,regW(g)]),tot=W.reduce((a,b)=>a+b[1],0);
+  if(!tot||Math.random()>=Math.min(.3,.06*tot))return null;return wpick(W);}
+function regClone(g){const p=JSON.parse(JSON.stringify(g.per));p.regId=g.id;p.regTemp=regTemp(g);regChoose.last=Date.now();return p;}
+function regBooker(pos){const g=regChoose(pos,"pax");return g?regClone(g):null;}
+function regSnd(c){const g=regChoose(c||S.driver,"pq");return g?regClone(g):null;}
+{const _at=assignTemp;assignTemp=function(p,ctx){if(p&&p.regId&&p.regTemp&&!(FORCE&&FORCE.temp)){p.temp=p.regTemp;return;}return _at.apply(this,arguments);};}
+const agoTxt=ts=>{const m=Math.max(0,Math.round((Date.now()-ts)/60000));return m<60?`hace ${m} min`:m<1440?`hace ${Math.round(m/60)} h`:`hace ${Math.round(m/1440)} día${Math.round(m/1440)===1?"":"s"}`;};
+function regLineHTML(id,kind){const g=regGet(id);if(!g)return "";const n=g.n,l=g.last||{};
+  const what=kind==="pq"?`ya te ha enviado ${n} paquete${n===1?"":"s"}`:`ya viajó contigo ${n} ${n===1?"vez":"veces"}`;
+  return `<div class="ctx reg">🤝 <b>Cliente habitual</b>: ${what}${l.rate!=null?`, la última te dio <b>${l.rate}★</b>`:l.status&&l.status!=="ok"?", la última vez no se completó":""}${l.ts?" ("+agoTxt(l.ts)+")":""} <i class="tsim">(sim.)</i></div>`;}
+function regSay(id,kind){const g=regGet(id);if(!g)return "";const n=g.n,l=g.last||{};
+  return ` Cliente habitual: ${kind==="pq"?`ya te ha enviado ${n===1?"un paquete":n+" paquetes"}`:`ya viajó contigo ${n===1?"una vez":n+" veces"}`}${l.rate!=null?`, la última te dio ${l.rate===1?"una estrella":l.rate+" estrellas"}`:""}.`;}
+function regComment(x){return x.w>0?pick(["como siempre, da gusto viajar contigo","otra vez genial, por eso repito"]):pick(["la última vez no fue muy bien y esta vez me he fijado más","después de la última vez venía con dudas"]);}
+function regRecord(per,kind,rate,status,r){if(!per)return null;const now=Date.now();let g=per.regId?regGet(per.regId):null;
+  if(!g){if(status!=="ok")return null;const p=FORCE?(FORCE.regNew?1:0):Q24()?0:kind==="pq"?(rate>=4?.2:.05):(rate>=4?.3:.1);if(Math.random()>=p)return null;
+    const c=JSON.parse(JSON.stringify(per));delete c.regId;delete c.regTemp;
+    g={id:"g"+now.toString(36)+rndI(100,999),kind,per:c,n:0,sum:0,rn:0,bad:0,first:now,city:S.settings.place||"",pt:(r.pickup||S.driver||S.settings.center).slice()};regsS().unshift(g);}
+  if(status==="ok"){g.n++;if(rate!=null){g.sum+=rate;g.rn++;}}else{g.bad=(g.bad||0)+1;}
+  g.last={ts:now,rate:status==="ok"&&rate!=null?rate:null,status,from:r.from||"",to:r.to||"",svc:r.svc};
+  const L=regsS();if(L.length>REG_MAX){L.sort((a,b)=>((b.last||{}).ts||0)-((a.last||{}).ts||0));L.length=REG_MAX;}
+  return g;}
+function regUI(){const L=regsS().slice().sort((a,b)=>((b.last||{}).ts||0)-((a.last||{}).ts||0));if(!$("regN"))return;$("regN").textContent=L.length;
+  $("regList").innerHTML=L.length?L.slice(0,15).map(g=>{const a=regAvg(g),l=g.last||{};return `<div class="regr"><span>${g.kind==="pq"?"📦":"🧑"} <b>${esc(g.per.name||g.per.nom||"¿?")}</b>${g.per.edad?", "+g.per.edad:""}</span><span>${g.n} ${g.kind==="pq"?"envío":"viaje"}${g.n===1?"":"s"} · media ${a==null?"–":num1(a)+"★"} · última ${l.rate!=null?l.rate+"★":"–"} · ${l.ts?agoTxt(l.ts):""}</span></div>`;}).join(""):'<div class="hint">Aún no hay clientes habituales. Algunos pasajeros satisfechos (y remitentes particulares) volverán a pedirte.</div>';}
+function ctxHTML(r){try{if(!r)return "";let h="";
+  if(r.evt){const T=EVT_T[r.evt.t]||{ic:"🎟️",n:"evento"};h+=`<div class="ctx evt">${T.ic} Sale del <b>${esc(T.n)}</b> en ${esc(r.evt.venue)} · <b>evento simulado (lugar real)</b></div>`;}
+  if(r.per&&r.per.regId&&r.svc==="urbano")h+=regLineHTML(r.per.regId,"pax");
+  if(r.rain&&r.svc==="urbano")h+='<div class="ctx rain">🌧️ Llueve en el juego: más demanda y tarifa algo más alta (simulado)</div>';
+  return h;}catch(e){return "";}}
+{const _mr=makeRequest;makeRequest=async function(){const r=await _mr.apply(this,arguments);if(!r)return r;
+  try{if(r.svc==="urbano"){r.rain=rainOn();if(r.rain)r.pickupMin*=1.1;
+      if(r.pu&&r.pu.evt){const e=evtAll().find(x=>x.id===r.pu.evt);r.evt={id:r.pu.evt,t:r.pu.evtT,venue:r.pu.name};if(!e)r.evt.gone=true;}}}catch(e){console.error(e);}
+  return r;};
+ const _vq=VOZT.req;VOZT.req=r=>{let t=_vq(r);try{if(r.evt)t+=` Sale del ${(EVT_T[r.evt.t]||{n:"evento"}).n} en ${r.evt.venue}.`;if(r.per&&r.per.regId)t+=regSay(r.per.regId,"pax");}catch(e){}return t;};
+ const _vp=VOZT.pqReq;VOZT.pqReq=r=>{let t=_vp(r);try{const J=(r.jobs||[]).find(j=>j.snd&&j.snd.regId);if(J)t+=regSay(J.snd.regId,"pq").replace("Cliente habitual:",`Remitente habitual, ${J.snd.nom||J.snd.name}:`);}catch(e){}return t;};}
+// Comentarios con lluvia y charla al subir
+{const _rc=rateComment;rateComment=function(rate,R,P,T,arrT){let c=_rc.apply(this,arguments);
+  try{if(T&&T.r&&T.r.rain&&(FORCE&&FORCE.noRnd||Math.random()<.5)){const x=rate>=4?pick(["Gracias por venir con la que estaba cayendo.","Con esta lluvia, se agradece un viaje así."]):rate<=2?pick(["Y encima con lo que llovía.","Con la lluvia, peor todavía."]):"";
+      if(x)c=c?c.replace(/\s+$/,"")+(/[.!?]$/.test(c.trim())?" ":". ")+x:x;}}catch(e){}return c;};}
+{const _pu=pickedUp;pickedUp=function(){const v=_pu.apply(this,arguments);
+  try{if(trip&&trip.r&&trip.r.rain&&trip.r.svc==="urbano"&&!trip.rainMsg){trip.rainMsg=1;const p=trip.r.per||{},nm=p.nom||(trip.r.name||"").split(" ")[0],m=pick(usted(p)?["¡Qué manera de llover! Menos mal que ha venido.","Uf, qué chaparrón. Gracias por esperarme."]:["¡Menudo chaparrón! Menos mal que has venido rápido.","Uf, qué manera de llover. Gracias por esperarme."]);
+    if(trip.ev&&trip.ev.log)trip.ev.log.push({ic:"🌧️",t:`${nm}: «${m}»`});S.trip=trip;save();setTimeout(()=>toast(`🌧️ ${nm}: «${m}»`),2800);}}catch(e){}return v;};}
+const bbFull=r=>{if(r.svc!=="compartido"||!(r.bookings||[]).length)return false;const cap=curVeh()?curVeh().pax:3,N=(r.pts||[]).length+1;let mx=0;
+  for(let k=0;k<N;k++)mx=Math.max(mx,r.bookings.reduce((a,b)=>a+(b.from<=k&&k<b.to?b.seats:0),0));return mx>=cap;};
+
+// ---------- 🏅 Logros ----------
+const ACH=[{id:"t1",ic:"🚗",n:"Primer viaje",d:"Completa tu primer viaje o envío",g:1,v:c=>c.trips},
+  {id:"t10",ic:"🔟",n:"10 viajes",d:"Completa 10 viajes o envíos",g:10,v:c=>c.trips},{id:"t100",ic:"💯",n:"100 viajes",d:"Completa 100 viajes o envíos",g:100,v:c=>c.trips},
+  {id:"t500",ic:"🏆",n:"500 viajes",d:"Completa 500 viajes o envíos",g:500,v:c=>c.trips},{id:"t1000",ic:"👑",n:"1.000 viajes",d:"Completa 1.000 viajes o envíos",g:1000,v:c=>c.trips},
+  {id:"km1k",ic:"🛣️",n:"1.000 km",d:"Recorre 1.000 km de servicio (incluye ir a recoger)",g:1000,v:c=>c.km},{id:"km10k",ic:"🌍",n:"10.000 km",d:"Recorre 10.000 km de servicio",g:10000,v:c=>c.km},
+  {id:"pq1",ic:"📦",n:"Primer paquete",d:"Entrega tu primer envío de paquetería",g:1,v:c=>c.pq},
+  {id:"night",ic:"🌙",n:"De madrugada",d:"Completa un viaje entre las 0:00 y las 6:00",g:1,v:c=>c.night},
+  {id:"week48",ic:"⭐",n:"Semana de 4,8",d:"Valoración media ≥ 4,8 durante 7 días (mínimo 10 valoraciones)",g:1,v:c=>c.week},
+  {id:"five10",ic:"🌟",n:"Racha de 5★",d:"10 viajes seguidos con 5 estrellas",g:10,v:c=>Math.max(c.streak,c.bestStreak)},
+  {id:"bbfull",ic:"🚙",n:"Coche lleno",d:"Un viaje compartido (BlaBlaCar) con todas las plazas ocupadas",g:1,v:c=>c.bbFull},
+  {id:"evt1",ic:"🎟️",n:"A la salida del evento",d:"Completa un viaje recogiendo a la salida de un evento (simulado)",g:1,v:c=>c.evt},
+  {id:"rain10",ic:"🌧️",n:"Bajo la lluvia",d:"Completa 10 viajes con «Llueve en el juego» activado",g:10,v:c=>c.rain},
+  {id:"eur100",ic:"💶",n:"100 € en un turno",d:"Gana 100 € netos en un mismo turno",g:100,v:c=>c.bestShift},
+  {id:"reg5",ic:"🤝",n:"Cliente fiel",d:"Un cliente habitual con 5 viajes o envíos contigo",g:5,v:c=>c.regMax}];
+function acFeed(e,c){if(!e)return;const ok=e.status==="ok";
+  if(ok){c.trips++;if(e.svc==="paquete")c.pq+=e.pq?Math.max(0,+e.pq.ok||0):1;const h=e.sh!=null?+e.sh:parseInt(e.time||"12",10);if(h>=0&&h<6)c.night++;
+    if(e.evt)c.evt++;if(e.rain)c.rain++;if(e.full)c.bbFull++;}
+  else if(e.svc==="paquete"&&e.pq&&e.pq.ok)c.pq+=+e.pq.ok||0;
+  c.km+=e.kmTot!=null?(+e.kmTot||0):ok?(+e.km||0):0;
+  if(e.rate!=null&&ok){if(e.rate>=4.95){c.streak++;c.bestStreak=Math.max(c.bestStreak,c.streak);}else c.streak=0;
+    const ts=e.ts||Date.now();c.rw=(c.rw||[]).concat([[ts,+e.rate]]).filter(x=>ts-x[0]<7*864e5).slice(-400);
+    if(c.rw.length>=10&&c.rw.reduce((a,x)=>a+x[1],0)/c.rw.length>=4.8)c.week=1;}}
+function acAux(c){c.regMax=Math.max(c.regMax||0,...regsS().map(g=>g.n||0),0);c.bestShift=Math.max(c.bestShift||0,...(S.shifts||[]).map(x=>+x.net||0),0);
+  if(S.shift)try{c.bestShift=Math.max(c.bestShift,+shiftTot(S.shift).net||0);}catch(e){}}
+let achQ=[];
+function acCheck(silent){const A=achS(),c=A.c;acAux(c);const nw=[];
+  for(const a of ACH)if(!A.u[a.id]&&a.v(c)>=a.g){A.u[a.id]=Date.now();nw.push(a);}
+  if(nw.length){save();if(!silent&&!Q24()){playSound("logro");nw.forEach(a=>say("logro",`Logro desbloqueado: ${a.n}. ${a.d}.`,{tag:"logro"}));
+      achToast(nw.map(a=>`🏅 Logro desbloqueado: ${a.ic} ${a.n}`).join("<br>"));}}
+  achUI();return nw;}
+function achToast(h){const e=$("achToast");e.innerHTML=h;e.style.display="block";clearTimeout(achToast.t);achToast.t=setTimeout(()=>e.style.display="none",5500);}
+async function acInit(){const A=achS();if(A.init||acInit.busy)return;acInit.busy=true;
+  try{let L=[];try{L=await HS.all();}catch(e){L=[];}const seen=new Set(L.map(x=>x.uid));(S.history||[]).forEach(x=>{if(x&&!seen.has(x.uid))L.push(x);});
+    L.sort((a,b)=>(a.ts||0)-(b.ts||0));const c=ACH_C0();L.forEach(e=>acFeed(e,c));A.c=c;A.init=true;
+    const nw=acCheck(true);if(nw.length&&!Q24())achToast(`🏅 ${nw.length} logro${nw.length>1?"s":""} desbloqueado${nw.length>1?"s":""} con tu historial: ${nw.map(a=>a.ic).join(" ")}`);save();}
+  finally{acInit.busy=false;}}
+function achUI(){const A=achS(),c=A.c,n=ACH.filter(a=>A.u[a.id]).length;if($("achN"))$("achN").textContent=n+"/"+ACH.length;
+  if($("achModal").hidden)return;
+  $("achBody").innerHTML=ACH.map(a=>{const u=A.u[a.id],v=Math.min(a.g,a.v(c)||0),p=Math.round(v/a.g*100);
+    const extra=a.id==="week48"&&!u&&(c.rw||[]).length?` · ahora ${num2((c.rw.reduce((s,x)=>s+x[1],0))/c.rw.length)} con ${c.rw.length}/10`:"";
+    return `<div class="ach${u?" on":""}" data-ach="${a.id}"><div class="ai">${a.ic}</div><div class="at"><b>${a.n}</b><span>${a.d}</span>
+      <div class="bar"><i style="width:${u?100:p}%"></i></div><span class="ap">${u?"✅ Desbloqueado "+fmtFecha(new Date(u).toISOString().slice(0,10)):(a.g>1?(a.id.startsWith("km")?num1(v):a.id==="eur100"?eur(v):Math.floor(v))+" / "+(a.id==="eur100"?eur(a.g):String(a.g).replace(/\B(?=(\d{3})+(?!\d))/g,".")):"Pendiente")+extra}</span></div></div>`;}).join("");}
+$("btnAch").onclick=()=>{$("achModal").hidden=false;achUI();if(!achS().init)acInit().then(achUI);};
+$("achClose").onclick=()=>{$("achModal").hidden=true;};
+// Tras cada viaje: banderas (lluvia, evento, coche lleno, hora simulada), clientes habituales y logros
+{const _he=historyEntry;historyEntry=function(r,status,rate,ex){const v=_he.apply(this,arguments);
+  try{const e=S.history[0];e.rain=!!r.rain;e.evt=r.evt?r.evt.t:null;e.sh=simNow().h;e.full=bbFull(r);e.reg=(r.per&&r.per.regId)||null;
+    const RT=(trip&&trip.r===r&&trip.ratings)||[];
+    if(r.svc==="urbano"&&r.per){const M=RT.find(x=>x.key==="main")||RT[0];regRecord(r.per,"pax",M?M.rate:rate,status,r);}
+    else if(r.svc==="paquete")(r.jobs||[]).forEach(J=>{if(J.pkind!=="priv"||!J.snd||J.done24)return;J.done24=1;const M=RT.find(x=>x.key===J.sk);regRecord(J.snd,"pq",M?M.rate:rate,status==="ok"&&pqOk(J)?"ok":status,{from:J.pu&&J.pu.name,to:J.de&&J.de.name,pickup:J.pu?[J.pu.lat,J.pu.lon]:null,svc:"paquete"});});
+    regUI();const A=achS();if(A.init){setTimeout(()=>{acFeed(S.history.find(x=>x.uid===e.uid)||e,A.c);acCheck(false);},0);}else setTimeout(acInit,0);}catch(err){console.error(err);}
+  return v;};}
+{const _su=shiftUI;shiftUI=function(){const v=_su.apply(this,arguments);try{if(S.shift&&achS().init&&!achS().u.eur100&&+shiftTot(S.shift).net>=100)acCheck(false);}catch(e){}return v;};}
+// Pruebas: forzar un evento que acaba de terminar en un recinto real conocido
+window.evtForce=(t,o)=>{o=o||{};const V=o.v||evtVenues().find(v=>({futbol:"stadium",basket:"arena",concierto:"music",teatro:"theatre",musical:"theatre",feria:"expo",congreso:"expo"}[t||"futbol"]===v.kind))||evtVenues()[0];
+  if(!V)return null;const T=t||"futbol",dur=o.dur||110,now=Date.now(),ago=o.ago||0;
+  const e={t:T,v:V,id:"F"+now.toString(36)+"-"+V.id,dur,win:o.win||60,startTs:now-(dur+ago)*60000,endTs:now-ago*60000,forced:true};EVT_FORCED.push(e);evtTick.sig=null;evtTick();return e.id;};
+window.evtSetVenues=L=>{EVV[evtKey()]={at:Date.now(),list:L,src:"test"};evtTick.sig=null;evtTick();};
+window.EVT24={all:evtAll,active:evtActive,venues:evtVenues,gen:evtGen,kind:evtKind,pick:evtPickVenues,key:evtKey};
+window.REG24={get:regGet,adj:regAdj,record:regRecord,list:regsS};
+window.ACH24={list:ACH,init:acInit,check:acCheck,feed:acFeed,c0:ACH_C0};
+rainUI();regUI();achUI();setInterval(evtTick,10000);setTimeout(evtTick,1500);setTimeout(()=>{if(!achS().init)acInit();},2500);
+
+Object.assign(VOZ_EJ,{evento:["evento",()=>evtSayTxt(EVT_EJ())],lluvia:["incEnv",()=>"Lluvia activada en el juego: habrá más solicitudes, la tarifa dinámica sube un poco y puede haber más atascos y retrasos."],
+  logro:["logro",()=>"Logro desbloqueado: 100 viajes. Completa 100 viajes o envíos."]});
 </script>
 </body>
 </html>
