@@ -1519,7 +1519,7 @@ async function newRequest(){
     ${bookingsHTML(r)}${ferryHTML(r)}${supHTML(r)}${zbeHTML(r)}
     ${S.settings.acceptSec?'<div class="bar"><i id="cdBar"></i></div>':""}
     <div class="acts"><button class="btn no" id="bNo">Rechazar</button><button class="btn ok" id="bOk">Aceptar</button></div></div>`;
-  if($("bNoPet"))$("bNoPet").onclick=()=>{lvlEv("pet");toast("🐾 Rechazada por la mascota · no cuenta en tu aceptación (simulado)");dismiss();};
+  v26CardWire(r);if($("bNoPet"))$("bNoPet").onclick=()=>{lvlEv("pet");toast("🐾 Rechazada por la mascota · no cuenta en tu aceptación (simulado)");dismiss();};
   $("bOk").onclick=accept;$("bNo").onclick=()=>{lvlEv("rej");toast("Solicitud rechazada");dismiss();};
   setStatus("Nueva solicitud de viaje");
   clearInterval(cdT);
@@ -1827,7 +1827,7 @@ function evEndEarly(r,ex,fee,km,pt,status,title){const ev=trip.ev;
 function calcTip(r,ev,rate,sat){if(r.svc!=="urbano")return 0;if(rate!=null&&rate<=2)return 0;
   if(FORCE&&FORCE.tip!=null)return FORCE.tip===true?Math.max(1,Math.round(r.price*.2)/2):+FORCE.tip||0;
   const p=r.per||{},pr0=p.prof||"",rich=/Médic|Abogad|Notari|Arquitect|Director|Ingenier|Empresari|Piloto|Dentist|Consultor|Juez|Jueza|Directiv|Gerente/.test(pr0);
-  let pr=.12+(rich?.08:0)+(p.edad>=65?.05:0)+(pr0.startsWith("Estudiante")||p.edad<23?-.06:0)+(ev.score||0)*.1+(rate===5?.04:rate<=3?-.08:0)+(r.cat==="comfort"||r.cat==="xl"?.05:0)+(r.surge>=1.5?-.04:0)+(sat!=null?Math.max(-.1,Math.min(.06,(sat-.75)*.08)):0)+needTipAdj(r)+(p.regId?regAdj(p.regId).tip:0)+(r.rain?.03:0);
+  let pr=.12+(rich?.08:0)+(p.edad>=65?.05:0)+(pr0.startsWith("Estudiante")||p.edad<23?-.06:0)+(ev.score||0)*.1+(rate===5?.04:rate<=3?-.08:0)+(r.cat==="comfort"||r.cat==="xl"?.05:0)+(r.surge>=1.5?-.04:0)+(sat!=null?Math.max(-.1,Math.min(.06,(sat-.75)*.08)):0)+needTipAdj(r)+v26Tip(r)+(p.regId?regAdj(p.regId).tip:0)+(r.rain?.03:0);
   pr=Math.max(0,Math.min(.8,pr));if(Math.random()>=pr)return 0;
   let a=r.price*rnd(.05,.15);if(p.edad>=65)a=Math.max(a,pick([1,2,2]));a=Math.max(1,Math.round(a*2)/2)+((ev.score||0)>=1?.5:0);return Math.min(a,20);}
 
@@ -2114,7 +2114,7 @@ function rateOne(T,P,endAt){
     sat-=pen;R.push({w:-pen,k:s.canal==="sin"?"unwarned":over?"over":"warned",s,onb});}
   if((r.needs||[]).length&&(r.svc==="urbano"||P.main)){const D=T.nd||{},DR=T.ndr||{};for(const n of r.needs){const dv=D[n.k],dec=dv==="no"?(DR[n.k]||{mind:true}):null,w=needW(n,dv===true,k,dec,tp);if(w){sat+=w;R.push({w,k:"need",n,done:dv===true,dec});}}}
   if(rg&&rg.b){sat+=rg.b;R.push({w:rg.b,k:"reg",g:rg.g});}
-  const es=(T.ev&&T.ev.score)||0;if(es){sat+=.3*es;R.push({w:.3*es,k:"ev"});}
+  {for(const x of v26Rate(T,P,k,sat)){sat+=x.w;R.push(x);}}const es=(T.ev&&T.ev.score)||0;if(es){sat+=.3*es;R.push({w:.3*es,k:"ev"});}
   const rate=sat>=.45?5:sat>=-.35?4:sat>=-1.2?3:sat>=-2.1?2:1;
   return {key:P.key,n:P.n,full:P.full,temp:tp,rate,sat:r2(sat),lateP:lateP==null?null:Math.round(lateP*10)/10,lateT:lateT==null?null:Math.round(lateT*10)/10,comment:rateComment(rate,R,P,T,arrT)};}
 function rateAll(T,endAt){return paxList(T.r).map(P=>rateOne(T,P,endAt));}
@@ -2124,6 +2124,7 @@ function rateComment(rate,R,P,T,arrT){
   const wWarn=stops.some(s=>s.t0<arrT&&s.canal!=="sin"),wSin=stops.some(s=>s.t0<arrT&&s.canal==="sin");
   const X=s=>incX({mot:s.mot,txt:s.txt});
   const txt=x=>{switch(x.k){
+    case "v26":return x.t;
     case "lateP":return `llegó ${x.L} min tarde a recogerme${wWarn&&!wSin?" pero avisó":wSin?" y sin avisar":""}`;
     case "lateT":return `el viaje duró ${x.L} min más de lo previsto`;
     case "unwarned":return x.onb?pick([`paró ${X(x.s)} sin avisar`,`se paró sin decir nada (${Math.round(x.s.act)} min)`]):`me tuvo esperando: paró y no avisó`;
@@ -3190,7 +3191,7 @@ $("vozStop").onclick=()=>vozCancel();
 if(SS()){try{SS().addEventListener?SS().addEventListener("voiceschanged",vozFill):(SS().onvoiceschanged=vozFill);}catch(e){}}
 syncVozUI();setTimeout(vozFill,600);setTimeout(vozFill,2500);
 // ---------- Móvil (Android) y app instalable (PWA) ----------
-const APP_VER="25.0";
+const APP_VER="26.0";
 const MQ_MOB=window.matchMedia("(max-width:899px),(max-height:520px) and (pointer:coarse)");
 function isMob(){return MQ_MOB.matches;}
 // Márgenes al encuadrar la ruta: en PC la tarjeta está a la izquierda; en móvil, abajo (vertical) o a la izquierda (horizontal)
@@ -3298,9 +3299,9 @@ function shiftStart(){if(S.shift)return;const g=Object.assign({},goalsS());
 function shiftEnd(){const sh=S.shift;if(!sh)return;if(trip){toast("⚠️ Termina primero el viaje en curso");return;}
   sh.end=Date.now();const T=shiftTot(sh);
   const rec={id:sh.id,start:sh.start,end:sh.end,tz:tzId(),goals:sh.goals,hit:sh.hit,gross:T.gross,net:T.net,fix:T.fix,trips:T.trips,can:T.can,km:T.km,rate:T.rate==null?null:r2(T.rate),rn:T.rn,tips:T.tips,pq:T.pq,eh:T.eh};
-  S.shifts=(S.shifts||[]).concat([rec]).slice(-200);S.shift=null;save();
+  try{const d=v26Diary(sh,rec);if(d)rec.diario=d;}catch(e){console.error(e);}S.shifts=(S.shifts||[]).concat([rec]).slice(-200);S.shift=null;save();
   if(online)goOffline();shiftUI();showShiftSum(rec);
-  say("turno",`Turno terminado: ${minSay(Math.max(1,Math.round((rec.end-rec.start)/60000)))}, ${numSay(rec.trips)} viajes y ${eurSay(rec.net)} netos.`);}
+  say("turno",`Turno terminado: ${minSay(Math.max(1,Math.round((rec.end-rec.start)/60000)))}, ${numSay(rec.trips)} viajes y ${eurSay(rec.net)} netos.`);if(rec.diario&&rec.diario.voz)say("turno",rec.diario.voz);}
 function showShiftSum(x){const tz=x.tz||tzId(),a=tzParts(new Date(x.start),tz),b=tzParts(new Date(x.end),tz),G=goalProg({goals:x.goals},{net:x.net,trips:x.trips,h:(x.end-x.start)/3600000});
   $("shBody").innerHTML=`<div style="font-size:13px;margin-top:8px">${fmtFecha(a.ymd)} · de <b>${a.hm}</b> a <b>${b.hm}</b> (${tzLabel(tz)}) · duración <b>${hmTxt(x.end-x.start)}</b></div>
     <div class="shsum"><div>Bruto<b>${eur(x.gross)}</b></div><div>Neto<b>${eur(x.net)}</b></div><div>Viajes<b>${x.trips}${x.can?` <small style="color:var(--mut)">(+${x.can} cancelados)</small>`:""}${x.pq?` <small style="color:var(--mut)">· 📦 ${x.pq} envíos</small>`:""}</b></div><div>Kilómetros<b>${num1(x.km)} km</b></div>
@@ -3458,8 +3459,8 @@ function pubLog(t){const P=S.pub;if(P){P.log.unshift({at:Date.now(),t});P.log.le
 let pubRt={tok:0,km:0,cand:[]};
 function pubOpen(){if(S.pub){toast("Ya tienes un viaje publicado: anúlalo antes de publicar otro");return;}
   const fs=$("pubFrom");fs.innerHTML=cityOptsHTML();const near=CITIES.reduce((b,c,i)=>hav(S.driver,c.c)<hav(S.driver,CITIES[b].c)?i:b,0);fs.value=String(near);
-  const now=Date.now()+3600e3,q=tzParts(new Date(now),"Europe/Madrid");$("pubDate").value=q.ymd;$("pubTime").value=String(q.h).padStart(2,"0")+":00";
-  $("pubDate").min=tzParts(new Date(),"Europe/Madrid").ymd;$("pubNow").checked=false;pubNowUI();
+  const now=Date.now()+3600e3+v26Off(),q=tzParts(new Date(now),"Europe/Madrid");$("pubDate").value=q.ymd;$("pubTime").value=String(q.h).padStart(2,"0")+":00";
+  $("pubDate").min=tzParts(new Date(Date.now()+v26Off()),"Europe/Madrid").ymd;$("pubNow").checked=false;pubNowUI();
   const cap=curVeh()?curVeh().pax:3;$("pubSeats").innerHTML=Array.from({length:Math.max(1,cap)},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join("");$("pubSeats").value=String(Math.min(3,cap));
   pubFillTo(true);pubMeetFill();$("pubModal").hidden=false;}
 function pubFillTo(def){const f=CITIES[+$("pubFrom").value],ts=$("pubTo"),cur=ts.value;
@@ -3480,8 +3481,8 @@ async function pubRoute(){const tok=++pubRt.tok,f=CITIES[+$("pubFrom").value],t=
   $("pubStops").innerHTML=pubRt.cand.length?pubRt.cand.map((c,i)=>`<label><input type="checkbox" data-ps="${i}"${i<1?" checked":""}> ${esc(c.n)}</label>`).join(""):(geo?"No hay ciudades de la lista cerca de la ruta":"Sin ruta: viaje directo, sin paradas");}
 function pubSubmit(){const f=CITIES[+$("pubFrom").value],t=CITIES[+$("pubTo").value];if(!f||!t||f===t){toast("Elige un destino distinto del origen");return null;}
   const now=$("pubNow").checked,created=Date.now();let dep;
-  if(now)dep=created+PUB_WIN.now+10e3;else{if(!$("pubDate").value||!$("pubTime").value){toast("Pon la fecha y la hora de salida");return null;}
-    dep=madTs($("pubDate").value,$("pubTime").value);if(dep<created-60e3){toast("Esa hora ya ha pasado (hora peninsular)");return null;}}
+  const inM=v26InMin();if(now)dep=created+PUB_WIN.now+10e3;else if(inM)dep=created+inM*60e3;else{if(!$("pubDate").value||!$("pubTime").value){toast("Pon la fecha y la hora de salida");return null;}
+    dep=madTs($("pubDate").value,$("pubTime").value)-v26Off();if(dep<created-60e3){toast(window.NO_V26?"Esa hora ya ha pasado (hora peninsular)":"Esa hora ya ha pasado (hora del simulador)");return null;}}
   const price=Math.round(+$("pubPrice").value*2)/2;if(!(price>=1&&price<=200)){toast("Precio por plaza no válido");return null;}
   const km=pubRt.km||hav(f.c,t.c)*ROAD,sug=Math.max(1,Math.round(.05*km*2)/2);
   const sel=[...document.querySelectorAll("#pubStops input[data-ps]:checked")].map(i=>pubRt.cand[+i.dataset.ps]).filter(Boolean);
@@ -3492,12 +3493,12 @@ function pubSubmit(){const f=CITIES[+$("pubFrom").value],t=CITIES[+$("pubTo").va
   const P={id:"pub"+created,fromI:CITIES.indexOf(f),toI:CITIES.indexOf(t),fromN:f.n,toN:t.n,km:Math.round(km),created,dep,now,seats:+$("pubSeats").value||1,price,sug,
     stops:sel.map(c=>c.n),mode,B:[],plan:[],log:[],meet:pubMeetMode()==="aqui"?{pt:S.driver.slice(),place:aquiPlace(S.driver.slice(),null)}:pubMeetSel(f),meetM:pubMeetMode(),warned:0};
   // Demanda simulada: un precio por encima del sugerido atrae menos reservas
-  const fair=Math.max(.15,Math.min(1.3,sug/price)),W=now?PUB_WIN.now:PUB_WIN.later,n=Math.max(fair>.6?1:0,Math.min(P.seats+1,Math.round(P.seats*Math.min(1,.4+.45*fair)*rnd(.7,1.25))));
+  const fair=Math.max(.15,Math.min(1.3,sug/price)),W=now?PUB_WIN.now:v26PubW(dep,created),n=Math.max(fair>.6?1:0,Math.min(P.seats+1,Math.round(P.seats*Math.min(1,.4+.45*fair)*rnd(.7,1.25))));
   for(let i=0;i<n;i++)P.plan.push({at:created+(i===0?rnd(4e3,10e3):rnd(8e3,W)),k:"book"});
   P.plan.sort((a,b)=>a.at-b.at);S.pub=P;
   pubLog(`Publicado: ${f.n} → ${t.n}, ${P.seats} plaza${P.seats>1?"s":""} a ${eur2(price)}`);save();
   $("pubModal").hidden=true;pubUI();
-  toast(`📢 Viaje publicado: ${f.n} → ${t.n} · sale ${now?"ahora":madTxt(dep)+" (h peninsular)"}`);
+  toast(`📢 Viaje publicado: ${f.n} → ${t.n} · sale ${now?"ahora":v26DepTxt(P)}`);
   say("bb",`Viaje publicado de ${f.n} a ${t.n}. ${P.seats} plaza${P.seats>1?"s":""} a ${eurSay(price)} cada una.`);return P;}
 // ---- Reservas en tiempo acelerado
 function pubBook(P){const N=pubNames(P),L=N.length-1,free=(f,t)=>P.seats-pubOcc(P,f,t);
@@ -3574,7 +3575,7 @@ function pubUI(){const P=S.pub,sm=$("pubSum"),ls=$("pubList");if(!sm)return;
   if(!P){sm.textContent="No tienes ningún viaje publicado.";ls.innerHTML="";return;}
   const left=P.dep-Date.now(),occ=pubOcc({B:P.B.filter(b=>b.st==="ok"||b.st==="chg"),seats:P.seats},0,pubNames(P).length-1);
   const lt=left<=0?"saliendo…":left<90e3?Math.ceil(left/1e3)+" s":left<36e5*2?Math.round(left/6e4)+" min":Math.floor(left/36e5)+" h "+Math.round(left%36e5/6e4)+" min";
-  sm.innerHTML=`🛣️ <b>${esc(P.fromN)} → ${esc(P.toN)}</b> · ${P.km} km · sale <b>${P.now?"ahora":madTxt(P.dep)+" (h peninsular)"}</b> (en ${lt})<br>`+
+  sm.innerHTML=`🛣️ <b>${esc(P.fromN)} → ${esc(P.toN)}</b> · ${P.km} km · sale <b>${P.now?"ahora":v26DepTxt(P)}</b> (en ${lt})<br>`+
     `${P.seats} plaza${P.seats>1?"s":""} a ${eur2(P.price)} · reservas ${P.mode==="man"?"manuales":"instantáneas"}${P.stops.length?" · paradas: "+P.stops.map(esc).join(", "):""}<br>`+
     `${P.meetM==="aqui"?"🚶 Vienen a donde estés parado: "+esc(P.meet.place.name)+" (posible retraso simulado)":"📍 Punto de encuentro: "+esc(P.meet.place.name)} · ocupadas <b id="pubOcc">${occ}/${P.seats}</b>`;
   const lab={ok:"✅ Confirmada",pend:"📩 Pendiente",chg:"📍 Pide cambio",can:"❌ Cancelada",no:"🚫 Rechazada",exp:"⌛ Caducada"};
@@ -4135,6 +4136,432 @@ Object.assign(VOZ_EJ,{pqlisto:["pqlisto",()=>"Ya te entregan el paquete."],
   calle:["calle",()=>hailSay({per:{g:"m",nom:"Javier",name:"Javier Martín Pérez",edad:41,prof:"Electricista",temp:"normal",conv:"hablador"},de:{name:"Estación de Madrid-Atocha"},km:3.4,min:11,price:9.8})]});
 window.V25={PW_PROF,pwS,pwSum,pwTipPen,hailS,hailRoll,hailShow,ASP,CONV,TOWNS,pickConv,
   pend:()=>HAIL_PEND,setPend:v=>{HAIL_PEND=!!v;},aquiLate,pubMeetMode};
+
+// ==================== v26: conversaciones, pasajeros, Cataluña, BlaBlaCar con reloj del simulador ====================
+const V26_DEF={conv:true,priv:true,intensa:true,cat:true,conflict:true,lost:true,pets:true,drunk:true,reqs:true,arr:true,diary:true,mem:true};
+const V26_LBL={conv:"💬 Conversaciones durante el viaje",priv:"🔒 Preguntas sobre tu vida privada",intensa:"💞 «Conversación intensa» (insinuante, nunca explícita)",
+  cat:"🗣️ Catalán (solo en Cataluña)",conflict:"⚠️ Clientes conflictivos (raros)",lost:"📞 Objetos olvidados",pets:"🐾 Mascotas y sillita infantil",
+  drunk:"🥴 Clientes bebidos o mareados",reqs:"🙋 Peticiones cotidianas (cargador, agua, música…)",arr:"🚶 BlaBlaCar: llegadas escalonadas al punto",diary:"📔 Diario de la conductora al cerrar turno",mem:"🧠 Habituales con memoria"};
+function v26S(){if(!S.settings.v26)S.settings.v26={};for(const k in V26_DEF)if(S.settings.v26[k]==null)S.settings.v26[k]=V26_DEF[k];
+  if(S.settings.drvName==null||!String(S.settings.drvName).trim())S.settings.drvName="Alba";return S.settings.v26;}
+const V26on=k=>!window.NO_V26&&!!v26S()[k];
+// Nombre para pantalla (mayúsculas como en la app) y para la voz (capitalizado: "ALBA" lo deletrearía el TTS)
+const drvN=()=>{const n=String((S.settings&&S.settings.drvName)||"Alba").trim()||"Alba";return n;};
+const drvUp=()=>drvN().toUpperCase();
+const drvVoz=()=>{const n=drvN();return n===n.toUpperCase()?n.charAt(0)+n.slice(1).toLowerCase():n;};
+const v26rn=a=>a[Math.floor(Math.random()*a.length)];
+
+// ---------- Sonidos y voz ----------
+if(!window.NO_V26)Object.assign(SND_R,{
+  conv:[[0,660,.09,"sine",.12],[.12,880,.12,"sine",.1]],
+  priv:[[0,523,.14,"triangle",.22],[.16,659,.14,"triangle",.22],[.32,784,.22,"triangle",.22]],
+  intensa:[[0,392,.25,"sine",.2,523],[.28,523,.3,"sine",.2,659],[.62,659,.35,"sine",.18,784]],
+  conflict:[[0,220,.18,"square",.22],[.22,185,.18,"square",.22],[.44,220,.18,"square",.22],[.66,155,.3,"sawtooth",.18]],
+  objeto:[[0,1318,.08,"square",.14],[.1,1046,.08,"square",.14],[.2,1318,.08,"square",.14],[.3,1046,.08,"square",.14],[.7,1318,.08,"square",.14],[.8,1046,.08,"square",.14],[.9,1318,.08,"square",.14],[1,1046,.08,"square",.14]],
+  mareo:[[0,330,.3,"sine",.22,250],[.35,300,.35,"sine",.22,220]],
+  catala:[[0,587,.12,"triangle",.2],[.14,740,.12,"triangle",.2],[.28,880,.18,"triangle",.2]],
+  peticion:[[0,740,.1,"triangle",.2],[.13,988,.16,"triangle",.2]]});
+for(const x of [["conv","💬 Conversación (suave)"],["priv","🔒 Pregunta privada"],["intensa","💞 Conversación intensa"],["conflict","⚠️ Cliente conflictivo"],["objeto","📞 Llamada: objeto olvidado"],["mareo","🥴 Cliente mareado"],["catala","🗣️ Cliente en catalán"],["peticion","🙋 Petición del pasajero"]])
+  if(!window.NO_V26&&!SND_KEYS.some(y=>y[0]===x[0]))SND_KEYS.push(x);
+for(const x of [["conv","Conversaciones y preguntas"],["conflict","Clientes conflictivos y mareados"],["objeto","Objetos olvidados"]])
+  if(!window.NO_V26&&!VOZ_KEYS.some(y=>y[0]===x[0]))VOZ_KEYS.push(x);
+
+// ---------- Cataluña: polígono aproximado (lat, lon) ----------
+const CAT_POLY=[[42.84,0.68],[42.70,1.42],[42.42,1.42],[42.40,1.80],[42.45,1.95],[42.50,2.05],[42.43,3.17],[42.35,3.40],[41.95,3.35],[41.65,2.95],[41.35,2.35],[41.10,1.55],[40.85,1.00],[40.60,0.98],[40.50,0.70],[40.52,0.52],
+  [40.62,0.29],[40.78,0.20],[40.93,0.22],[41.08,0.24],[41.22,0.40],[41.33,0.40],[41.42,0.36],[41.50,0.40],[41.60,0.44],[41.75,0.37],[41.85,0.50],[42.00,0.62],[42.20,0.68],[42.45,0.70],[42.60,0.66]];
+function inPoly(lat,lon,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const [yi,xi]=P[i],[yj,xj]=P[j];if(((yi>lat)!==(yj>lat))&&(lon<(xj-xi)*(lat-yi)/(yj-yi)+xi))c=!c;}return c;}
+function inCatPt(pt){if(!pt)return false;const la=Array.isArray(pt)?pt[0]:pt.lat,lo=Array.isArray(pt)?pt[1]:(pt.lng!=null?pt.lng:pt.lon);if(la==null||lo==null)return false;
+  if(window.FORCE_CAT!=null)return !!window.FORCE_CAT;return inPoly(+la,+lo,CAT_POLY);}
+const v26CatOrig=p=>!!(p&&p.orig&&CAT_TOWNS.some(t=>p.orig.startsWith(t.split("|")[0]+" (")));
+const inCat=()=>inCatPt(typeof S!=="undefined"&&S?S.driver:null);
+{const _ra=regionAt;regionAt=function(pt){if(!window.NO_V26&&inCatPt(pt))return ["cat",1.1];return _ra.apply(this,arguments);};}
+if(!window.NO_V26)REG_P.cat=[.62,.66];
+// Nombres y apellidos catalanes extra: pesos orientativos del simulador (no son estadística del INE)
+{const X={m:[["Narcís",45],["Ignasi",40],["Josep Maria",58],["Joan Carles",50],["Llorenç",45],["Valentí",38],["Agustí",55],["Esteve",40],["Ramon",57],["Jofre",22],["Oleguer",18],["Marcel",25],["Hug",12],["Jan",12],["Pol",17],["Oriol",33],["Arnau",20],["Martí",22],["Gerard",30],["Guillem",22],["Jaume",50],["Pere",52],["Pau",24],["Lluís",50],["Miquel",45]],
+  f:[["Núria",42],["Montserrat",55],["Mònica",42],["Sílvia",42],["Glòria",48],["Júlia",20],["Assumpta",62],["Sònia",40],["Clàudia",20],["Bruna",10],["Abril",10],["Èlia",15],["Remei",65],["Imma",45],["Laia",22],["Mireia",32],["Marina",28],["Berta",22],["Txell",35],["Rosa Maria",58],["Montse",50],["Queralt",28],["Eulàlia",45]]};
+  if(!window.NO_V26)for(const g of ["m","f"])for(const [n,ed] of X[g]){const NL=g==="m"?NAMES_M:NAMES_F;if(!NL.includes(n))NL.push(n);const L=INE_NOM.reg.cat[g];if(!L.some(x=>x[0]===n))L.push([n,3000,ed]);REG_OF[g][n]="cat";if(!INE_NOM[g].some(x=>x[0]===n))INE_NOM[g].push([n,800,ed]);}
+  const A=["Vendrell","Bertran","Ribas","Vives","Pla","Comas","Costa","Solé","Badia","Bonet","Canals","Carbonell","Cardona","Castells","Colomer","Duran","Farré","Feliu","Folch","Gasull","Gener","Guardiola","Jové","Llobet","Mir","Miró","Montaner","Noguera","Olivé","Palau","Pagès","Parera","Pi","Planas","Ribera","Rius","Sabater","Segarra","Sunyer","Tarrés","Torrent","Torras","Vallès","Verdaguer","Vilanova","Vilalta","Carreras","Fàbregas","Bassols","Codina","Mestre","Escudé","Freixas","Galí","Busquets","Pujadas","Masó","Tomàs","Arnau","Reig","Clotet","Riba","Brugués","Puigdemont","Coll","Esteve","Batlle","Sala","Vidal","Font","Serra","Soler","Prat","Riera","Camps","Roca","Pujol","Mas","Valls","Bosch","Vila","Rovira"];
+  const LA=INE_NOM.reg.cat.a;if(!window.NO_V26)for(const a of A)if(!LA.some(x=>x[0]===a))LA.push([a,3000]);}
+// Municipios reales de Cataluña: "Municipio|Comarca|Provincia"
+const CAT_TOWNS=("Figueres|Alt Empordà|Girona;Roses|Alt Empordà|Girona;Cadaqués|Alt Empordà|Girona;L'Escala|Alt Empordà|Girona;Castelló d'Empúries|Alt Empordà|Girona;La Jonquera|Alt Empordà|Girona;Llançà|Alt Empordà|Girona;El Port de la Selva|Alt Empordà|Girona;"+
+ "Palafrugell|Baix Empordà|Girona;Sant Feliu de Guíxols|Baix Empordà|Girona;Palamós|Baix Empordà|Girona;La Bisbal d'Empordà|Baix Empordà|Girona;Begur|Baix Empordà|Girona;Torroella de Montgrí|Baix Empordà|Girona;Calonge|Baix Empordà|Girona;"+
+ "Girona|Gironès|Girona;Salt|Gironès|Girona;Cassà de la Selva|Gironès|Girona;Celrà|Gironès|Girona;Blanes|Selva|Girona;Lloret de Mar|Selva|Girona;Santa Coloma de Farners|Selva|Girona;Hostalric|Selva|Girona;Anglès|Selva|Girona;Tossa de Mar|Selva|Girona;"+
+ "Olot|Garrotxa|Girona;Besalú|Garrotxa|Girona;Santa Pau|Garrotxa|Girona;Castellfollit de la Roca|Garrotxa|Girona;Ripoll|Ripollès|Girona;Camprodon|Ripollès|Girona;Sant Joan de les Abadesses|Ripollès|Girona;Ribes de Freser|Ripollès|Girona;"+
+ "Puigcerdà|Cerdanya|Girona;Llívia|Cerdanya|Girona;Alp|Cerdanya|Girona;Bellver de Cerdanya|Cerdanya|Lleida;Banyoles|Pla de l'Estany|Girona;Porqueres|Pla de l'Estany|Girona;"+
+ "Vic|Osona|Barcelona;Manlleu|Osona|Barcelona;Torelló|Osona|Barcelona;Centelles|Osona|Barcelona;Tona|Osona|Barcelona;Rupit i Pruit|Osona|Barcelona;Prats de Lluçanès|Lluçanès|Barcelona;Olost|Lluçanès|Barcelona;"+
+ "Berga|Berguedà|Barcelona;Gironella|Berguedà|Barcelona;Puig-reig|Berguedà|Barcelona;Bagà|Berguedà|Barcelona;Guardiola de Berguedà|Berguedà|Barcelona;"+
+ "Manresa|Bages|Barcelona;Sant Fruitós de Bages|Bages|Barcelona;Navarcles|Bages|Barcelona;Cardona|Bages|Barcelona;Súria|Bages|Barcelona;Sant Vicenç de Castellet|Bages|Barcelona;Navàs|Bages|Barcelona;Moià|Moianès|Barcelona;Castellterçol|Moianès|Barcelona;"+
+ "Igualada|Anoia|Barcelona;Capellades|Anoia|Barcelona;Calaf|Anoia|Barcelona;Piera|Anoia|Barcelona;Santa Margarida de Montbui|Anoia|Barcelona;Solsona|Solsonès|Lleida;Sant Llorenç de Morunys|Solsonès|Lleida;"+
+ "Sabadell|Vallès Occidental|Barcelona;Terrassa|Vallès Occidental|Barcelona;Sant Cugat del Vallès|Vallès Occidental|Barcelona;Rubí|Vallès Occidental|Barcelona;Cerdanyola del Vallès|Vallès Occidental|Barcelona;Ripollet|Vallès Occidental|Barcelona;Castellar del Vallès|Vallès Occidental|Barcelona;"+
+ "Granollers|Vallès Oriental|Barcelona;Mollet del Vallès|Vallès Oriental|Barcelona;Cardedeu|Vallès Oriental|Barcelona;La Garriga|Vallès Oriental|Barcelona;Sant Celoni|Vallès Oriental|Barcelona;Montmeló|Vallès Oriental|Barcelona;Parets del Vallès|Vallès Oriental|Barcelona;"+
+ "Mataró|Maresme|Barcelona;Arenys de Mar|Maresme|Barcelona;Calella|Maresme|Barcelona;Pineda de Mar|Maresme|Barcelona;Premià de Mar|Maresme|Barcelona;El Masnou|Maresme|Barcelona;Malgrat de Mar|Maresme|Barcelona;Canet de Mar|Maresme|Barcelona;"+
+ "Cornellà de Llobregat|Baix Llobregat|Barcelona;Sant Boi de Llobregat|Baix Llobregat|Barcelona;Castelldefels|Baix Llobregat|Barcelona;Viladecans|Baix Llobregat|Barcelona;El Prat de Llobregat|Baix Llobregat|Barcelona;Martorell|Baix Llobregat|Barcelona;Esparreguera|Baix Llobregat|Barcelona;Gavà|Baix Llobregat|Barcelona;Molins de Rei|Baix Llobregat|Barcelona;Olesa de Montserrat|Baix Llobregat|Barcelona;"+
+ "Barcelona|Barcelonès|Barcelona;Badalona|Barcelonès|Barcelona;L'Hospitalet de Llobregat|Barcelonès|Barcelona;Santa Coloma de Gramenet|Barcelonès|Barcelona;Sant Adrià de Besòs|Barcelonès|Barcelona;"+
+ "Vilanova i la Geltrú|Garraf|Barcelona;Sitges|Garraf|Barcelona;Sant Pere de Ribes|Garraf|Barcelona;Vilafranca del Penedès|Alt Penedès|Barcelona;Sant Sadurní d'Anoia|Alt Penedès|Barcelona;Gelida|Alt Penedès|Barcelona;"+
+ "El Vendrell|Baix Penedès|Tarragona;Calafell|Baix Penedès|Tarragona;Cunit|Baix Penedès|Tarragona;L'Arboç|Baix Penedès|Tarragona;"+
+ "Tarragona|Tarragonès|Tarragona;Salou|Tarragonès|Tarragona;Torredembarra|Tarragonès|Tarragona;Altafulla|Tarragonès|Tarragona;Vila-seca|Tarragonès|Tarragona;Constantí|Tarragonès|Tarragona;"+
+ "Reus|Baix Camp|Tarragona;Cambrils|Baix Camp|Tarragona;Mont-roig del Camp|Baix Camp|Tarragona;Riudoms|Baix Camp|Tarragona;Prades|Baix Camp|Tarragona;Valls|Alt Camp|Tarragona;Alcover|Alt Camp|Tarragona;"+
+ "Montblanc|Conca de Barberà|Tarragona;L'Espluga de Francolí|Conca de Barberà|Tarragona;Falset|Priorat|Tarragona;Porrera|Priorat|Tarragona;Gratallops|Priorat|Tarragona;Cornudella de Montsant|Priorat|Tarragona;"+
+ "Móra d'Ebre|Ribera d'Ebre|Tarragona;Flix|Ribera d'Ebre|Tarragona;Ascó|Ribera d'Ebre|Tarragona;Miravet|Ribera d'Ebre|Tarragona;Gandesa|Terra Alta|Tarragona;Horta de Sant Joan|Terra Alta|Tarragona;Batea|Terra Alta|Tarragona;"+
+ "Tortosa|Baix Ebre|Tarragona;L'Ametlla de Mar|Baix Ebre|Tarragona;Deltebre|Baix Ebre|Tarragona;L'Ampolla|Baix Ebre|Tarragona;Roquetes|Baix Ebre|Tarragona;"+
+ "Amposta|Montsià|Tarragona;La Ràpita|Montsià|Tarragona;Alcanar|Montsià|Tarragona;Ulldecona|Montsià|Tarragona;Sant Jaume d'Enveja|Montsià|Tarragona;"+
+ "Lleida|Segrià|Lleida;Alcarràs|Segrià|Lleida;Almacelles|Segrià|Lleida;Alpicat|Segrià|Lleida;Torrefarrera|Segrià|Lleida;Aitona|Segrià|Lleida;Balaguer|Noguera|Lleida;Artesa de Segre|Noguera|Lleida;Ponts|Noguera|Lleida;"+
+ "Tàrrega|Urgell|Lleida;Agramunt|Urgell|Lleida;Bellpuig|Urgell|Lleida;Mollerussa|Pla d'Urgell|Lleida;Bellvís|Pla d'Urgell|Lleida;Linyola|Pla d'Urgell|Lleida;Cervera|Segarra|Lleida;Guissona|Segarra|Lleida;"+
+ "Les Borges Blanques|Garrigues|Lleida;Arbeca|Garrigues|Lleida;Juneda|Garrigues|Lleida;La Seu d'Urgell|Alt Urgell|Lleida;Organyà|Alt Urgell|Lleida;Oliana|Alt Urgell|Lleida;"+
+ "Tremp|Pallars Jussà|Lleida;La Pobla de Segur|Pallars Jussà|Lleida;Talarn|Pallars Jussà|Lleida;Isona i Conca Dellà|Pallars Jussà|Lleida;Sort|Pallars Sobirà|Lleida;Esterri d'Àneu|Pallars Sobirà|Lleida;Llavorsí|Pallars Sobirà|Lleida;Rialp|Pallars Sobirà|Lleida;"+
+ "El Pont de Suert|Alta Ribagorça|Lleida;Vilaller|Alta Ribagorça|Lleida;La Vall de Boí|Alta Ribagorça|Lleida;Vielha e Mijaran|Aran|Lleida;Bossòst|Aran|Lleida;Naut Aran|Aran|Lleida;Les|Aran|Lleida").split(";");
+// Profesiones con sabor catalán (además de las generales). Pesos orientativos del simulador.
+const CAT_PROFS=[["Mosso d'Esquadra","Mossa d'Esquadra",22,60],["Payés","Payesa",25,75],["Agente rural","Agente rural",25,62],["Guía de montaña","Guía de montaña",22,60],["Monitor de esquí","Monitora de esquí",18,45],
+  ["Bombero de la Generalitat","Bombera de la Generalitat",22,60],["Funcionario de la Generalitat","Funcionaria de la Generalitat",25,66],["Profesor de catalán","Profesora de catalán",25,66],["Enólogo de cava","Enóloga de cava",26,64],
+  ["Pescador de la cofradía","Pescadora de la cofradía",20,65],["Cocinero de un restaurante con estrella","Cocinera de un restaurante con estrella",22,60],["Castellero (aficionado)","Castellera (aficionada)",18,50],
+  ["Viticultor del Penedès","Viticultora del Penedès",25,70],["Operario de la SEAT en Martorell","Operaria de la SEAT en Martorell",20,64],["Técnico del puerto de Barcelona","Técnica del puerto de Barcelona",24,64],["Estibador del puerto de Tarragona","Estibadora del puerto de Tarragona",22,62],["Químico del polígono de Tarragona","Química del polígono de Tarragona",24,64],["Ceramista de La Bisbal","Ceramista de La Bisbal",25,72],["Fruticultor de Lleida","Fruticultora de Lleida",25,72],["Turronero de Agramunt","Turronera de Agramunt",22,68],["Payés de arroz del Delta del Ebro","Payesa de arroz del Delta del Ebro",25,72],["Maestro de escuela pública","Maestra de escuela pública",24,66]];
+// Extensible a otras regiones: REGX[reg] = {towns, profs, lang}
+const REGX={cat:{towns:CAT_TOWNS,profs:CAT_PROFS,lang:"ca",inside:inCatPt}};
+const isCatName=(g,n)=>!!n&&(REG_OF[g]&&REG_OF[g][n]==="cat"||INE_NOM.reg.cat[g].some(x=>x[0]===n));
+const ADULT_AGE=18;
+// Rasgos v26 de cada persona: reacción ante un rechazo, «ligón/a», idioma (solo Cataluña)
+{const _mp=makePerson;makePerson=function(o={}){
+  let oo=o;if(!window.NO_V26&&!o.prof&&inCat()&&Math.random()<.15){const age=o.edad;const c=v26rn(CAT_PROFS.filter(p=>age==null||(age>=p[2]&&age<=p[3])))||null;if(c)oo=Object.assign({},o,{prof:[c[0],c[1]]});}
+  const p=_mp.call(this,oo);if(window.NO_V26||!p)return p;
+  try{p.rx=Math.random()<.6?"respeta":"molesta";p.flirt=p.edad>=ADULT_AGE&&Math.random()<(window.FLIRT_P!=null?window.FLIRT_P:.08);
+    if(inCat()){if(Math.random()<.55)p.orig=v26rn(CAT_TOWNS).split("|").slice(0,2).join(" (")+")";
+      const cn=isCatName(p.g,p.nom),ct=v26CatOrig(p);p.catL=p.edad>=8&&Math.random()<(window.CAT_P!=null?window.CAT_P:(ct?(cn?.7:.35):(cn?.25:.05)));
+      if(p.catL)p.pref=wpick([["cat",35],["neutral",50],["facil",15]]);}}catch(e){console.error(e);}
+  return p;};}
+
+// ---------- Acompañantes con perfil completo (carácter, conversación, aspecto) ----------
+{const _tf=tempsFor;tempsFor=function(r){const v=_tf.apply(this,arguments);if(window.NO_V26)return v;
+  try{const ctx={shared:r.svc!=="urbano"};for(const c of (r.comps||[]))assignTemp(c,ctx);for(const b of (r.bookings||[]))for(const c of (b.comps||[]))assignTemp(c,ctx);}catch(e){console.error(e);}return v;};}
+{const _gs=grpSay;grpSay=function(p,comps){const s=_gs.apply(this,arguments);if(window.NO_V26||!comps||!comps.length)return s;
+  try{const L=comps.filter(c=>c&&(c.conv||c.temp)).slice(0,3).map(c=>`${c.nom||String(c.name||"").split(" ")[0]}${c.edad!=null?", "+c.edad+" años":""}${c.conv&&CONV[c.conv]?", "+convName(c).toLowerCase():""}${c.temp&&tempOf(c)!=="normal"?", "+lc1(tempName(c)):""}${c.asp&&c.asp!=="Normal"?", aspecto "+c.asp.toLowerCase():""}`);
+    return L.length?s+" Acompañantes: "+L.join("; ")+".":s;}catch(e){return s;}};}
+
+// ---------- Panel grande de respuesta (✅ / ✋) ----------
+document.head.insertAdjacentHTML("beforeend",`<style>
+#v26P{position:fixed;left:50%;transform:translateX(-50%);top:70px;z-index:6000;width:min(560px,94vw)}
+#v26P .v26box{background:#191d26;border:2px solid #8a6ad8;border-radius:14px;padding:12px 14px;box-shadow:0 10px 40px #000c;color:var(--txt)}
+#v26P.v26k-intensa .v26box{border-color:#d85a9a;background:#22161e}#v26P.v26k-priv .v26box{border-color:#4aa3df}#v26P.v26k-cat .v26box{border-color:#d4a514;background:#1f1b0e}
+#v26P.v26k-conf .v26box{border-color:#e05252;background:#261616}#v26P.v26k-lost .v26box{border-color:#e0a040}#v26P.v26k-sick .v26box{border-color:#7bbf3f}#v26P.v26k-req .v26box{border-color:#3fb27f}
+#v26P .v26h{font-size:16px;margin-bottom:6px}#v26P .v26b{font-size:14px;line-height:1.4}#v26P .v26q{font-style:italic;margin:6px 0;padding:6px 9px;border-left:3px solid #8a6ad8;background:#0004;border-radius:6px}
+#v26P .v26a{display:flex;gap:10px;margin-top:10px}#v26P .v26a button{flex:1;font-size:20px;font-weight:800;padding:14px 8px;border-radius:12px;border:0;cursor:pointer;color:#fff}
+#v26P .v26ok{background:#1f9d55}#v26P .v26no{background:#8b3a3a}#v26P .v26bar{height:4px;background:#0006;border-radius:3px;margin-top:8px;overflow:hidden}#v26P .v26bar i{display:block;height:100%;background:#8a6ad8;width:100%}
+#v26P .v26sim{font-size:10px;padding:1px 6px;border-radius:8px;border:1px solid var(--line);color:var(--mut);vertical-align:middle}
+.v26cv{margin:4px 0;padding:5px 9px;border-radius:8px;background:#161c26;border-left:3px solid #8a6ad8;font-size:12.5px}
+.v26tag{display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border-radius:10px;font-size:12px;border:1px solid var(--line);background:#1c2430}
+.v26tag.conf{border-color:#e05252;background:#2a1414;color:#ffb0b0;font-weight:700}.v26tag.cat{border-color:#d4a514;background:#231e0c}.v26tag.drunk{border-color:#7bbf3f;background:#14210d}.v26tag.pet{border-color:#c48a3a;background:#241a0c}
+.v26arr{font-size:12px;margin:2px 0}.v26arr b{font-weight:700}
+@media (max-width:899px){#v26P{top:auto;bottom:0;width:100vw;left:0;transform:none}#v26P .v26box{border-radius:14px 14px 0 0}#v26P .v26a button{font-size:19px;padding:16px 8px}}
+</style>`);
+const V26Q=[];let V26C=null,v26PT=0;const V26_LOG=[];window.V26_LOG=V26_LOG;
+function v26Box(){let b=$("v26P");if(!b){b=document.createElement("div");b.id="v26P";b.hidden=true;document.body.appendChild(b);}return b;}
+function v26Ask(q){q.id=q.id||("q"+Date.now().toString(36)+Math.random().toString(36).slice(2,5));V26Q.push(q);V26_LOG.push({k:q.k,title:q.title,at:Date.now()});v26Next();return q;}
+function v26Next(){if(V26C||!V26Q.length)return;const q=V26C=V26Q.shift();q.t0=Date.now();const b=v26Box();
+  b.className="v26k-"+q.k;b.innerHTML=`<div class="v26box" role="dialog"><div class="v26h">${q.ic||"💬"} <b>${esc(q.title)}</b> <span class="v26sim">simulado</span></div><div class="v26b">${q.body||""}</div>
+    <div class="v26a"><button class="v26ok" id="v26Ok">${esc(q.okTxt||"✅ Aceptar")}</button><button class="v26no" id="v26No">${esc(q.noTxt||"✋ Rechazar")}</button></div><div class="v26bar"><i id="v26Bar"></i></div></div>`;
+  b.hidden=false;$("v26Ok").onclick=()=>v26Answer("ok");$("v26No").onclick=()=>v26Answer("no");
+  try{if(q.snd)playSound(q.snd);if(q.voz)say(q.vcat||"conv",q.voz,{after:q.snd||undefined,tag:"v26"});attention(q.title,q.ic||"💬");}catch(e){}
+  const T=q.timeout||(window.V26_TIMEOUT||90e3);clearInterval(v26PT);v26PT=setInterval(()=>{const l=T-(Date.now()-q.t0),bar=$("v26Bar");if(bar)bar.style.width=Math.max(0,l/T*100)+"%";if(l<=0)v26Answer("ign");},500);}
+function v26Answer(a){const q=V26C;if(!q)return false;V26C=null;clearInterval(v26PT);const b=$("v26P");if(b){b.hidden=true;b.innerHTML="";}
+  q.ans=a;try{q.on&&q.on(a);}catch(e){console.error(e);}if(trip){S.trip=trip;save();}setTimeout(v26Next,window.V26_GAPQ!=null?window.V26_GAPQ:600);return true;}
+function v26DropTrip(){for(let i=V26Q.length-1;i>=0;i--)if(V26Q[i].trip)V26Q.splice(i,1);if(V26C&&V26C.trip)v26Answer("ign");}
+
+// ---------- Estado v26 del viaje ----------
+function v26T(){if(!trip)return null;if(!trip.v26)trip.v26={log:[],eff:{},tip:0,n:0,next:0,priv:0,int:0,req:0,conf:0,topics:[],cur:null};return trip.v26;}
+function v26Log(ic,t,kind){const T=v26T();if(!T)return;T.log.push({ic,t,k:kind||"conv",at:Date.now()});if(T.log.length>40)T.log.shift();mlog(ic,t);}
+function v26Eff(key,w,t,tip){const T=v26T();if(!T)return;(T.eff[key||"main"]=T.eff[key||"main"]||[]).push({w:r2(w),t:t||""});if(tip)T.tip=r2((T.tip||0)+tip);}
+function v26Rate(T,P,k,sat){const V=T.v26,out=[];const r=T.r;
+  if(r.conf&&(r.svc==="urbano"||P.main)){const tg=window.CONF_BASE!=null?-window.CONF_BASE:(FORCE&&FORCE.noRnd?-.6:rnd(-1.6,.3)),w=Math.min(-.5,tg-(sat||0));out.push({w,k:"v26",t:pick(["cliente conflictivo: nada le parecía bien","se quejó de todo durante el viaje","una valoración dura, sin motivos claros"])});}
+  if(V&&V.eff&&V.eff[P.key])for(const e of V.eff[P.key])if(e.w)out.push({w:e.w,k:"v26",t:e.t});
+  return out;}
+function v26Tip(r){if(!trip||trip.r!==r||!trip.v26)return 0;return Math.max(-.12,Math.min(.12,trip.v26.tip||0))+(r.conf?-.1:0);}
+const drvTag=()=>`<b>${esc(drvUp())}</b>`;
+// Quién va a bordo y puede hablar (titular + acompañantes)
+function v26Speakers(){if(!trip)return [];const r=trip.r,L=[];
+  for(const P of paxList(r)){if(r.svc!=="urbano"&&paxState(P)!=="on")continue;const b=r.svc==="urbano"?null:(r.bookings||[]).find(x=>x.id===P.key);
+    const ppl=[P.per].concat(r.svc==="urbano"?(r.comps||[]):((b&&b.comps)||[]));for(const p of ppl)if(p&&p.nom!==undefined||p&&p.name)L.push({P,p});}
+  return L.filter(x=>x.p&&(x.p.edad==null||x.p.edad>=8));}
+const CV_MIN={callado:18,poco:9,hablador:5,muy:3.5,pesado:2.5};
+const PRIV_P={callado:.02,poco:.05,hablador:.12,muy:.2,pesado:.3};
+function v26Gap(p){if(window.CV_GAP!=null)return window.CV_GAP*1000;return (CV_MIN[(p&&p.conv)||"poco"]||9)*60000*rnd(.6,1.4);}
+// ---------- Temas de conversación (según edad, profesión, origen y zona) ----------
+const TOPICS=[["el tráfico de la ciudad",10],["el tiempo que va a hacer el fin de semana",6],["el último partido de fútbol",8],["series que están viendo",8],["viajes que les gustaría hacer",8],
+  ["restaurantes de la zona",7],["el precio de los pisos",7],["el trabajo y los horarios",8],["los planes para las vacaciones",7],["mascotas",5],["música de los 90",5],["podcasts que escuchan",4],
+  ["la cesta de la compra cada vez más cara",6],["coches eléctricos",5],["recetas de cocina",5],["el gimnasio y hacer deporte",5],["libros que han leído",4],["conciertos y festivales",5],
+  ["la familia",6],["anécdotas de otros viajes en coche",5],["el barrio y cómo ha cambiado",5],["la inteligencia artificial",4],["películas de estreno",5],["fiestas del pueblo",4],["la montaña y el senderismo",4],
+  ["la playa",4],["el teletrabajo",4],["el fútbol femenino",3],["los videojuegos",3],["la jubilación",3],["los hijos y el colegio",4],["las obras de la calle",3],["la Fórmula 1",3],["el ciclismo",3],["el baloncesto",3]];
+function v26Topic(p,r){const e=+p.edad||35,pr=String(p.prof||""),L=TOPICS.map(x=>[x[0],x[1]]);const add=(t,w)=>L.push([t,w]);
+  if(e<26){add("exámenes y la universidad",8);add("música urbana y reguetón",6);add("TikTok y redes sociales",7);add("compartir piso",5);add("los videojuegos",6);}
+  if(e>=60){add("los nietos",9);add("cómo era la ciudad antes",8);add("la salud y el médico de cabecera",5);add("la jubilación",6);}
+  if(e>=30&&e<60){add("la hipoteca",5);add("conciliar trabajo y familia",5);}
+  if(/Médic|Enfermer/.test(pr))add("las guardias en el hospital",8);if(/Profesor|Maestr/.test(pr))add("los alumnos y el curso escolar",8);
+  if(/Camioner|Transportist|Conductor/.test(pr))add("la vida en la carretera",8);if(/Estudiante/.test(pr))add("lo que estudia",8);if(/Ingenier|Programador|Informátic/.test(pr))add("tecnología y móviles nuevos",7);
+  if(/Payés|Agricultor|Ganader/.test(pr))add("la cosecha de este año",9);if(/Mosso|Mossa|Policía|Guardia/.test(pr))add("anécdotas de su trabajo (sin detalles)",6);if(/cava|Enólog|Sumiller/.test(pr))add("vinos y cava",9);
+  if(p.orig)add("su pueblo, "+p.orig.replace(/ \(.*$/,""),8);
+  if(inCat()){add("los castells",6);add("el Barça",7);add("una calçotada",6);add("Sant Jordi, libros y rosas",5);add("la Mercè",4);add("ir a la Costa Brava",5);add("el Pirineo",5);add("Rodalies y los retrasos",6);}
+  const T=v26T(),used=new Set((T&&T.topics)||[]);const LL=L.filter(x=>!used.has(x[0]));return wpick(LL.length?LL:L);}
+const PRIV_Q=[["¿Tienes pareja, {D}?","Le cuentas algo, sin entrar en detalles."],["¿Vives sola o con alguien?","Le dices que vives cerca y cambias de tema con naturalidad."],["¿Cuántos años tienes, si no es indiscreción?","Le dices la edad entre risas."],
+  ["¿Tienes hijos?","Le hablas un poco de tu familia."],["¿Y por qué zona vives exactamente?","Le dices el barrio, sin dar la dirección."],["¿Cuánto se gana al mes con esto?","Le das una idea aproximada."],
+  ["¿Qué haces cuando no conduces?","Le hablas de tus aficiones."],["¿Tienes Instagram o algo así?","Le dices que casi no usas redes."],["¿Y tu familia qué dice de que trabajes de noche?","Le cuentas que ya están acostumbrados."],["¿Tienes novio? Bueno… o novia, perdona.","Contestas con una sonrisa, sin dar detalles."]];
+const INT_Q=[["Te lo tengo que decir: tienes una sonrisa preciosa. ¿Te lo dicen mucho?"],["Si no estuvieras trabajando, te invitaba a tomar algo…"],["Me encanta cómo conduces… y tu voz también, la verdad."],
+  ["Qué pena que el viaje se acabe tan pronto. Contigo se hace corto."],["¿Siempre eres así de encantadora o solo con los clientes?"],["Me has alegrado el día. ¿Me dejas tu número, por si vuelvo a necesitar coche?"],["Con una conductora como tú, iría a cualquier sitio."]];
+const REQS=[["cargador","🔌","¿Tienes un cargador de móvil? Me queda un 3 %.","Le dejas el cable USB.","Lo siento, no llevo cargador."],["panuelos","🤧","¿Tendrías un pañuelo de papel, por favor?","Le pasas un paquete de pañuelos.","Lo siento, se me han acabado."],
+  ["agua","💧","¿Llevarías una botellita de agua?","Le das una botella de agua.","Perdona, hoy no llevo agua."],["temp","🌡️","¿Puedes subir un poco la temperatura? Tengo frío.","Subes un par de grados.","Lo dejo así, que se empañan los cristales."],
+  ["temp2","❄️","¿Puedes poner un poco más fuerte el aire?","Pones el aire más fuerte.","Lo siento, ya va bastante fuerte."],["ventana","🪟","¿Te importa si bajo la ventanilla?","Le dices que sí, sin problema.","Prefiero cerrada, por el ruido."],
+  ["tumusica","🎶","¿Qué música llevas? ¡Pon la tuya, a ver qué te gusta!","Pones tu lista.","Prefiero dejar la radio bajita."],["volumen","🔉","¿Puedes bajar un poco el volumen, por favor?","Bajas la música.","Lo dejo así, está bajito."],
+  ["cajero","🏧","¿Podemos parar un momento en un cajero? Son dos minutos.","Paras dos minutos en un cajero (simulado).","Lo siento, aquí no puedo parar."]];
+const CONF_Q=[["⚠️","Discute la ruta: «¡Por aquí no! Gira en la siguiente, que yo lo sé mejor.»","✅ Hacerle caso","✋ Seguir el navegador"],["⚠️","Te exige ir más rápido: «¿No puedes correr un poco? Vaya tortuga…»","✅ Ir un poco más ágil (sin saltarte límites)","✋ Mantener la velocidad"],
+  ["⚠️","Se queja: «Qué calor hace aquí, y vaya música más horrible».","✅ Cambiar música y aire","✋ Dejarlo como está"],["⚠️","Quiere comer y beber en el coche: «Me abro una lata, ¿vale?».","✅ Dejarle","✋ Pedirle que no"],
+  ["⚠️","Te graba con el móvil: «Como no me dejes en la puerta, te pongo una estrella».","✅ Dejarle en la puerta","✋ Pararte donde se puede"],["⚠️","Pide que pares en doble fila: «Aquí mismo, me da igual».","✅ Parar donde pide","✋ Buscar un sitio legal"]];
+const fillD=s=>s.replace(/\{D\}/g,drvN());
+function v26Special(sp){const T=v26T(),r=trip.r,p=sp.p,P=sp.P,nm=p.nom||String(p.name||"").split(" ")[0]||"El pasajero",cv=p.conv||"poco",adult=(+p.edad||30)>=ADULT_AGE;
+  const F=window.V26_FORCE;let kind=null;
+  if(F)kind=F;else{const q=Math.random();const pp=V26on("priv")?PRIV_P[cv]||.05:0,pi=V26on("intensa")&&adult&&T.int<1?(p.flirt?.35:.05):0,pr=V26on("reqs")&&T.req<3?.12:0;
+    if(q<pi)kind="intensa";else if(q<pi+pp)kind="priv";else if(q<pi+pp+pr)kind="req";}
+  if(!kind)return;
+  if(kind==="intensa"&&(!adult||!V26on("intensa")))return;if(kind==="priv"&&!V26on("priv"))return;if(kind==="req"&&!V26on("reqs"))return;
+  const molesta=p.rx==="molesta",key=P.key;
+  if(kind==="priv"){T.priv++;const Q=pick(PRIV_Q),qq=fillD(Q[0]);
+    v26Ask({k:"priv",trip:true,ic:"🔒",title:`Pregunta personal de ${nm}`,body:`<div class="v26q">«${esc(qq)}»</div><div class="sub">${esc(nm)} quiere saber algo de tu vida privada. Tú decides si contestas.</div>`,
+      okTxt:"✅ Contestar",noTxt:"✋ Prefiero no",snd:"priv",voz:`${nm} te pregunta: ${qq}`,
+      on:a=>{if(a==="ok"){v26Eff(key,.12,pick(["muy maja, charlamos de todo","cercana y simpática, da gusto hablar con ella"]),.03);v26Log("🔒",`${nm} pregunta «${qq}» y contestas: ${Q[1]}`,"priv");}
+        else if(a==="no"){const w=molesta?-(cv==="pesado"?.2:.14):-.02;v26Eff(key,w,molesta?"un poco seca cuando le pregunté algo personal":"respetó su intimidad con educación, normal",molesta?-.03:0);v26Log("✋",`${nm} pregunta «${qq}» y le dices con educación que prefieres no hablar de eso${molesta?"; no le sienta bien":"; lo entiende"}`,"priv");}
+        else{v26Eff(key,-.05,"no me contestó cuando le pregunté algo");v26Log("🔇",`No contestas a la pregunta de ${nm}: «${qq}»`,"priv");}}});}
+  else if(kind==="intensa"){T.int++;const qq=pick(INT_Q)[0];
+    v26Ask({k:"intensa",trip:true,ic:"💞",title:`Conversación intensa con ${nm}`,body:`<div class="v26q">«${esc(qq)}»</div><div class="sub">${esc(nm)} se pone insinuante (en tono de broma, nada explícito). ¿Le sigues la conversación o la cortas con amabilidad?</div>`,
+      okTxt:"✅ Seguir la conversación",noTxt:"✋ Cortar con amabilidad",snd:"intensa",voz:`Conversación intensa. ${nm} te dice: ${qq}`,
+      on:a=>{if(a==="ok"){v26Eff(key,.18,pick(["muy simpática y con buen rollo","conversación muy agradable, un encanto"]),.05);v26Log("💞",`Conversación intensa: ${nm} te dice «${qq}» y le sigues la conversación con simpatía, sin pasar de ahí`,"intensa");}
+        else if(a==="no"){const w=molesta?-.1:0;if(w)v26Eff(key,w,"algo distante");else v26Eff(key,.02,"muy profesional");v26Log("✋",`Conversación intensa: ${nm} te dice «${qq}» y le contestas «Gracias, pero estoy trabajando»${molesta?"; se queda algo cortado":"; lo respeta"}`,"intensa");}
+        else{v26Log("🔇",`Conversación intensa de ${nm}: no le sigues el juego`,"intensa");}}});}
+  else if(kind==="req"){T.req++;const Q=pick(REQS);
+    v26Ask({k:"req",trip:true,ic:Q[1],title:`Petición de ${nm}`,body:`<div class="v26q">«${esc(Q[2])}»</div>`,okTxt:"✅ Aceptar",noTxt:"✋ Rechazar",snd:"peticion",voz:`${nm} te pide: ${Q[2]}`,
+      on:a=>{if(a==="ok"){v26Eff(key,.1,pick(["muy atenta, me ayudó en todo","detallista: "+Q[3].toLowerCase()]),.02);v26Log(Q[1],`${nm}: «${Q[2]}» — ${Q[3]}`,"req");if(Q[0]==="cajero")mlog("🏧","Parada breve en un cajero (simulado)");}
+        else if(a==="no"){const w=molesta?-.12:-.03;v26Eff(key,w,molesta?"no quiso ni "+(Q[0]==="cajero"?"parar en un cajero":"ayudarme con algo tan sencillo"):"no pudo ayudarme, aunque lo explicó");v26Log("✋",`${nm}: «${Q[2]}» — Tú: «${Q[4]}»`,"req");}
+        else{v26Eff(key,-.1,"le pedí algo y ni me contestó");v26Log("🔇",`Ignoras la petición de ${nm}: «${Q[2]}»`,"req");}}});}}
+function v26ConvEvent(){const T=v26T(),r=trip.r,SP=v26Speakers();if(!SP.length)return;
+  const silent=(r.needs||[]).some(n=>n.k==="silencio");
+  const sp=wpick(SP.map(x=>[x,1/(CV_MIN[x.p.conv||"poco"]||9)]));T.next=Date.now()+v26Gap(sp.p);
+  if(silent&&!window.V26_FORCE)return;
+  const p=sp.p,nm=p.nom||String(p.name||"").split(" ")[0];let topic=v26Topic(p,r);T.topics.push(topic);T.n++;
+  let extra="";const mem=V26on("mem")&&p.regId&&regGet(p.regId)&&regGet(p.regId).mem;
+  if(mem&&!T.memUsed){T.memUsed=1;const m=mem;if(m.topics&&m.topics.length){topic=m.topics[m.topics.length-1];extra=` (lo recuerda de la última vez)`;}
+    if(m.rej&&m.rej.length)extra+=` · recuerda que la otra vez rechazaste ${m.rej[m.rej.length-1]}`;}
+  const line=`💬 ${nm} y ${drvUp()} entablan conversación sobre ${topic}${extra}`;T.cur={t:line,at:Date.now()};v26Log("💬",line.replace(/^💬 /,""),"conv");
+  const el=$("v26cv");if(el)el.innerHTML=esc(line)+' <span class="simtag">simulado</span>';
+  playSound("conv");say("conv",`${nm} y ${drvVoz()} hablan de ${topic}.`,{after:"conv",tag:"v26c"});
+  if(!V26C&&!V26Q.some(q=>q.trip))v26Special(sp);}
+
+// ---------- Rasgos de la solicitud: conflictivo, bebido/mareado, catalán ----------
+const isNightSim=()=>{const h=simNow().h;return h>=22||h<6;};
+function v26ReqFlags(r){if(!r||r.svc==="paquete"||window.NO_V26)return r;const F=window.V26R||{},p=r.per||{};
+  r.conf=F.conf!=null?!!F.conf:V26on("conflict")&&Math.random()<(window.CONF_P!=null?window.CONF_P:.03);
+  const night=isNightSim();r.drunk=F.drunk!=null?(F.drunk?(F.drunk===true?(night?"bebido":"mareado"):F.drunk):null):V26on("drunk")&&Math.random()<(window.DRUNK_P!=null?window.DRUNK_P:(night?.08:.02))?(night?(Math.random()<.75?"bebido":"mareado"):(Math.random()<.3?"bebido":"mareado")):null;
+  if(r.drunk&&p.edad<ADULT_AGE)r.drunk=r.drunk==="bebido"?"mareado":r.drunk;
+  const here=inCatPt(r.pickup||S.driver);if(F.ca!=null){r.ca=!!F.ca&&here;if(r.ca){p.catL=true;if(!p.pref)p.pref=F.pref||"cat";if(!v26CatOrig(p))p.orig=v26rn(CAT_TOWNS).split("|").slice(0,2).join(" (")+")";}}else r.ca=V26on("cat")&&here&&!!p.catL;
+  if(F.pet&&!(r.needs||[]).some(n=>n.k==="mascota")){const n=needMake("mascota",r);if(n)(r.needs=r.needs||[]).push(n);}
+  if(F.flirt&&p)p.flirt=true;if(F.rx&&p)p.rx=F.rx;
+  return r;}
+{const _mr=makeRequest;makeRequest=async function(){const r=await _mr.apply(this,arguments);if(r)try{v26ReqFlags(r);}catch(e){console.error(e);}return r;};}
+const caSal=()=>{const h=simNow().h;return h>=6&&h<14?"Bon dia":h>=14&&h<21?"Bona tarda":"Bona nit";};
+const caDest=r=>String((r.de&&r.de.name)||r.to||"").split(",")[0];
+function caPhrase(r){return `${caSal()}! Em podries portar a ${caDest(r)}, si us plau?`;}
+{const _vq=VOZT.req;VOZT.req=r=>{let s=_vq(r);if(window.NO_V26||!r)return s;
+  if(r.conf)s="Atención: cliente conflictivo. "+s;if(r.drunk)s+=` ${pnom(r)} parece ${r.drunk==="bebido"?"haber bebido":"mareado"}.`;if(r.ca)s+=` Habla en catalán.`;
+  if((r.needs||[]).some(n=>n.k==="mascota")&&!/mascota|perro|gato/.test(s))s+=" Viaja con mascota.";return s;};}
+{const _cx=ctxHTML;ctxHTML=function(r){let h=_cx.apply(this,arguments);if(window.NO_V26||!r||r.svc==="paquete")return h;
+  try{const inTrip=trip&&trip.r===r,tags=[];
+    if(r.conf)tags.push(`<span class="v26tag conf" title="Cliente conflictivo (simulado): más incidencias y valoraciones duras">⚠️ Cliente conflictivo</span>`);
+    if(r.drunk)tags.push(`<span class="v26tag drunk" title="Simulado: puede marearse y pedir una parada urgente">🥴 ${r.drunk==="bebido"?"Parece haber bebido":"Se marea en coche"}</span>`);
+    if(V26on("pets")){const N=r.needs||[];if(N.some(n=>n.k==="mascota"))tags.push(`<span class="v26tag pet">🐾 Mascota</span>`);if(N.some(n=>n.k==="sillita"))tags.push(`<span class="v26tag pet">👶 Sillita infantil</span>`);}
+    if(r.ca)tags.push(`<span class="v26tag cat">🗣️ Parla català</span>`);
+    if(tags.length)h+=`<div class="v26tags">${tags.join("")}<span class="simtag">simulado</span></div>`;
+    if(r.ca&&!inTrip)h+=`<div class="v26cv" lang="ca">🗣️ «${esc(caPhrase(r))}»</div>`;
+    if(inTrip&&trip.phase===2&&V26on("conv")){const T=v26T();h+=`<div class="v26cv" id="v26cv">${T&&T.cur?esc(T.cur.t)+' <span class="simtag">simulado</span>':"💬 De momento, silencio en el coche"}</div>`;}}catch(e){console.error(e);}
+  return h;};}
+{const _nh=needsHTML;needsHTML=function(r){let h=_nh.apply(this,arguments);if(!window.NO_V26&&V26on("pets")&&(r.needs||[]).some(n=>n.k==="sillita"))h+='<button class="btn no petno" id="bNoSil">👶 Rechazar por la sillita (sin penalización)</button>';return h;};}
+function v26CardWire(r){if(window.NO_V26||!r)return;
+  if($("bNoSil"))$("bNoSil").onclick=()=>{lvlEv("pet");toast("👶 Rechazada por la sillita · no cuenta en tu aceptación (simulado)");dismiss();};
+  if(r.conf){playSound("conflict",{delay:1.4});}
+  else if(r.ca)playSound("catala",{delay:1.4});}
+
+// ---------- Durante el viaje: conversaciones, catalán, mareos y cliente conflictivo ----------
+function v26Tick(){if(!trip||window.NO_V26||!trip.r||trip.r.svc==="paquete"||trip.phase!==2)return;const T=v26T(),r=trip.r,now=Date.now();
+  if(!T.t0){T.t0=now;const SP=v26Speakers(),p0=(SP[0]&&SP[0].p)||r.per;T.next=now+(window.CV_FIRST!=null?window.CV_FIRST*1000:Math.min(v26Gap(p0),rnd(60,240)*1000));
+    if(r.ca)T.caAt=now+(window.CA_DELAY!=null?window.CA_DELAY:3000);if(r.drunk)T.sickAt=now+(window.SICK_DELAY!=null?window.SICK_DELAY:rnd(45,150)*1000);
+    if(r.conf)T.confAt=now+(window.CONF_GAP!=null?window.CONF_GAP*1000:rnd(25,70)*1000);S.trip=trip;save();}
+  if(trip.ev&&trip.ev.cur)return;
+  const busy=V26C||V26Q.some(q=>q.trip);
+  if(T.caAt&&now>=T.caAt&&!busy){T.caAt=0;v26CatPrompt();return;}
+  if(T.sickAt&&now>=T.sickAt&&!busy){T.sickAt=0;v26Sick();return;}
+  if(T.confAt&&now>=T.confAt&&!busy){T.conf++;T.confAt=T.conf<3?now+(window.CONF_GAP!=null?window.CONF_GAP*1000:rnd(70,160)*1000):0;v26Conf();return;}
+  if(V26on("conv")&&T.next&&now>=T.next)v26ConvEvent();}
+setInterval(()=>{try{v26Tick();}catch(e){console.error(e);}},1000);
+function mainKey(r){return r.svc==="urbano"?"main":(((r.bookings||[]).find(b=>b.main)||{}).id)||"main";}
+function v26CatPrompt(){const r=trip.r,p=r.per||{},nm=pnom(r),key=mainKey(r),pref=p.pref||"neutral",ph=`${caSal()}! Anem a ${caDest(r)}, si us plau. Quina calor que fa avui, oi?`.replace(/Quina calor que fa avui, oi\?/,pick(["Quin dia més bonic, oi?","Gràcies per venir tan ràpid.","Vaig una mica just de temps."]));
+  v26Ask({k:"cat",trip:true,ic:"🗣️",title:`${nm} et parla en català`,body:`<div class="v26q" lang="ca">«${esc(ph)}»</div><div class="sub">¿En qué idioma le respondes?</div>`,okTxt:"🗣️ Respondre en català",noTxt:"🇪🇸 Responder en castellano",snd:"catala",voz:`${nm} te habla en catalán.`,
+    on:a=>{const T=v26T();T.lang=a==="ok"?"ca":a==="no"?"es":null;
+      if(a==="ok"){v26Eff(key,pref==="cat"?.2:pref==="neutral"?.08:.06,pick(["Molt amable, i a més m'ha parlat en català. Gràcies!","Molt bé, i en català. Moltes gràcies!","Conductora molt simpàtica, m'ha parlat en català."]),pref==="cat"?.03:.01);v26Log("🗣️",`${nm}: «${ph}» — Le respondes en catalán: «Hola! Perfecte, anem-hi.»`,"cat");}
+      else if(a==="no"){const w=pref==="cat"?(p.rx==="molesta"?-.12:-.03):pref==="facil"?.03:0;if(w)v26Eff(key,w,w<0?"Bé, però li he parlat en català i m'ha contestat en castellà.":"me cambió al castellano sin problema, mejor para mí");v26Log("🇪🇸",`${nm}: «${ph}» — Le respondes en castellano${pref==="cat"?"; responde «D'acord…» algo seco":"; cambia al castellano sin problema"}`,"cat");}
+      else{v26Eff(key,-.03,"");v26Log("🔇",`${nm} te habla en catalán y no le contestas`,"cat");}}});}
+function v26Sick(){const r=trip.r,nm=pnom(r),key=mainKey(r),dr=r.drunk==="bebido";
+  v26Ask({k:"sick",trip:true,ic:"🤢",title:`${nm} se encuentra mal`,body:`<div class="v26q">«${dr?"Para, para… que me parece que he bebido demasiado y me estoy mareando…":"¿Puedes parar un momento? Me estoy mareando mucho…"}»</div><div class="sub">Si no paras, puede vomitar en el coche (cargo de limpieza simulado).</div>`,
+    okTxt:"✅ Parar de urgencia",noTxt:"✋ Seguir conduciendo",snd:"mareo",vcat:"conflict",voz:`${nm} se está mareando y pide parar.`,
+    on:a=>{const T=v26T();if(a==="ok"){const out=Math.random()<.25;v26Eff(key,.12,"paró enseguida cuando me mareé, muy amable");v26Log("🛑",`Parada urgente: ${nm} se mareaba${out?"; vomita fuera del coche, sin manchar nada":"; toma el aire y se le pasa"}`,"sick");T.sick=out?"fuera":"ok";}
+      else{const vom=Math.random()<(window.VOMIT_P!=null?window.VOMIT_P:.65);
+        if(vom){const fee=window.CLEAN_FEE!=null?window.CLEAN_FEE:Math.round(rnd(30,40)/5)*5;trip.ev.money.fee=r2((trip.ev.money.fee||0)+fee);T.clean=fee;T.sick="dentro";
+          v26Eff(key,-.35,"me cobraron la limpieza del coche… no paró cuando se lo pedí");v26Log("🤮",`${nm} ha vomitado en el coche: cargo de limpieza de ${eur(fee)} al pasajero (simulado)`,"sick");
+          playSound("mareo");say("conflict",`${nm} ha vomitado en el coche. Se le cobra un cargo de limpieza de ${eurSay(fee)}.`,{tag:"v26"});}
+        else{T.sick="aguanta";v26Eff(key,-.15,"me encontraba fatal y no paró");v26Log("😖",`${nm} se aguanta el mareo hasta el final`,"sick");}}}});}
+function v26Conf(){const r=trip.r,nm=pnom(r),key=mainKey(r),Q=pick(CONF_Q);
+  v26Ask({k:"conf",trip:true,ic:"⚠️",title:`Cliente conflictivo: ${nm}`,body:`<div class="v26q">${esc(Q[1])}</div>`,okTxt:Q[2],noTxt:Q[3],snd:"conflict",vcat:"conflict",voz:`Atención. ${nm}: ${Q[1].replace(/[«»]/g,"")}`,
+    on:a=>{if(a==="ok"){v26Eff(key,.2,"");v26Log("⚠️",`${Q[1]} — ${Q[2].replace(/^✅ /,"")}`,"conf");}
+      else{v26Eff(key,-.15,pick(["no me hizo ni caso","una borde, no hizo nada de lo que le pedí"]));v26Log("⚠️",`${Q[1]} — ${Q[3].replace(/^✋ /,"")}; se enfada todavía más`,"conf");}}});}
+{const _ft=finishTrip;finishTrip=function(){if(trip&&trip.r&&trip.r.svc!=="paquete"&&!(animating||(trip.ev&&trip.ev.cur)||(trip.inc&&trip.inc.cur!=null)))v26DropTrip();
+  const r=trip&&trip.r,had=!!trip;const v=_ft.apply(this,arguments);try{if(had&&!trip&&r&&r.svc!=="paquete")v26AfterTrip(r);}catch(e){console.error(e);}return v;};}
+{const _ct=cancelTrip;cancelTrip=function(){const v=_ct.apply(this,arguments);try{if(!trip)v26DropTrip();}catch(e){}return v;};}
+
+// ---------- BlaBlaCar con el reloj del simulador ----------
+// Desfase (ms) entre la hora del simulador y la hora peninsular real: la salida se escribe en hora del simulador
+function v26Off(){if(window.NO_V26)return 0;const n=simNow(),q=tzParts(new Date(),"Europe/Madrid");
+  const sm=(n.dow-1)*1440+n.h*60+n.m,rm=((q.dow||1)-1)*1440+q.h*60+q.m;let d=((sm-rm)%10080+10080)%10080;if(d>5040)d-=10080;return d*60000;}
+function v26DepTxt(P){if(window.NO_V26)return madTxt(P.dep)+" (h peninsular)";const off=P.off!=null?P.off:v26Off();return madTxt(P.dep+off).slice(6)+" (hora del simulador)";}
+const v26InMin=()=>{if(window.NO_V26)return 0;const s=$("pubIn");return s?+s.value||0:0;};
+function v26PubW(dep,created){if(window.NO_V26)return PUB_WIN.later;return Math.max(PUB_WIN.later,Math.min(8*60e3,dep-created-60e3));}
+{const tl=document.querySelector('label[for="pubTime"]');if(tl&&!window.NO_V26)tl.textContent="Salida (hora del simulador)";
+  const pn=$("pubNow"),lab=pn&&pn.closest("label");if(lab&&!$("pubIn")){lab.insertAdjacentHTML("afterend",`<div id="pubInBox" style="margin:6px 0"><label for="pubIn">⏱️ O bien: sale en…</label> <select id="pubIn"><option value="0">— usar fecha y hora —</option>${[5,10,15,20,30,45,60].map(m=>`<option value="${m}">${m} min (cuenta atrás real)</option>`).join("")}</select></div>`);
+    $("pubIn").onchange=()=>{const v=+$("pubIn").value;if(v){$("pubNow").checked=false;pubNowUI();}$("pubDate").disabled=!!v||$("pubNow").checked;$("pubTime").disabled=!!v||$("pubNow").checked;};}
+  if(window.NO_V26&&$("pubInBox"))$("pubInBox").hidden=true;}
+{const _po=pubOpen;pubOpen=function(){const v=_po.apply(this,arguments);try{if($("pubIn")){$("pubIn").value="0";$("pubInBox").hidden=!!window.NO_V26;}}catch(e){}return v;};$("btnPub").onclick=pubOpen;}
+{const _ps=pubSubmit;pubSubmit=function(){const inM=v26InMin(),P=_ps.apply(this,arguments);if(P&&!window.NO_V26){P.off=v26Off();P.inM=inM||0;P.rem={};save();pubUI();}return P;};$("pubOk").onclick=pubSubmit;}
+// Hora hablada de BlaBlaCar: en hora del simulador
+{const _hs=horaSay;horaSay=function(ms){return _hs.call(this,window.NO_V26?ms:ms+v26Off());};}
+
+// ---------- «Vienen a donde estoy parado»: cada pasajero llega a una hora distinta ----------
+function v26ArrPlan(P,b){if(!V26on("arr")||!P||P.meetM!=="aqui"||b.f!==0||b.arrAt)return;const now=Date.now(),left=P.dep-now,sc=window.ARR_SCALE||1;
+  const mode=window.ARR_MODE||wpick([["soon",35],["normal",55],["late",10]]);let at;
+  if(mode==="late")at=P.dep+rnd(1,6)*60e3*sc;
+  else if(left<=60e3)at=now+Math.max(5e3,left*rnd(.2,.8));
+  else if(mode==="soon")at=Math.min(now+rnd(1,4)*60e3*sc,now+left*rnd(.15,.5));
+  else{at=P.dep-rnd(0,10)*60e3*sc;if(at<now+30e3)at=now+Math.max(30e3*Math.min(1,sc*4),left*rnd(.3,.95));if(at>P.dep-5e3)at=P.dep-5e3;}
+  b.arrAt=Math.round(at);b.arrM=mode;}
+{const _sc=pubSched;pubSched=function(P,b){const v=_sc.apply(this,arguments);try{v26ArrPlan(P,b);}catch(e){console.error(e);}return v;};}
+const arrHm=(P,ts)=>madTxt(ts+(P.off!=null?P.off:v26Off())).slice(6);
+function v26ArrCount(P){const L=P.B.filter(b=>b.st==="ok"&&b.f===0&&b.arrAt);return {n:L.filter(b=>b.arrived).length,t:L.length};}
+let v26LastP=null;
+function v26PubPre(){const P=S.pub;
+  if(P)v26LastP=P;
+  try{if(P&&!window.NO_V26){const now=Date.now();
+    if(P.meetM==="aqui"&&V26on("arr"))for(const b of P.B){if(b.st!=="ok"||b.f!==0)continue;if(!b.arrAt)v26ArrPlan(P,b);
+      if(b.arrAt&&!b.arrived&&now>=b.arrAt&&now<P.dep){b.arrived=now;const c=v26ArrCount(P),nm=b.name.split(" ")[0];
+        pubLog(`🚶 ${b.name} ya está aquí (${c.n} de ${c.t})`);alertUser("llega","✅ Ha llegado un pasajero (BlaBlaCar)",`${b.name} ya está donde estás parado (${c.n} de ${c.t})`,"✅");
+        say("bb",`${nm} ya ha llegado. ${c.n} de ${c.t}.`,{after:"llega"});save();}}
+    if(!P.rem)P.rem={};const left=P.dep-now;
+    for(const th of [10,5,1]){const T=th*60e3;if(left<=T&&left>T-60e3&&!P.rem[th]&&P.dep-P.created>T+20e3){P.rem[th]=1;const okN=P.B.filter(b=>b.st==="ok").length,c=v26ArrCount(P);
+      const ex=P.meetM==="aqui"&&c.t?` Han llegado ${c.n} de ${c.t}.`:"";pubLog(`⏰ Sale en ${th} min · ${okN} reserva${okN!==1?"s":""}${ex?" · llegados "+c.n+"/"+c.t:""}`);
+      alertUser("bb",`⏰ Tu BlaBlaCar sale en ${th} min`,`${P.fromN} → ${P.toN} · ${okN} reserva${okN!==1?"s":""}`,"⏰");say("bb",`Tu viaje de BlaBlaCar a ${P.toN} sale en ${th===1?"un minuto":th+" minutos"}. ${okN} reserva${okN!==1?"s":""} confirmada${okN!==1?"s":""}.${ex}`,{after:"bb"});save();}}}}catch(e){console.error(e);}}
+// el setInterval original llama a la función antigua: v26 tiene su propio reloj (idempotente)
+{const _pt=pubTick;pubTick=function(){v26PubPre();return _pt.apply(this,arguments);};}
+setInterval(()=>{try{v26PubPre();}catch(e){console.error(e);}},1000);
+// Estado de cada pasajero en el panel
+{const _pu=pubUI;pubUI=function(){const v=_pu.apply(this,arguments);const P=S.pub;if(!P||window.NO_V26)return v;
+  try{const sm=$("pubSum");if(sm&&P.off!=null)sm.innerHTML=sm.innerHTML.replace(/ \(h peninsular\)/,"").replace(madTxt(P.dep),v26DepTxt(P)).replace(/\(hora del simulador\) \(hora del simulador\)/,"(hora del simulador)");
+    if(P.meetM==="aqui"&&V26on("arr"))document.querySelectorAll("#pubList .pubb[data-bid]").forEach(el=>{const b=P.B.find(x=>x.id===el.dataset.bid);if(!b||b.st!=="ok"||b.f!==0||!b.arrAt)return;
+      const now=Date.now(),txt=b.arrived?`✅ Ya está aquí`:b.arrAt>P.dep?`⏰ Llegará tarde (~${arrHm(P,b.arrAt)})`:`🚶 De camino · llega ~${arrHm(P,b.arrAt)}`;
+      let s=el.querySelector(".v26arr");if(!s){s=document.createElement("div");s.className="v26arr";el.appendChild(s);}if(s.textContent!==txt)s.innerHTML=`<b>${esc(txt)}</b> <span class="simtag">simulado</span>`;});}catch(e){console.error(e);}
+  return v;};}
+// Al salir: solo provoca espera quien aún no ha llegado (sin penalizarte)
+{const _al=aquiLate;aquiLate=function(T){if(window.NO_V26||!V26on("arr")||!T||!T.r)return _al.apply(this,arguments);
+  const P=S.pub||v26LastP,Q=b=>b.pb||(P&&b.pubId!=null&&(P.B||[]).find(x=>x.id===b.pubId))||null;
+  const L=(T.r.bookings||[]).map(b=>({b,q:Q(b)})).filter(x=>x.q&&x.q.f===0&&x.q.arrAt);if(!L.length)return _al.apply(this,arguments);
+  const late=L.filter(x=>!x.q.arrived);if(!late.length){mlog("✅","Todos los pasajeros ya estaban donde estabas parado (simulado)");return;}
+  const nm=x=>String(x.q.name||x.b.name||"");
+  const last=late.sort((a,b)=>b.q.arrAt-a.q.arrAt)[0],arr=Math.max(.4,(last.q.arrAt-Date.now())/60000/(window.ARR_SCALE||1)),said=Math.max(1,Math.round(arr*rnd(.8,1.2)));
+  T.ev.plan=T.ev.plan.filter(e=>e.type!=="tarde");T.ev.plan.push({type:"tarde",st:"pending",due:null,aqui:true,said,arr,v26name:nm(last),v26n:late.length});
+  T.v26late={names:late.map(nm),min:said};mlog("⏰",`${late.map(x=>nm(x).split(" ")[0]).join(" y ")} aún no ${late.length>1?"han":"ha"} llegado: salís un poco más tarde (no es culpa tuya)`);};}
+{const _lc=lateCur;lateCur=function(type,r,e,per,extra){const c=_lc.apply(this,arguments);if(e&&e.v26name){c.name=e.v26name;c.msg=`${e.v26name.split(" ")[0]}: Voy andando hacia donde estás parado, llego en ${minW(e.said)}.`;}return c;};}
+
+// ---------- Historial: actualizar un viaje ya guardado (objetos devueltos) ----------
+HS.upd=async function(uid,fn){if(HS_MODE==="ls"){const a=lsAll(),e=a.find(x=>x.uid===uid);if(!e)return false;fn(e);try{localStorage.setItem(LSH,JSON.stringify(a));}catch(err){}return true;}
+  const db=await idbOpen();return new Promise((res,rej)=>{const tx=db.transaction(IDB_STORE,"readwrite"),ix=tx.objectStore(IDB_STORE).index("uid"),q=ix.openCursor(IDBKeyRange.only(uid));let ok=false;
+    q.onsuccess=()=>{const c=q.result;if(c){const v=c.value;fn(v);c.update(v);ok=true;}};tx.oncomplete=()=>res(ok);tx.onabort=()=>rej(tx.error);});};
+// ---------- Resumen v26 del viaje en el historial ----------
+function v26Hist(r){const T=trip&&trip.r===r?trip.v26:null;if(window.NO_V26)return null;
+  const o={conv:T?T.n:0,priv:T?T.priv:0,int:T?T.int:0,req:T?T.req:0,conf:!!r.conf,drunk:r.drunk||null,ca:!!r.ca,lang:T&&T.lang||null,clean:T&&T.clean||0,sick:T&&T.sick||null,
+    topics:T?T.topics.slice(-6):[],log:T?T.log.slice(-15).map(x=>({ic:x.ic,t:x.t,k:x.k})):[],late:trip&&trip.v26late||null};
+  return (o.conv||o.priv||o.int||o.req||o.conf||o.drunk||o.ca||o.log.length)?o:null;}
+{const _he=historyEntry;historyEntry=function(r,status,rate,ex){const v=_he.apply(this,arguments);try{const e=S.history[0],h=v26Hist(r);if(e&&h){e.v26=h;r._v26=h;}}catch(err){console.error(err);}return v;};}
+// ---------- Habituales con memoria: temas y rechazos ----------
+{const _rr=regRecord;regRecord=function(per,kind,rate,status,r){const g=_rr.apply(this,arguments);
+  try{if(g&&V26on("mem")&&trip&&trip.r===r&&trip.v26){const T=trip.v26,m=g.mem||{topics:[],rej:[],lang:null};
+    m.topics=(m.topics||[]).concat(T.topics.slice(-3)).slice(-6);
+    const rj=T.log.filter(x=>x.ic==="✋").map(x=>x.k==="priv"?"una pregunta personal":x.k==="intensa"?"su conversación intensa":x.k==="req"?"una petición suya":x.k==="pet"?"a su mascota":"algo que te pidió");
+    m.rej=(m.rej||[]).concat(rj).slice(-5);if(T.lang)m.lang=T.lang;m.at=Date.now();g.mem=m;}}catch(e){console.error(e);}return g;};}
+// ---------- Objetos olvidados en el coche (simulado) ----------
+const LOST_OBJ=[["el móvil","📱"],["la cartera","👛"],["unas llaves","🔑"],["las gafas de sol","🕶️"],["un paraguas","☂️"],["una bufanda","🧣"],["los auriculares","🎧"],["una bolsa de la compra","🛍️"],["una chaqueta","🧥"],["un libro","📖"]];
+function v26AfterTrip(r){if(!V26on("lost")||!r||r.svc==="paquete")return;const e=S.history[0];if(!e||e.status!=="ok")return;
+  const p=window.LOST_P!=null?window.LOST_P:.04;if(Math.random()>=p)return;const uid=e.uid,O=pick(LOST_OBJ),nm=pnom(r)||"El pasajero";
+  const d=window.LOST_DELAY!=null?window.LOST_DELAY*1000:rnd(20,60)*1000;
+  setTimeout(()=>{const pay=window.LOST_PAY!=null?window.LOST_PAY:Math.round(rnd(5,15));
+    v26Ask({k:"lost",trip:false,ic:"📞",title:`Llamada de ${nm}: objeto olvidado`,body:`<div class="v26q">«Hola, soy ${esc(nm)}, el del viaje a ${esc(r.to||"")}. Creo que me he dejado ${esc(O[0])} en tu coche ${O[1]}. ¿Me lo podrías acercar?»</div><div class="sub">Si se lo devuelves te paga ${eur(pay)} por la molestia (simulado).</div>`,
+      okTxt:"✅ Devolvérselo",noTxt:"✋ Dejarlo en objetos perdidos",snd:"objeto",vcat:"objeto",voz:`Llamada de ${nm}: se ha dejado ${O[0]} en el coche. ¿Se lo devuelves?`,timeout:120e3,
+      on:a=>{const x=S.history.find(h=>h.uid===uid);let up=0;
+        if(a==="ok"){const better=x&&x.rate&&x.rate<5&&(window.LOST_UP!=null?window.LOST_UP:Math.random()<.5);
+          if(x){x.gross=r2((x.gross||0)+pay);x.net=r2((x.net||0)+pay);x.lost={obj:O[0],ok:true,pay};if(better){x.rate++;S.stats.rateSum+=1;up=1;x.lost.up=1;}}
+          S.stats.earn+=pay;S.stats.net+=pay;save();mlog("📞",`Devuelves ${O[0]} a ${nm}: +${eur(pay)}${up?" y sube la valoración a "+x.rate+"★":""} (simulado)`);
+          toast(`📞 ${nm} te paga ${eur(pay)} por devolverle ${O[0]}${up?" · +1★":""}`);say("objeto",`${nm} te da las gracias y te paga ${eurSay(pay)}.`,{tag:"v26"});}
+        else{if(x)x.lost={obj:O[0],ok:false,pay:0};save();mlog("📞",`${O[0]} de ${nm} queda en objetos perdidos`);}
+        HS.upd(uid,v=>{if(x){v.gross=x.gross;v.net=x.net;v.rate=x.rate;v.lost=x.lost;}}).catch(()=>{});setTimeout(renderStats,0);}});},d);}
+// ---------- Diario de la conductora al cerrar el turno ----------
+function v26Diary(sh,rec){if(!V26on("diary"))return null;const L=S.history.filter(e=>e.shift===sh.id).slice().reverse(),D=L.filter(e=>e.v26);
+  const sum=k=>D.reduce((a,e)=>a+(+e.v26[k]||0),0),cnt=f=>D.filter(f).length,N=drvN();
+  const st={conv:sum("conv"),priv:sum("priv"),int:sum("int"),req:sum("req"),conf:cnt(e=>e.v26.conf),drunk:cnt(e=>e.v26.drunk),ca:cnt(e=>e.v26.ca),lost:L.filter(e=>e.lost&&e.lost.ok).length};
+  const lines=[];
+  lines.push(`Hoy he hecho ${rec.trips} viaje${rec.trips===1?"":"s"} y he ganado ${eur(rec.net)} netos.`);
+  if(st.conv)lines.push(`He tenido ${st.conv} ${st.conv===1?"conversación":"conversaciones"} con los pasajeros${D.some(e=>e.v26.topics.length)?": se ha hablado de "+[...new Set(D.flatMap(e=>e.v26.topics))].slice(0,4).join(", "):""}.`);
+  if(st.priv)lines.push(`Me han hecho ${st.priv} pregunta${st.priv===1?"":"s"} personal${st.priv===1?"":"es"}.`);
+  if(st.int)lines.push(`Ha habido ${st.int} ${st.int===1?"conversación intensa":"conversaciones intensas"} (nada fuera de tono).`);
+  if(st.req)lines.push(`${st.req} ${st.req===1?"petición":"peticiones"} de los pasajeros (cargador, agua, música…).`);
+  if(st.ca)lines.push(`${st.ca} pasajero${st.ca===1?"":"s"} me ha${st.ca===1?"":"n"} hablado en catalán.`);
+  if(st.conf)lines.push(`${st.conf} cliente${st.conf===1?"":"s"} conflictivo${st.conf===1?"":"s"}: paciencia.`);
+  if(st.drunk)lines.push(`${st.drunk} pasajero${st.drunk===1?"":"s"} bebido${st.drunk===1?"":"s"} o mareado${st.drunk===1?"":"s"}.`);
+  if(st.lost)lines.push(`He devuelto ${st.lost} objeto${st.lost===1?"":"s"} olvidado${st.lost===1?"":"s"}.`);
+  const ok=L.filter(e=>e.status==="ok"),best=ok.slice().sort((a,b)=>(b.rate||0)-(a.rate||0)||(b.tip||0)-(a.tip||0))[0],tipT=ok.slice().sort((a,b)=>(b.tip||0)-(a.tip||0))[0];
+  const hi=[];if(best&&best.rate)hi.push(`Mejor valoración: ${best.rate}★ de ${String(best.pax||"").split(",")[0]}${best.comment?" («"+best.comment+"»)":""}`);
+  if(tipT&&tipT.tip)hi.push(`Mejor propina: ${eur(tipT.tip)} (${String(tipT.pax||"").split(",")[0]})`);
+  const an=D.flatMap(e=>e.v26.log.filter(x=>x.k!=="conv").map(x=>x.ic+" "+x.t));const anec=[];while(an.length&&anec.length<4){anec.push(an.splice(Math.floor(Math.random()*an.length),1)[0]);}
+  const voz=`Diario de ${drvVoz()}. ${lines.slice(0,3).join(" ")}${hi.length?" "+hi[0].replace(/★/g," estrellas")+".":""}`;
+  return {by:N,lines,hi,anec,st,voz,sim:true};}
+{const _ss=showShiftSum;showShiftSum=function(x){const v=_ss.apply(this,arguments);try{const d=x&&x.diario;if(d&&$("shBody"))$("shBody").insertAdjacentHTML("beforeend",
+  `<div class="v26diary" style="margin-top:8px;padding:8px;border:1px solid var(--line,#ccc);border-radius:8px;font-size:13px"><b>📔 Diario de ${esc(String(d.by||drvN()).toUpperCase())}</b> <span class="simtag">simulado</span>
+  <div>${d.lines.map(esc).join(" ")}</div>${d.hi.length?`<div>⭐ ${d.hi.map(esc).join(" · ")}</div>`:""}${d.anec.length?`<ul style="margin:4px 0 0 18px;padding:0">${d.anec.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>`:""}</div>`);}catch(e){console.error(e);}return v;};}
+// ---------- CSV: columnas v26 ----------
+{const _cs=csvOf;csvOf=function(list){const s=_cs.apply(this,arguments);if(window.NO_V26)return s;const rows=s.split("\r\n");if(rows.length!==list.length+1)return s;
+  const q=t=>{t=String(t==null?"":t);return /[";\r\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;};
+  rows[0]+=";Conversaciones y peticiones (simulado);Objeto olvidado";
+  list.forEach((x,i)=>{const v=x.v26;rows[i+1]+=";"+q(v?v.log.map(y=>y.t).join(" | "):"")+";"+q(x.lost?x.lost.obj+(x.lost.ok?" (devuelto, +"+String(x.lost.pay).replace(".",",")+" €)":" (objetos perdidos)"):"");});
+  return rows.join("\r\n");};}
+// ---------- Ajustes: «Conversaciones y pasajeros» ----------
+{const ev=$("secEv");if(ev&&!$("secV26")){v26S();ev.insertAdjacentHTML("afterend",`<div class="sec" id="secV26"><h2>Conversaciones y pasajeros <span class="simtag">simulado</span></h2>
+  <div class="g2"><div style="grid-column:1/-1"><label for="v26Name">Nombre de la conductora</label><input type="text" id="v26Name" maxlength="20" placeholder="Alba"></div></div>
+  <div class="v26chk" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px 10px;margin-top:6px">${Object.keys(V26_DEF).map(k=>`<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-v26="${k}"> ${V26_LBL[k]}</label>`).join("")}</div>
+  <div class="hint">En pantalla el nombre se muestra en mayúsculas (${esc(drvUp())}); la voz lo lee como palabra («${esc(drvVoz())}»), porque en mayúsculas la síntesis de voz lo deletrearía. Conversaciones, preguntas, peticiones, conflictos, mareos, objetos olvidados y llegadas son <b>simulados</b>; los lugares son reales. Nada explícito: la «conversación intensa» es solo insinuante y puedes cortarla sin apenas penalización.</div></div>`);
+  $("v26Name").onchange=()=>{const v=String($("v26Name").value||"").trim().slice(0,20)||"Alba";S.settings.drvName=v;save();syncV26UI();toast("Conductora: "+drvUp());};
+  document.querySelectorAll("#secV26 input[data-v26]").forEach(c=>c.onchange=()=>{v26S()[c.dataset.v26]=c.checked;save();toast(V26_LBL[c.dataset.v26]+": "+(c.checked?"activado":"desactivado"));});}}
+function syncV26UI(){if(!$("secV26"))return;const s=v26S();$("v26Name").value=drvN();document.querySelectorAll("#secV26 input[data-v26]").forEach(c=>c.checked=!!s[c.dataset.v26]);
+  const h=$("secV26").querySelector(".hint");if(h)h.innerHTML=h.innerHTML.replace(/\([^()]*\); la voz lo lee como palabra \(«[^»]*»\)/,`(${esc(drvUp())}); la voz lo lee como palabra («${esc(drvVoz())}»)`);}
+{const _se=syncEvUI;syncEvUI=function(){const v=_se.apply(this,arguments);try{syncV26UI();}catch(e){}return v;};}
+syncV26UI();
+// ---------- API de pruebas ----------
+window.V26={S:v26S,on:V26on,drvN,drvUp,drvVoz,inCatPt,inCat,Q:()=>V26Q,C:()=>V26C,ask:v26Ask,answer:v26Answer,T:()=>trip&&trip.v26,conv:()=>v26ConvEvent(),tick:()=>v26Tick(),
+  off:v26Off,depTxt:v26DepTxt,diary:v26Diary,hist:v26Hist,after:r=>v26AfterTrip(r),towns:()=>CAT_TOWNS,profs:()=>CAT_PROFS,topic:(p,r)=>v26Topic(p,r),flags:r=>v26ReqFlags(r),
+  isCatName,arrPlan:v26ArrPlan,conf:()=>v26Conf(),sick:()=>v26Sick(),cat:()=>v26CatPrompt(),special:sp=>v26Special(sp),speakers:()=>v26Speakers(),HSupd:(u,f)=>HS.upd(u,f)};
+{const _ft=finishTrip;finishTrip=function(){const r=trip&&trip.r,u0=S.history[0]&&S.history[0].uid;const out=_ft.apply(this,arguments);
+  try{if(!window.NO_V26&&r&&S.history[0]&&S.history[0].uid!==u0)v26AfterTrip(r);}catch(e){console.error(e);}return out;};}
+// Corrección: si la espera en recogida acaba mientras hay animación, el botón «Paquete recogido» se quedaba desactivado
+{const _pe=pwEnd;pwEnd=function(T){const r=_pe.apply(this,arguments);
+  try{if(T&&T.pq&&T.pq.pw&&T.pq.pw.done){const k=T.pq.k,f=()=>{if(trip!==T||!T.pq||T.pq.k!==k)return;if(animating)return void setTimeout(f,300);const b=$("bPqPick");if(b&&b.disabled)pqShow(false);};setTimeout(f,300);}}catch(e){console.error(e);}
+  return r;};}
+
+$("pubNow").addEventListener("change",()=>{if($("pubNow").checked&&$("pubIn")){$("pubIn").value="0";}});
 </script>
 </body>
 </html>
