@@ -3191,7 +3191,7 @@ $("vozStop").onclick=()=>vozCancel();
 if(SS()){try{SS().addEventListener?SS().addEventListener("voiceschanged",vozFill):(SS().onvoiceschanged=vozFill);}catch(e){}}
 syncVozUI();setTimeout(vozFill,600);setTimeout(vozFill,2500);
 // ---------- Móvil (Android) y app instalable (PWA) ----------
-const APP_VER="26.0";
+const APP_VER="27.0";
 const MQ_MOB=window.matchMedia("(max-width:899px),(max-height:520px) and (pointer:coarse)");
 function isMob(){return MQ_MOB.matches;}
 // Márgenes al encuadrar la ruta: en PC la tarjeta está a la izquierda; en móvil, abajo (vertical) o a la izquierda (horizontal)
@@ -4562,6 +4562,388 @@ window.V26={S:v26S,on:V26on,drvN,drvUp,drvVoz,inCatPt,inCat,Q:()=>V26Q,C:()=>V26
   return r;};}
 
 $("pubNow").addEventListener("change",()=>{if($("pubNow").checked&&$("pubIn")){$("pubIn").value="0";}});
+
+// ==================== v27: esperas reales, situaciones nuevas en ruta (todo SIMULADO; lugares reales) ====================
+const V27_DEF={parada:true,pqwalk:true,datos:true,asiento:true,llamadas:true,sucio:true,control:true,regalos:true,dormido:true,vuelo:true,terceros:true,famosos:true,pareja:true};
+const V27_LBL={parada:"⏱️ Parada extra con cronómetro real (el cliente puede tardar más o menos)",pqwalk:"📦 Paquetería: te lo acercan al coche o vas al mostrador",datos:"🗺️ Más nombres, apellidos, pueblos y temas reales (al recargar)",
+  asiento:"💺 Asiento elegido (copiloto o detrás)",llamadas:"📞 Llamadas del cliente antes de la recogida",sucio:"🧽 Coche sucio (mascota, mareo, lluvia)",control:"🚓 Controles policiales (muy raros)",
+  regalos:"🎁 Regalos de clientes contentos",dormido:"😴 Clientes que se duermen",vuelo:"✈️ Aeropuerto: vuelos con retraso",terceros:"👥 Viajes reservados para otra persona",
+  famosos:"⭐ «Famosos simulados» (ficticios, muy raros)",pareja:"💏 Pareja cariñosa detrás (excepcional, nada explícito)"};
+function v27S(){if(!S.settings.v27)S.settings.v27={};for(const k in V27_DEF)if(S.settings.v27[k]==null)S.settings.v27[k]=V27_DEF[k];return S.settings.v27;}
+const V27on=k=>!window.NO_V27&&!window.NO_V26&&!!v27S()[k];
+const v27R=()=>window.V27R||{};
+const v27spm=()=>window.V27_SPM!=null?+window.V27_SPM:60;   // segundos reales por minuto: 60 = cronómetro real
+const v27rn=a=>a[Math.floor(Math.random()*a.length)];
+const v27clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const v27mmss=s=>{s=Math.max(0,Math.floor(s));return (s>=3600?Math.floor(s/3600)+":":"")+String(Math.floor(s/60)%60).padStart(2,"0")+":"+String(s%60).padStart(2,"0");};
+const v27gw=(m,f,g)=>g==="f"?f:m;
+
+// ---------- Sonidos y voz ----------
+if(!window.NO_V27)Object.assign(SND_R,{
+  v27vuelve:[[0,784,.1,"triangle",.22],[.12,988,.1,"triangle",.22],[.24,1175,.22,"triangle",.22]],
+  v27llamada:[[0,880,.12,"sine",.2],[.14,1046,.12,"sine",.2],[.5,880,.12,"sine",.2],[.64,1046,.12,"sine",.2]],
+  v27control:[[0,700,.25,"sawtooth",.13,950],[.27,950,.25,"sawtooth",.13,700],[.54,700,.25,"sawtooth",.13,950]],
+  v27pq:[[0,523,.12,"square",.14],[.15,392,.2,"square",.14]],
+  v27dormido:[[0,440,.35,"sine",.16,330],[.4,330,.45,"sine",.14,262]],
+  v27pareja:[[0,523,.14,"triangle",.18],[.18,494,.14,"triangle",.18],[.36,523,.24,"triangle",.18]],
+  v27regalo:[[0,1046,.08,"sine",.2],[.1,1318,.08,"sine",.2],[.2,1568,.08,"sine",.2],[.3,2093,.25,"sine",.16]],
+  v27sucio:[[0,300,.18,"square",.14],[.22,250,.28,"square",.14]],
+  v27vuelo:[[0,660,.15,"sine",.2],[.2,880,.15,"sine",.2],[.4,660,.3,"sine",.2]],
+  v27famoso:[[0,1175,.1,"triangle",.18],[.12,1568,.18,"triangle",.18]]});
+for(const x of [["v27vuelve","⏱️ El cliente vuelve de la parada"],["v27llamada","📞 Llamada del cliente"],["v27control","🚓 Control policial"],["v27pq","📦 Ir al mostrador / te lo acercan"],["v27dormido","😴 Cliente dormido"],
+  ["v27pareja","💏 Pareja cariñosa"],["v27regalo","🎁 Regalo de un cliente"],["v27sucio","🧽 Coche sucio"],["v27vuelo","✈️ Vuelo con retraso"],["v27famoso","⭐ Famoso simulado"]])
+  if(!window.NO_V27&&!SND_KEYS.some(y=>y[0]===x[0]))SND_KEYS.push(x);
+if(!window.NO_V27&&!VOZ_KEYS.some(y=>y[0]==="v27"))VOZ_KEYS.push(["v27","Esperas, llamadas, controles y situaciones v27"]);
+const v27say=(t,snd)=>{try{say("v27",t,{after:snd||undefined,tag:"v27"});}catch(e){}};
+const v27alert=(snd,title,body,ic,voz)=>{try{alertUser(snd,title,body,ic);}catch(e){}if(voz)v27say(voz,snd);};
+
+// ---------- Panel de opciones (más de dos botones grandes) sobre el panel v26 ----------
+document.head.insertAdjacentHTML("beforeend",`<style>
+#v26P .v27o{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+#v26P .v27o button{font-size:17px;font-weight:800;padding:13px 8px;min-height:52px;border-radius:12px;border:0;cursor:pointer;color:#fff;background:#2d4f86;line-height:1.2}
+#v26P .v27o button.ok{background:#1f9d55}#v26P .v27o button.no{background:#8b3a3a}#v26P .v27o button.mid{background:#7a5a1e}
+#v26P.v26k-v27control .v26box{border-color:#3a7bd5;background:#121a2a}#v26P.v26k-v27pareja .v26box{border-color:#d85a9a}#v26P.v26k-v27call .v26box{border-color:#3fb27f}
+#v26P.v26k-v27vuelo .v26box{border-color:#4aa3df}#v26P.v26k-v27dormido .v26box{border-color:#8a8ad8}#v26P.v26k-v27fam .v26box{border-color:#e0b040;background:#211c0e}
+.v27w{margin:6px 0;padding:9px 11px;border-radius:10px;border:2px solid #e0a040;background:#231b0c}
+.v27w .evh{font-weight:800}.v27w .v27c{font-size:34px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:1px}
+.v27w .bar{height:6px;background:#0006;border-radius:3px;overflow:hidden;margin:4px 0}.v27w .bar i{display:block;height:100%;background:#e0a040;width:0}
+.v27w.over .bar i{background:#e05252}.v27w button{width:100%;margin-top:6px;font-size:17px;font-weight:800;min-height:48px}
+.v26tag.v27{border-color:#4aa3df;background:#10202e}.v26tag.v27s{border-color:#e0a040;background:#2a1f0c}.v26tag.v27f{border-color:#e0b040;background:#2a230c;color:#ffe08a;font-weight:700}
+#v27Dirty{margin-top:8px;padding:8px;border-radius:10px;border:2px solid #b08040;background:#2a1f10;font-size:13px}#v27Dirty button{width:100%;margin-top:6px;min-height:46px;font-size:16px;font-weight:800}
+@media (max-width:899px){#v26P .v27o button{font-size:16px;padding:14px 6px;min-height:54px}.v27w .v27c{font-size:30px}}
+</style>`);
+{const _n=v26Next;v26Next=function(){if(V26C||!V26Q.length||!V26Q[0].opts)return _n.apply(this,arguments);
+  const q=V26C=V26Q.shift();q.t0=Date.now();const b=v26Box();b.className="v26k-"+q.k+" v27opt";
+  b.innerHTML=`<div class="v26box" role="dialog"><div class="v26h">${q.ic||"💬"} <b>${esc(q.title)}</b> <span class="v26sim">simulado</span></div><div class="v26b">${q.body||""}</div>
+    <div class="v27o">${q.opts.map(o=>`<button class="${o[2]||""}" id="v27o_${o[0]}" data-a="${o[0]}">${esc(o[1])}</button>`).join("")}</div><div class="v26bar"><i id="v26Bar"></i></div></div>`;
+  b.hidden=false;b.querySelectorAll("button[data-a]").forEach(x=>x.onclick=()=>v26Answer(x.dataset.a));
+  try{if(q.snd)playSound(q.snd);if(q.voz)say(q.vcat||"v27",q.voz,{after:q.snd||undefined,tag:"v27"});attention(q.title,q.ic||"💬");}catch(e){}
+  const T=q.timeout||(window.V26_TIMEOUT||90e3);clearInterval(v26PT);v26PT=setInterval(()=>{const l=T-(Date.now()-q.t0),bar=$("v26Bar");if(bar)bar.style.width=Math.max(0,l/T*100)+"%";if(l<=0)v26Answer("ign");},500);};}
+function v27Ask(q){q.trip=q.trip!==false;q.vcat=q.vcat||"v27";return v26Ask(q);}
+
+// ---------- Estado v27 del viaje ----------
+function v27T(){if(!trip)return null;if(!trip.v27)trip.v27={w:null,puW:[],log:[],stops:[],init:0};return trip.v27;}
+function v27Log(ic,t){const T=v27T();if(T){T.log.push({ic,t});if(T.log.length>30)T.log.shift();}try{v26Log(ic,t,"v27");}catch(e){}}
+const v27Busy=()=>!!(trip&&trip.v27&&trip.v27.w&&!trip.v27.w.done);
+const v27Key=r=>{try{return mainKey(r);}catch(e){return "main";}};
+
+// ---------- Espera con cronómetro real (bloquea el botón de avance hasta que acaba) ----------
+// w={k,ic,title,why,said,min,sub,cancel,data}; min = duración real (en minutos del simulador = minutos reales)
+const V27DONE={};
+function v27Wait(o){const T=v27T();if(!T)return null;T.w=Object.assign({t0:animating?null:Date.now(),spm:v27spm(),done:false},o);S.trip=trip;save();
+  if(!animating&&$("overlay").querySelector(".trip"))showTrip(false);return T.w;}
+function v27WEl(w){return w.t0?(Date.now()-w.t0)/1000:0;}
+function v27WHTML(){const T=trip&&trip.v27,w=T&&T.w;if(!w||w.done)return "";const el=v27WEl(w),said=w.said;
+  const pct=said?Math.min(100,el/(said*w.spm)*100):Math.min(100,el/(w.min*w.spm)*100),over=said&&el>said*w.spm;
+  return `<div class="v27w evp${over?" over":""}" id="v27W"><div class="evh">${w.ic||"⏱️"} ${esc(w.title)} <span class="simtag">simulado</span></div>
+    ${w.quote?`<div class="evq">“${esc(w.quote)}”${w.who?`<span class="evwho"> — ${esc(w.who)}</span>`:""}</div>`:""}
+    <div><span class="v27c" id="v27Wc">${v27mmss(el)}</span> <span class="sub" id="v27Wl">${said?"dijo "+minW(said)+(over?" · ya tarda más de lo que dijo":""):"cronómetro"}</span></div>
+    <div class="bar"><i id="v27Wb" style="width:${pct}%"></i></div>
+    <div class="sub">${w.sub||""} ${w.spm>=60?"⏱️ Cronómetro real: no se puede saltar.":"Prueba acelerada: 1 min = "+w.spm+" s."}</div>
+    ${w.cancel?`<button class="btn cancel" id="v27WCancel">${esc(w.cancel)}</button>`:""}</div>`;}
+{const _st=showTrip;showTrip=function(){const v=_st.apply(this,arguments);try{if(!window.NO_V27&&v27Busy()&&trip.r.svc!=="paquete"){const ov=$("overlay"),ph=ov.querySelector(".trip .phase");
+    if(ph&&!$("v27W"))ph.insertAdjacentHTML("afterend",v27WHTML());
+    const wk=trip.v27.w.k;if(ph&&(wk==="vuelo"||wk==="recogida"))ph.textContent="1/2 · Esperando en el punto de recogida: el viaje empieza cuando suba";
+    for(const id of ["bPick","bStop","bEnd"]){const b=$(id);if(b){b.disabled=true;b.title="Espera en curso (cronómetro real)";}}
+    const c=$("v27WCancel");if(c)c.onclick=()=>{const w=trip.v27.w;if(w&&V27DONE[w.k+"_cancel"])V27DONE[w.k+"_cancel"](w);};}}catch(e){console.error(e);}return v;};}
+function v27WTick(){if(!trip||!trip.v27||!trip.v27.w||trip.v27.w.done)return;const w=trip.v27.w;
+  if(!w.t0){if(animating)return;w.t0=Date.now();S.trip=trip;save();}
+  if(!animating&&!$("v27W")&&$("overlay").querySelector(".trip"))showTrip(false);
+  const el=v27WEl(w),c=$("v27Wc");if(c)c.textContent=v27mmss(el);
+  const said=w.said,b=$("v27Wb");if(b)b.style.width=(said?Math.min(100,el/(said*w.spm)*100):Math.min(100,el/(w.min*w.spm)*100))+"%";
+  if(said&&el>said*w.spm){const box=$("v27W");if(box&&!box.classList.contains("over")){box.classList.add("over");const l=$("v27Wl");if(l)l.textContent="dijo "+minW(said)+" · ya tarda más de lo que dijo";}}
+  if(el>=w.min*w.spm){if(animating)return;w.done=true;w.real=r2(el/w.spm);const T=trip.v27;T.w=null;S.trip=trip;save();
+    try{V27DONE[w.k]&&V27DONE[w.k](w);}catch(e){console.error(e);}if(trip&&!animating)showTrip(false);}}
+setInterval(()=>{try{if(!window.NO_V27)v27WTick();}catch(e){console.error(e);}},250);
+// Bloqueos mientras hay una espera
+{const _pu0=stopReached;stopReached=function(){if(v27Busy()){toast("⏳ Espera en curso: el cronómetro no se puede saltar");return;}return _pu0.apply(this,arguments);};}
+{const _vt=v26Tick;v26Tick=function(){if(trip&&trip.v27&&(v27Busy()||trip.v27.asleep&&!trip.v27.woke))return;return _vt.apply(this,arguments);};}
+
+// ---------- (2) Parada extra con cronómetro real ----------
+const V27_STOPWHY={
+  super:[["Había mucha cola en caja",1.5,2.2,"late"],["Solo había una caja abierta",1.4,2,"late"],["No encontraba lo que buscaba y ha preguntado a un reponedor",1.3,1.8,"late"],["Ha cogido un par de cosas más de las previstas",1.15,1.5,"late"],["Ha sido rapidísimo, no había nadie",.35,.7,"early"],["Ha tardado lo previsto",.85,1.15,"ok"]],
+  farmacia:[["No tenían el medicamento y le han buscado una alternativa",1.4,2,"late"],["Había cola y la receta electrónica no salía",1.3,1.9,"late"],["Lo tenían preparado: ha sido rapidísimo",.35,.7,"early"],["Ha tardado lo previsto",.85,1.15,"ok"]],
+  cajero:[["El cajero estaba fuera de servicio y ha tenido que ir a otro",1.8,2.6,"late"],["Había cola en el cajero",1.3,1.8,"late"],["Ha sido rapidísimo",.3,.6,"early"],["Ha tardado lo previsto",.8,1.1,"ok"]],
+  addr:[["La persona que tenía que darle la cosa no bajaba",1.4,2.2,"late"],["Se ha quedado hablando en el portal",1.2,1.7,"late"],["Ya se lo tenían preparado en la puerta",.4,.7,"early"],["Ha tardado lo previsto",.85,1.15,"ok"]]};
+function v27StopPlan(r,s){const p=r.per||{},k=V27_STOPWHY[s.errand]?s.errand:"addr",F=v27R();
+  let L=V27_STOPWHY[k];if(F.stop)L=L.filter(x=>x[3]===F.stop)||L;const x=v27rn(L.length?L:V27_STOPWHY[k]);
+  let mod=1;const e=+p.edad||40;if(e>=70)mod*=1.25;else if(e<30)mod*=.92;if(p.conv==="muy"||p.conv==="pesado")mod*=1.1;if(String(p.fisica||"").startsWith("Movilidad"))mod*=1.3;if((r.comps||[]).some(c=>c.edad<12))mod*=1.15;
+  const said=+s.wait||5;let min=said*rnd(x[1],x[2])*mod;if(F.stopMin!=null)min=+F.stopMin;
+  return {said,min:Math.max(.3,r2(min)),why:x[0],kind:x[3]};}
+{const _sb=stopBtn;stopBtn=function(r,k){const s=r&&r.pts&&r.pts[k-1];if(s&&s.kind==="extra"&&V27on("parada")&&r.svc!=="paquete")return "🛒 Llegada a "+esc(s.n)+" · empieza la espera";return _sb.apply(this,arguments);};}
+{const _sr=stopReached;stopReached=function(){const r=trip&&trip.r,k=trip&&trip.si||1,s=r&&r.pts&&r.pts[k-1];
+  const go=!!(r&&s&&s.kind==="extra"&&V27on("parada")&&!animating&&!(trip.ev&&trip.ev.cur)&&!(trip.inc&&trip.inc.cur!=null)&&!v27Busy());
+  const v=_sr.apply(this,arguments);
+  try{if(go&&trip&&trip.si===k+1){const pl=v27StopPlan(r,s),nm=pnom(r);
+    v27Wait({k:"parada",ic:"🛒",title:`${nm} está en ${s.n}`,quote:`Vuelvo en ${minW(pl.said)}`,who:nm,said:pl.said,min:pl.min,sub:"El cliente ha dicho cuánto tardaría, pero puede volver antes o después (perfil y sitio simulados).",data:{k,why:pl.why,kind:pl.kind,n:s.n}});
+    v27Log("🛒",`Llegas a ${s.n}: ${nm} baja y dice que tarda ${minW(pl.said)}`);}}catch(e){console.error(e);}
+  return v;};}
+V27DONE.parada=w=>{const r=trip.r,d=w.data,nm=pnom(r),real=w.real,diff=r2(real-w.said);
+  try{if(r.segMin&&r.segMin[d.k-1]!=null){r.segMin[d.k-1]=Math.max(0,r.segMin[d.k-1]+diff);recompute(r);refare(r);}}catch(e){console.error(e);}
+  const why=d.kind==="early"?`¡Ha sido rapidísimo! ${d.why}.`:d.kind==="late"?`Perdona la espera: ${lc1(d.why)}.`:"Ya estoy, lo previsto.";
+  (trip.v27.stops=trip.v27.stops||[]).push({n:d.n,said:w.said,real,why:d.why,kind:d.kind});
+  v27Log("⏱️",`${nm} vuelve de ${d.n}: ${fmtWait(real)} min reales (dijo ${minW(w.said)}) · ${d.why}`);
+  if(d.kind==="late"&&real>w.said*1.4)v26Eff(v27Key(r),.04,"se disculpó por tardar; la conductora esperó con paciencia");
+  v27alert("v27vuelve",`🛒 ${nm} ha vuelto`,d.why,"🛒",`${nm} ha vuelto de la parada. ${why.replace(/[«»]/g,"")}`);
+  toast(`🛒 ${nm} ha vuelto (${fmtWait(real)} min, dijo ${minW(w.said)}): ${d.why}`);S.trip=trip;save();};
+
+// ---------- (1) Paquetería: te lo acercan al coche o vas al mostrador ----------
+{const _pe=pwEnd;pwEnd=function(T){const w=T&&T.pq&&T.pq.pw;
+  try{if(w&&!w.done&&!w.v27&&V27on("pqwalk")&&w.min>=3){const F=v27R(),pB=v27clamp(.2+.07*w.min,.2,.92);
+      const bring=F.pq?F.pq==="trae":Math.random()<pB;
+      if(bring){w.v27="trae";w.save=r2(rnd(1.5,3));const out=_pe.apply(this,arguments);
+        mlog("🤝",`${w.name}: el encargado te lo acerca al coche para compensar la espera (te ahorras ~${fmtWait(w.save)} min, simulado)`);
+        v27say("El encargado te lo acerca al coche para compensar la espera.","pqlisto");toast("🤝 Te lo acercan al coche para compensar la espera");return out;}
+      w.v27="anda";const add=r2(F.pqMin!=null?+F.pqMin:rnd(2,4));w.min=r2(w.min+add);w.walk=add;
+      mlog("🚶",`${w.name}: el paquete está listo, pero tienes que ir a recogerlo al mostrador (+${fmtWait(add)} min, simulado)`);
+      v27alert("v27pq","🚶 Ve a recogerlo al mostrador",w.name,"📦",`El paquete ya está, pero te piden que vayas a recogerlo al mostrador. Unos ${Math.round(add)} minutos más.`);
+      pqSave();if(trip===T&&!animating)pqShow(false);pwWire();return;}}catch(e){console.error(e);}
+  return _pe.apply(this,arguments);};}
+{const _ph=pwHTML;pwHTML=function(){let h=_ph.apply(this,arguments);try{const w=trip&&trip.pq&&trip.pq.pw;if(h&&w&&w.v27==="anda")h=h.replace("min para que te entreguen el paquete","min: vas andando al mostrador a recogerlo").replace('<div class="evh">⏳ Esperando en la recogida','<div class="evh">🚶 Vas al mostrador a por el paquete');}catch(e){}return h;};}
+
+// ---------- (3) Más datos reales: nombres, apellidos, pueblos y temas (frecuencias aproximadas, solo para el sorteo) ----------
+const V27_NM={m:[["Anselmo",70],["Baltasar",70],["Casimiro",70],["Ceferino",70],["Cipriano",70],["Dámaso",70],["Demetrio",70],["Efrén",45],["Fulgencio",70],["Gabino",70],["Genaro",70],["Gilberto",58],["Heriberto",70],["Higinio",70],["Horacio",58],["Humberto",55],["Inocencio",70],["Lisardo",70],["Macario",70],["Maximino",70],["Melchor",70],["Nazario",70],["Nemesio",70],["Nicanor",70],["Norberto",60],["Olegario",70],["Plácido",70],["Porfirio",70],["Prudencio",70],["Quintín",70],["Reinaldo",55],["Remigio",70],["Rosendo",70],["Segundo",70],["Severino",70],["Silvestre",70],["Sixto",70],["Tadeo",30],["Tiburcio",70],["Timoteo",70],["Ulises",40],["Urbano",70],["Venancio",70],["Virgilio",70],["Wenceslao",70],["Zacarías",70],["Iñigo",32],["Adrián",40],["Rubén",42],["Iván",40],["Óscar",45],["Sergio",40],["Raúl",45],["Alberto",48],["Gonzalo",35],["Álvaro",28],["Hugo",10],["Mario",25],["Marcos",28],["Jaime",30],["Ignacio",45],["Rodrigo",28],
+  ["Ismael",38],["Joaquín",58],["Lorenzo",60],["Valentín",62],["Fermín",66],["Germán",48],["Héctor",38],["Julián",60],["Leandro",50],["Matías",20],["Nicolás",30],["Octavio",65],["Ramiro",55],["Saúl",35],["Teodoro",72],
+  ["Vicente",60],["Gregorio",68],["Benito",72],["Bruno",12],["Darío",22],["Elías",30],["Fabián",30],["Gael",8],["Izan",10],["Leo",8],["Mateo",9],["Thiago",8],["Unai",16],["Aitor",30],["Asier",28],["Iker",20],
+  ["Eloy",45],["Esteban",55],["Florencio",76],["Hilario",74],["Isidro",70],["Jacinto",74],["Lucio",68],["Marcelino",72],["Plácido",76],["Rogelio",70],["Severiano",78],["Tomás",50],["Cristian",28],["Aarón",20],
+  ["Gabriel",30],["Samuel",22],["Abel",35],["Andrés",52],["Emilio",58],["Felipe",55],["Guillermo",40],["Ezequiel",45],["Bernardo",64],["Agustín",62]],
+  f:[["Angustias",70],["Brígida",70],["Casilda",70],["Chelo",70],["Clotilde",70],["Covadonga",70],["Custodia",70],["Dafne",25],["Desamparados",70],["Dulce",70],["Goretti",45],["Sonsoles",70],["Valvanera",70],["Zaida",30],["Xènia",28],["Jara",22],["Lucía",18],["Sofía",14],["Martina",10],["Valeria",14],["Daniela",18],["Paula",22],["Irene",30],["Nerea",26],["Lorena",36],["Rocío",36],["Silvia",45],["Sonia",46],["Verónica",44],["Yolanda",52],["Inmaculada",58],
+  ["Remedios",72],["Encarnación",74],["Milagros",68],["Purificación",72],["Consuelo",72],["Amparo",66],["Asunción",72],["Rosario",68],["Trinidad",72],["Esperanza",64],["Gloria",62],["Paloma",52],["Macarena",34],
+  ["Adriana",22],["Ainhoa",28],["Aitana",14],["Alma",8],["Carla",18],["Elena",38],["Emma",10],["Gabriela",22],["Jimena",14],["Julia",16],["Lola",14],["Manuela",50],["Mía",8],["Noelia",34],["Olivia",8],["Triana",12],
+  ["Vega",12],["Zoe",12],["Celia",28],["Estefanía",36],["Vanesa",40],["Tamara",34],["Miriam",36],["Cristina",42],["Mónica",46],["Beatriz",44],["Soledad",66],["Pilar",64],["Mercedes",64],["Rosa María",62],["Ana Belén",44],["María Jesús",58],["Begoña",54]]};
+const V27_AP=("Arroyo Barrios Bermúdez Cabello Cano Carmona Carrasco Castaño Cuesta Diez Escobar Espinosa Esteban Ferrer Galán Gallardo Guerrero Hidalgo Iglesias Lozano Luque Maldonado Manzano Marín Mateos Meléndez Merino Miranda Montero Mora Moya Nieto Ortega Pardo Pascual Peña Prieto Quintana Redondo Rey Rivas Robles Salazar Serrano Soler Toledo Trujillo Valero Vallejo Varela Velasco Vidal Zamora "+ "Aranda Becerra Benavides Calvo Cobo Collado Corral Escudero Heredia Huertas Lorente Mancebo Mesa Naranjo Olmedo Palomo Pastor Quesada Rueda Salinas Soria Tapia Tejero Villalba Yáñez Zapata Abad Acosta Arias Bravo Carrillo Chacón Cordero Figueroa Galindo Granados Lara Llorente Marco Mendoza Muñiz Ochoa Orozco Pacheco Padilla Ramos Rosales Santana Segura Solís Valverde Villar Adán Almagro Almeida Anguita Briones Buendía Cañizares Cisneros Echevarría Elías Feijoo Gamero Infante Manzanares Nogales Pedraza Pelayo Sanchís Sepúlveda Zurita Arrieta Echeverría Etxeberria Garmendia Goikoetxea Larrañaga Olano Urrutia Zubizarreta Ferrándiz Vilaró Casals Rial Castiñeira Fraga Lamas Couto Bouzas Arteaga Bilbao Ugarte Zabala Lasa Irigoyen Uriarte Aldama Albaladejo Alcañiz Bermejo Cebrián Corbalán Escrivá Fenoll Gisbert Llopis Mompó Monzó Puchol Sendra Tormo").split(" ");
+const V27_TOWNS=["Écija|Sevilla","Osuna|Sevilla","Carmona|Sevilla","Utrera|Sevilla","Lebrija|Sevilla","Morón de la Frontera|Sevilla","Estepa|Sevilla","Antequera|Málaga","Ronda|Málaga","Nerja|Málaga","Vélez-Málaga|Málaga","Coín|Málaga","Archidona|Málaga","Úbeda|Jaén","Baeza|Jaén","Linares|Jaén","Andújar|Jaén","Alcalá la Real|Jaén","Martos|Jaén","Lucena|Córdoba","Priego de Córdoba|Córdoba","Montilla|Córdoba","Cabra|Córdoba","Puente Genil|Córdoba","Pozoblanco|Córdoba","Baza|Granada","Guadix|Granada","Loja|Granada","Motril|Granada","Almuñécar|Granada","Níjar|Almería","Vera|Almería","Huércal-Overa|Almería","Roquetas de Mar|Almería","Arcos de la Frontera|Cádiz","Vejer de la Frontera|Cádiz","Conil de la Frontera|Cádiz","Tarifa|Cádiz","Chiclana de la Frontera|Cádiz","Sanlúcar de Barrameda|Cádiz","Ubrique|Cádiz","Ayamonte|Huelva","Lepe|Huelva","Almonte|Huelva","Moguer|Huelva","Aracena|Huelva","Astorga|León","Ponferrada|León","La Bañeza|León","Sahagún|León","Medina del Campo|Valladolid","Tordesillas|Valladolid","Peñafiel|Valladolid","Medina de Rioseco|Valladolid","Aranda de Duero|Burgos","Miranda de Ebro|Burgos","Lerma|Burgos","Briviesca|Burgos","Béjar|Salamanca","Ciudad Rodrigo|Salamanca","Alba de Tormes|Salamanca","Benavente|Zamora","Toro|Zamora","Cuéllar|Segovia","El Espinar|Segovia","Arévalo|Ávila","El Barco de Ávila|Ávila","Almazán|Soria","El Burgo de Osma|Soria","Aguilar de Campoo|Palencia","Guardo|Palencia","Talavera de la Reina|Toledo","Illescas|Toledo","Consuegra|Toledo","Madridejos|Toledo","Tomelloso|Ciudad Real","Valdepeñas|Ciudad Real","Alcázar de San Juan|Ciudad Real","Puertollano|Ciudad Real","Almagro|Ciudad Real","Hellín|Albacete","Villarrobledo|Albacete","Almansa|Albacete","La Roda|Albacete","Tarancón|Cuenca","San Clemente|Cuenca","Sigüenza|Guadalajara","Azuqueca de Henares|Guadalajara","Aranjuez|Madrid","Chinchón|Madrid","Alcalá de Henares|Madrid","Torrejón de Ardoz|Madrid","Collado Villalba|Madrid","San Lorenzo de El Escorial|Madrid","Navalcarnero|Madrid","Arganda del Rey|Madrid","Colmenar Viejo|Madrid","Valdemoro|Madrid","Xàtiva|Valencia","Gandia|Valencia","Sueca|Valencia","Requena|Valencia","Ontinyent|Valencia","Alzira|Valencia","Dénia|Alicante","Xàbia|Alicante","Villena|Alicante","Elda|Alicante","Orihuela|Alicante","Torrevieja|Alicante","Alcoy|Alicante","Vinaròs|Castellón","Benicarló|Castellón","Morella|Castellón","Burriana|Castellón","Vila-real|Castellón","Calatayud|Zaragoza","Tarazona|Zaragoza","Ejea de los Caballeros|Zaragoza","Caspe|Zaragoza","Jaca|Huesca","Barbastro|Huesca","Monzón|Huesca","Fraga|Huesca","Alcañiz|Teruel","Calamocha|Teruel","Ferrol|A Coruña","Betanzos|A Coruña","Carballo|A Coruña","Ribeira|A Coruña","Monforte de Lemos|Lugo","Viveiro|Lugo","Vilalba|Lugo","O Barco de Valdeorras|Ourense","Verín|Ourense","Vilagarcía de Arousa|Pontevedra","Cangas|Pontevedra","Lalín|Pontevedra","Sanxenxo|Pontevedra","Avilés|Asturias","Mieres|Asturias","Langreo|Asturias","Llanes|Asturias","Cangas de Onís|Asturias","Luarca|Asturias","Torrelavega|Cantabria","Castro Urdiales|Cantabria","Laredo|Cantabria","Reinosa|Cantabria","Santillana del Mar|Cantabria","Eibar|Gipuzkoa","Tolosa|Gipuzkoa","Zarautz|Gipuzkoa","Hondarribia|Gipuzkoa","Getxo|Bizkaia","Gernika-Lumo|Bizkaia","Durango|Bizkaia","Llodio|Araba/Álava","Tudela|Navarra","Estella-Lizarra|Navarra","Tafalla|Navarra","Olite|Navarra","Calahorra|La Rioja","Haro|La Rioja","Arnedo|La Rioja","Santo Domingo de la Calzada|La Rioja","Plasencia|Cáceres","Trujillo|Cáceres","Coria|Cáceres","Jerez de los Caballeros|Badajoz","Llerena|Badajoz","Lorca|Murcia","Caravaca de la Cruz|Murcia","Yecla|Murcia","Jumilla|Murcia","Águilas|Murcia","Mazarrón|Murcia","Cieza|Murcia","Manacor|Illes Balears","Inca|Illes Balears","Sóller|Illes Balears","Ciutadella de Menorca|Illes Balears","Maó|Illes Balears","Sant Antoni de Portmany|Illes Balears","Arucas|Las Palmas","Gáldar|Las Palmas","Teror|Las Palmas","Tías|Las Palmas","La Oliva|Las Palmas","Icod de los Vinos|Santa Cruz de Tenerife","La Orotava|Santa Cruz de Tenerife","Los Llanos de Aridane|Santa Cruz de Tenerife","Vícar|Almería","Adra|Almería","Berja|Almería","Garrucha|Almería","Barbate|Cádiz","Medina-Sidonia|Cádiz","Olvera|Cádiz","Chipiona|Cádiz","Puerto Real|Cádiz","San Roque|Cádiz","Grazalema|Cádiz","Aguilar de la Frontera|Córdoba","Peñarroya-Pueblonuevo|Córdoba","Salobreña|Granada","Huéscar|Granada","Santa Fe|Granada","Alhama de Granada|Granada","Bollullos Par del Condado|Huelva","Cartaya|Huelva","Punta Umbría|Huelva","La Carolina|Jaén","Bailén|Jaén","Villacarrillo|Jaén","Alhaurín de la Torre|Málaga","Alhaurín el Grande|Málaga","Cártama|Málaga","Torrox|Málaga","Álora|Málaga","Campillos|Málaga","Manilva|Málaga","Mairena del Aljarafe|Sevilla","Los Palacios y Villafranca|Sevilla","La Rinconada|Sevilla","Arahal|Sevilla","Cazalla de la Sierra|Sevilla","Sanlúcar la Mayor|Sevilla","Lora del Río|Sevilla","Binéfar|Huesca","Graus|Huesca","Aínsa|Huesca","Tamarite de Litera|Huesca","Utrillas|Teruel","Albarracín|Teruel","Valderrobres|Teruel","Mora de Rubielos|Teruel","Utebo|Zaragoza","La Almunia de Doña Godina|Zaragoza","Borja|Zaragoza","Daroca|Zaragoza","Zuera|Zaragoza","Siero|Asturias","Villaviciosa|Asturias","Navia|Asturias","Cangas del Narcea|Asturias","Grado|Asturias","Castro-Urdiales|Cantabria","Comillas|Cantabria","Potes|Cantabria","Suances|Cantabria","Arenas de San Pedro|Ávila","Las Navas del Marqués|Ávila","Piedrahíta|Ávila","Candeleda|Ávila","Medina de Pomar|Burgos","Villarcayo|Burgos","Salas de los Infantes|Burgos","Belorado|Burgos","San Andrés del Rabanedo|León","Valencia de Don Juan|León","Bembibre|León","Cacabelos|León","Venta de Baños|Palencia","Paredes de Nava|Palencia","Carrión de los Condes|Palencia","Herrera de Pisuerga|Palencia","Santa Marta de Tormes|Salamanca","Peñaranda de Bracamonte|Salamanca","Vitigudino|Salamanca","San Ildefonso|Segovia","Sepúlveda|Segovia","Riaza|Segovia","Cantalejo|Segovia","Ayllón|Segovia","Ágreda|Soria","San Leonardo de Yagüe|Soria","Medinaceli|Soria","Ólvega|Soria","Laguna de Duero|Valladolid","Tudela de Duero|Valladolid","Íscar|Valladolid","Simancas|Valladolid","Puebla de Sanabria|Zamora","Fermoselle|Zamora","Villalpando|Zamora","Alcañices|Zamora","Caudete|Albacete","Tobarra|Albacete","Alcaraz|Albacete","Madrigueras|Albacete","Daimiel|Ciudad Real","La Solana|Ciudad Real","Miguelturra|Ciudad Real","Socuéllamos|Ciudad Real","Las Pedroñeras|Cuenca","Quintanar del Rey|Cuenca","Huete|Cuenca","Belmonte|Cuenca","Cabanillas del Campo|Guadalajara","Alovera|Guadalajara","Pastrana|Guadalajara","Brihuega|Guadalajara","Seseña|Toledo","Sonseca|Toledo","Oropesa|Toledo","Badalona|Barcelona","Martorell|Barcelona","Mollet del Vallès|Barcelona","Roses|Girona","Sant Feliu de Guíxols|Girona","Cervera|Lleida","Solsona|Lleida","Tremp|Lleida","Vielha e Mijaran|Lleida","Calafell|Tarragona","Montblanc|Tarragona","Sant Carles de la Ràpita|Tarragona","Elche|Alicante","Benidorm|Alicante","San Vicente del Raspeig|Alicante","Petrer|Alicante","Benicàssim|Castellón","Almassora|Castellón","Paterna|Valencia","Oliva|Valencia","Mérida|Badajoz","Montijo|Badajoz","Villafranca de los Barros|Badajoz","Fregenal de la Sierra|Badajoz","Azuaga|Badajoz","Castuera|Badajoz","Miajadas|Cáceres","Moraleja|Cáceres","Jaraíz de la Vera|Cáceres","Valencia de Alcántara|Cáceres","Guadalupe|Cáceres","Hervás|Cáceres","Santiago de Compostela|A Coruña","Narón|A Coruña","Oleiros|A Coruña","Arteixo|A Coruña","Muros|A Coruña","Ortigueira|A Coruña","Cee|A Coruña","Foz|Lugo","Burela|Lugo","Chantada|Lugo","Mondoñedo|Lugo","Xinzo de Limia|Ourense","Celanova|Ourense","Ribadavia|Ourense","Allariz|Ourense","Vigo|Pontevedra","Redondela|Pontevedra","Marín|Pontevedra","Ponteareas|Pontevedra","Cambados|Pontevedra","Baiona|Pontevedra","Calvià|Illes Balears","Ibiza|Illes Balears","Alcúdia|Illes Balears","Telde|Las Palmas","Arrecife|Las Palmas","Puerto del Rosario|Las Palmas","Mogán|Las Palmas","San Cristóbal de La Laguna|Santa Cruz de Tenerife","Adeje|Santa Cruz de Tenerife","Puerto de la Cruz|Santa Cruz de Tenerife","Santa Cruz de La Palma|Santa Cruz de Tenerife","San Sebastián de La Gomera|Santa Cruz de Tenerife","Valverde|Santa Cruz de Tenerife","Fuenlabrada|Madrid","Leganés|Madrid","Alcorcón|Madrid","Parla|Madrid","Las Rozas de Madrid|Madrid","Pozuelo de Alarcón|Madrid","Tres Cantos|Madrid","Cartagena|Murcia","Torre-Pacheco|Murcia","Burlada|Navarra","Barañáin|Navarra","Corella|Navarra","Alsasua|Navarra","Peralta|Navarra","Amurrio|Araba/Álava","Salvatierra|Araba/Álava","Laguardia|Araba/Álava","Arrasate|Gipuzkoa","Errenteria|Gipuzkoa","Azpeitia|Gipuzkoa","Beasain|Gipuzkoa","Hernani|Gipuzkoa","Getaria|Gipuzkoa","Portugalete|Bizkaia","Santurtzi|Bizkaia","Basauri|Bizkaia","Mungia|Bizkaia","Leioa|Bizkaia","Sestao|Bizkaia","Balmaseda|Bizkaia","Alfaro|La Rioja","Nájera|La Rioja","Lardero|La Rioja","Cervera del Río Alhama|La Rioja"];
+const V27_TOP=[["la feria del pueblo",4],["el precio de la luz",5],["la última serie de moda",5],["cómo ha cambiado el centro de la ciudad",4],["las obras de la calle",4],["el colegio de los hijos",4],["las rebajas",3],
+  ["la Vuelta ciclista",3],["el Mundial y la selección",4],["el baloncesto",3],["la paella del domingo",3],["el teletrabajo",4],["las oposiciones",3],["los nietos",4],["la jubilación",3],["el camino de Santiago",3],
+  ["playas para el verano",4],["los turistas en la ciudad",3],["el alquiler y los pisos turísticos",4],["la Semana Santa",3],["las fiestas patronales",3],["los perros y los gatos de casa",3],["los sitios de tapas",4],["el móvil nuevo",3],["la radio de la mañana",2]];
+const V27_DATA={nm:0,ap:0,towns:0,top:0};
+if(!window.NO_V27&&!window.NO_V26&&v27S().datos){try{
+  for(const g of ["m","f"])for(const [n,ed] of V27_NM[g]){const NL=g==="m"?NAMES_M:NAMES_F;if(NL.includes(n)||INE_NOM[g].some(x=>x[0]===n))continue;NL.push(n);INE_NOM[g].push([n,9000,ed]);V27_DATA.nm++;}
+  for(const a of V27_AP)if(!INE_NOM.a.some(x=>x[0]===a)){INE_NOM.a.push([a,9000]);V27_DATA.ap++;}
+  for(const t of V27_TOWNS)if(!TOWNS.includes(t)){TOWNS.push(t);V27_DATA.towns++;}
+  for(const t of V27_TOP)if(!TOPICS.some(x=>x[0]===t[0])){TOPICS.push(t);V27_DATA.top++;}}catch(e){console.error(e);}}
+
+// ---------- Rasgos v27 de cada solicitud ----------
+const V27_FAM=[["futbolista","futbolista","de Primera División"],["cantante","cantante","de pop"],["actor","actriz","de series"],["presentador de televisión","presentadora de televisión",""],["tenista","tenista","profesional"],["chef","chef","con estrella"],["influencer","influencer","con millones de seguidores"]];
+const V27_FL_FROM=["Londres-Gatwick","París-Orly","Ámsterdam","Roma-Fiumicino","Berlín","Lisboa","Tenerife Norte","Gran Canaria","Palma de Mallorca","Sevilla","Bilbao","Fráncfort","Bruselas","Milán-Malpensa","Zúrich","Oporto","Dublín","Múnich"];
+function v27Flags(r){if(!r||r.svc==="paquete"||window.NO_V27||window.NO_V26)return r;const F=v27R(),p=r.per||{},adult=(+p.edad||30)>=18,urb=r.svc==="urbano";
+  // (4) Asiento
+  if(V27on("asiento")&&p){const nC=(r.comps||[]).length,kids=(r.comps||[]).some(c=>c.edad<12),pet=(r.needs||[]).some(n=>n.k==="mascota");
+    let cop=F.seat?F.seat==="copiloto":(!adult||(+p.edad||30)<16)?false:nC>=3?true:nC>=1?(kids?Math.random()<.5:Math.random()<.3):Math.random()<(p.g==="m"?.3:.18);
+    if(pet&&!F.seat)cop=false;p.seat=cop?"copiloto":"detrás";
+    if(cop&&p.g==="m"&&adult){p.flirt=true;p.v27fl=true;}}
+  // (13) Pareja cariñosa: casi siempre parejas jóvenes
+  const pa=(r.comps||[]).find(c=>c.rel==="Pareja");r.couple=null;
+  if(urb&&pa&&adult&&V27on("pareja")&&(F.couple||Math.random()<((+p.edad||40)<35?.05:.008))){r.couple={type:F.coupleType||wpick([["vergonzosa",50],["descarada",30],["susceptible",20]]),with:pa.nom||String(pa.name||"").split(" ")[0]};p.seat="detrás";if(p.v27fl){p.flirt=false;p.v27fl=false;}}
+  // (10) Vuelo con retraso
+  r.fl=null;if(urb&&r.pu&&r.pu.hub==="air"&&V27on("vuelo")&&(F.fl||Math.random()<.3)){r.fl={no:v27rn(["VY","IB","UX","FR","V7","I2","NT","YW","U2"])+rndI(1000,8999),from:v27rn(V27_FL_FROM),delay:F.flDelay!=null?+F.flDelay:rndI(10,35)};}
+  // (11) Reservado para otra persona
+  r.forO=null;if(urb&&V27on("terceros")&&adult&&(F.forO||Math.random()<.05)){const old=(+p.edad||40)>=68,kind=F.forO&&F.forO!==true?F.forO:old?"familia":"empresa";
+    if(kind==="familia"){const g=Math.random()<.5?"m":"f",nm=v27rn(g==="m"?NAMES_M:NAMES_F),rel=(+p.edad||70)>=80&&Math.random()<.4?v27gw("nieto","nieta",g):v27gw("hijo","hija",g);
+      r.forO={kind,by:nm,rel,g,ins:v27rn([`Va con bastón: ayúda${p.g==="f"?"la":"le"} a subir, por favor`,"Avísame cuando llegue, por favor",`Oye un poco mal: hábla${p.g==="f"?"la":"le"} alto y despacio`,`Lleva una bolsa pesada: ayúda${p.g==="f"?"la":"le"} con ella`]),notify:true};}
+    else r.forO={kind:"empresa",by:"su empresa",rel:"empresa",ins:v27rn(["Factura a nombre de la empresa, por favor","Avisadnos cuando llegue a destino","Es su primer día: déjalo en la puerta principal"]),notify:Math.random()<.6};
+    if(/Avís/.test(r.forO.ins))r.forO.notify=true;}
+  // (12) Famoso simulado (ficticio)
+  r.fam=null;if(urb&&adult&&V27on("famosos")&&(F.fam||Math.random()<.004)){const f=F.famKind?V27_FAM.find(x=>x[0]===F.famKind)||V27_FAM[0]:v27rn(V27_FAM);r.fam={k:f[0],t:v27gw(f[0],f[1],p.g)+(f[2]?" "+f[2]:"")};}
+  // (9) Se dormirá en el viaje (largo o de madrugada)
+  const h=simNow().h,night=h>=0&&h<6||h>=23;r.sleep=V27on("dormido")&&(F.sleep||((r.min||0)>=35||night)&&Math.random()<((r.min||0)>=35?.3:.18));
+  if(r.couple)r.sleep=!!F.sleep;
+  // (5) Llamada antes de la recogida
+  r.call=null;if(urb&&V27on("llamadas")&&!r.fl&&(F.call||Math.random()<.16))r.call=F.call&&F.call!==true?F.call:wpick([["atras",22],["baja2",30],["noenc",20],["esquina",16],["maleta",12]]);
+  return r;}
+{const _rf=v26ReqFlags;v26ReqFlags=function(r){const v=_rf.apply(this,arguments);try{v27Flags(r);}catch(e){console.error(e);}return v;};}
+{const _vq=VOZT.req;VOZT.req=r=>{let s=_vq(r);if(window.NO_V27||!r)return s;try{
+  if(r.fam)s+=` Famoso simulado: ${r.fam.t}. Pide discreción.`;if(r.fl)s+=` Recogida en el aeropuerto, vuelo ${r.fl.no.replace(/(\D+)(\d+)/,"$1 $2")} desde ${r.fl.from}.`;
+  if(r.forO)s+=r.forO.kind==="empresa"?" Reservado por su empresa.":` Reservado por su ${r.forO.rel}.`;
+  if(r.per&&r.per.seat==="copiloto")s+=" Se sienta de copiloto.";}catch(e){}return s;};}
+{const _cx=ctxHTML;ctxHTML=function(r){let h=_cx.apply(this,arguments);if(window.NO_V27||window.NO_V26||!r||r.svc==="paquete")return h;
+  try{const tags=[],p=r.per||{},inTrip=trip&&trip.r===r,T=inTrip&&trip.v27;
+    if(p.seat&&V27on("asiento"))tags.push(`<span class="v26tag v27" title="Asiento elegido por el pasajero (simulado)">💺 ${p.seat==="copiloto"?"Copiloto":"Detrás"}</span>`);
+    if(r.fam)tags.push(`<span class="v26tag v27f" title="Personaje ficticio: no es una persona real">⭐ Famoso simulado: ${esc(r.fam.t)}</span>`);
+    if(r.fl)tags.push(`<span class="v26tag v27" title="Número y estado del vuelo simulados">✈️ Vuelo ${esc(r.fl.no)} desde ${esc(r.fl.from)} (simulado)</span>`);
+    if(r.forO)tags.push(`<span class="v26tag v27" title="La persona que reserva no es la que viaja (simulado)">👥 Reservado por ${r.forO.kind==="empresa"?"su empresa":esc(r.forO.by)+" ("+esc(r.forO.rel)+")"} · «${esc(r.forO.ins)}»</span>`);
+    if(T&&T.puAdj)tags.push(`<span class="v26tag v27s">📍 Recogida ajustada: ${esc(T.puAdj)}</span>`);
+    if(T&&T.asleep&&!T.woke)tags.push(`<span class="v26tag v27s">😴 ${esc(pnom(r))} se ha dormido</span>`);
+    if(inTrip&&v27Dirty())tags.push(`<span class="v26tag v27s">🧽 Coche sucio</span>`);
+    if(tags.length){if(/class="v26tags"/.test(h))h=h.replace(/(<div class="v26tags"[^>]*>)/,"$1"+tags.join(""));else h+=`<div class="v26tags v27tags" style="margin:4px 0">${tags.join("")}</div>`;}}catch(e){console.error(e);}
+  return h;};}
+
+// ---------- Eventos v27 durante el viaje ----------
+function v27Init(){const T=v27T(),r=trip.r,now=Date.now(),F=v27R();if(T.init)return T;T.init=now;
+  const at=(s,a,b)=>now+(F[s]!=null?F[s]*1000:rnd(a,b)*1000);
+  if(r.call)T.callAt=at("callAt",8,30);if(r.fl)T.flAt=at("flAt",4,12);if(r.forO)T.forAt=at("forAt",6,25);
+  if(V27on("control")&&(F.control||Math.random()<.012))T.ctlAt=at("ctlAt",20,150);
+  S.trip=trip;save();return T;}
+function v27Tick(){if(window.NO_V27||window.NO_V26||!trip||!trip.r||trip.r.svc==="paquete")return;const T=v27Init(),r=trip.r,now=Date.now(),F=v27R();
+  if(animating||v27Busy()||(trip.ev&&trip.ev.cur)||(trip.inc&&trip.inc.cur!=null))return;
+  const busy=V26C||V26Q.some(q=>q.trip);if(busy)return;
+  if(trip.phase===1&&!trip.atPickup){
+    if(T.flAt&&now>=T.flAt){T.flAt=0;return v27Flight();}
+    if(T.forAt&&now>=T.forAt){T.forAt=0;return v27ForCall();}
+    if(T.callAt&&now>=T.callAt){T.callAt=0;return v27Call();}}
+  if(trip.phase===2&&!T.p2){T.p2=now;if(r.sleep)T.sleepAt=now+(F.sleepAt!=null?F.sleepAt*1000:rnd(90,300)*1000);if(r.couple)T.coupleAt=now+(F.coupleAt!=null?F.coupleAt*1000:rnd(40,150)*1000);
+    if(r.fam)T.famAt=now+(F.famAt!=null?F.famAt*1000:rnd(8,25)*1000);S.trip=trip;save();}
+  if(T.ctlAt&&now>=T.ctlAt){T.ctlAt=0;return v27Control();}
+  if(trip.phase!==2)return;
+  if(T.famAt&&now>=T.famAt){T.famAt=0;return v27Fam();}
+  if(T.coupleAt&&now>=T.coupleAt&&!T.asleep){T.coupleAt=0;return v27Couple();}
+  if(T.sleepAt&&now>=T.sleepAt){T.sleepAt=0;T.asleep=true;const nm=pnom(r);v27Log("😴",`${nm} se ha quedado ${v27gw("dormido","dormida",(r.per||{}).g)} en el asiento ${(r.per||{}).seat==="copiloto"?"del copiloto":"de atrás"}`);
+    v27alert("v27dormido",`😴 ${nm} se ha dormido`,"Al llegar tendrás que despertarle","😴",`${nm} se ha quedado ${v27gw("dormido","dormida",(r.per||{}).g)}. Al llegar tendrás que despertarle.`);S.trip=trip;save();showTrip(false);}}
+setInterval(()=>{try{v27Tick();}catch(e){console.error(e);}},1000);
+
+// (5) Llamadas antes de la recogida
+const V27_CALLS={
+  atras:{q:pl=>`Hola, estoy en la puerta de atrás de ${pl}. ¿Puedes venir aquí?`,ok:"✅ Voy a la puerta de atrás",no:"✋ Que venga a la entrada principal",
+    y:T=>{T.puAdj="puerta de atrás";return [.08,"vino a buscarme a la puerta de atrás, un detalle","Cambias el punto: la puerta de atrás"];},n:T=>{T.puW.push([rnd(1.5,3),"viene andando desde la puerta de atrás"]);return [-.05,"","Le pides que venga a la entrada principal"];}},
+  baja2:{q:()=>"¡Perdona! Bajo en 2 minutos, que estoy terminando de vestirme.",ok:"✅ Vale, te espero",no:"✋ Por favor, baja ya, que tengo prisa",said:2,
+    y:T=>{T.puW.push([rnd(1.5,4.5),"baja a la calle (dijo 2 minutos)",2]);return [.05,"me esperó sin problema","Le dices que le esperas"];},n:T=>{T.puW.push([rnd(1,2.5),"baja con prisas",2]);return [-.1,"me metió prisa por teléfono","Le metes prisa"];}},
+  noenc:{q:()=>"No te encuentro, ¿dónde estás exactamente?",ok:"✅ Le describes el coche y la matrícula",no:"✋ Que mire la app",
+    y:T=>[.05,"me explicó muy bien dónde estaba","Le describes el coche y la matrícula"],n:T=>{T.puW.push([rnd(1,2),"tarda en encontrar el coche"]);return [-.08,"no me ayudó a encontrar el coche","Le dices que mire la app"];}},
+  esquina:{q:()=>"¿Me recoges en la esquina de enfrente? Es que aquí no se puede parar.",ok:"✅ Vale, cambio el punto",no:"✋ Mejor en el punto de la app",
+    y:T=>{T.puAdj="esquina de enfrente";return [.06,"se adaptó al cambio de punto","Cambias el punto: la esquina de enfrente"];},n:T=>{T.puW.push([rnd(1,2),"cruza la calle hasta el punto"]);return [-.03,"","Le pides que vaya al punto de la app"];}},
+  maleta:{q:()=>"Llevo dos maletas grandes, ¿me ayudas a cargarlas?",ok:"✅ Claro, te ayudo",no:"✋ No puedo bajar del coche",
+    y:T=>{T.puW.push([1,"le ayudas a cargar las maletas"]);return [.12,"me ayudó con las maletas","Le ayudas con las maletas"];},n:T=>{T.puW.push([rnd(1.5,2.5),"carga sus maletas sin ayuda"]);return [-.08,"no me ayudó con las maletas","No le ayudas con las maletas"];}}};
+function v27Call(){const r=trip.r,T=v27T(),k=r.call,C=V27_CALLS[k];if(!C)return;const nm=pnom(r),pl=(plOf(r,"pu")||{}).name||"la recogida",q=C.q(String(pl).split(",")[0]);
+  v27Ask({k:"v27call",ic:"📞",title:`Te llama ${nm}`,body:`<div class="v26q">«${esc(q)}»</div><div class="sub">Llamada antes de la recogida (simulada).</div>`,okTxt:C.ok,noTxt:C.no,snd:"v27llamada",voz:`Te llama ${nm}: ${q}`,
+    on:a=>{const T=v27T();if(!T)return;const res=a==="no"?C.n(T):C.y(T);T.call={k,a};if(res[0])v26Eff(v27Key(r),res[0],res[1]);v27Log("📞",`Llamada de ${nm}: «${q}» — ${res[2]}${a==="ign"?" (sin contestar)":""}`);S.trip=trip;save();if(!animating)showTrip(false);}});}
+// (11) Reservado para otra persona: llama quien reserva
+function v27ForCall(){const r=trip.r,o=r.forO,nm=pnom(r),who=o.kind==="empresa"?"la empresa de "+nm:`${o.by} (${v27gw("el","la",o.g)} ${o.rel} de ${nm})`;
+  const help=/ayúd|ayud/.test(o.ins),q=o.kind==="empresa"?`Hola, llamamos de la empresa de ${nm}. ${o.ins}.`:`Hola, soy ${o.by}, ${v27gw("el","la",o.g)} ${o.rel} de ${nm}. ${o.ins}.`;
+  v27Ask({k:"v27call",ic:"👥",title:`Te llama ${who}`,body:`<div class="v26q">«${esc(q)}»</div><div class="sub">Viaje reservado para otra persona (simulado).</div>`,okTxt:help?"✅ Claro, le ayudo":"✅ De acuerdo",noTxt:help?"✋ Lo siento, no puedo":"✋ No puedo comprometerme",snd:"v27llamada",voz:`Te llama ${who.replace(/\(|\)/g,"")}. ${o.ins}.`,
+    on:a=>{const T=v27T();if(!T)return;T.forA=a;if(a==="ok"){if(help)T.puW.push([1,`ayudas a ${nm} a subir`]);v26Eff(v27Key(r),.15,o.kind==="empresa"?"todo perfecto, como pidió la empresa":`muy atenta, como le pidió mi ${o.rel}`);}
+      else if(a==="no")v26Eff(v27Key(r),-.15,o.kind==="empresa"?"no hizo caso de lo que pidió la empresa":"no quiso ayudarme");
+      v27Log("👥",`${o.kind==="empresa"?"La empresa":o.by+" ("+o.rel+")"} reserva para ${nm}: «${o.ins}» — ${a==="ok"?"aceptas":a==="no"?"no te comprometes":"sin respuesta"}`);S.trip=trip;save();}});}
+// (10) Vuelo con retraso
+function v27Flight(){const r=trip.r,f=r.fl,nm=pnom(r);
+  v27Ask({k:"v27vuelo",ic:"✈️",title:"Vuelo con retraso (simulado)",body:`<div class="v26q">El vuelo <b>${esc(f.no)}</b> desde ${esc(f.from)} de ${esc(nm)} llega con unos <b>${f.delay} min</b> de retraso.</div><div class="sub">Estado del vuelo simulado (no es un dato real). Si esperas, el cronómetro real empieza al llegar al aeropuerto; si cancelas, cuenta como cancelación tuya.</div>`,
+    okTxt:"✅ Esperar en llegadas",noTxt:"✋ Cancelar el viaje",snd:"v27vuelo",voz:`El vuelo de ${nm} llega con unos ${f.delay} minutos de retraso. ¿Esperas o cancelas?`,
+    on:a=>{const T=v27T();if(!T)return;if(a==="no"){T.flA="cancel";v27Log("✈️",`Vuelo ${f.no} con ${f.delay} min de retraso: cancelas el viaje`);
+        if(trip.ev)trip.ev.log.push({ic:"✈️",t:`Cancelado por el retraso del vuelo ${f.no} (simulado)`});const go=()=>{if(!trip)return;if(animating)return void setTimeout(go,300);cancelTrip();
+          toast("✈️ Viaje cancelado por el retraso del vuelo: cuenta como cancelación tuya");v27say("Has cancelado el viaje por el retraso del vuelo. Cuenta como cancelación tuya.");};setTimeout(go,50);return;}
+      T.flA="wait";T.flT0=Date.now();v27Log("✈️",`Vuelo ${f.no} desde ${f.from} con ${f.delay} min de retraso: decides esperar`);S.trip=trip;save();}});}
+// Recogida: esperas reales (vuelo, «bajo en 2 minutos», ayudar a subir…)
+{const _pu=pickedUp;pickedUp=function(){if(v27Busy()){toast("⏳ Espera en curso: el cronómetro no se puede saltar");return;}
+  const T0=trip,ok0=!!(trip&&trip.phase===1&&trip.r.svc!=="paquete"&&!animating&&!(trip.ev&&trip.ev.cur)&&!(trip.inc&&trip.inc.cur!=null));
+  const v=_pu.apply(this,arguments);
+  try{if(ok0&&trip===T0&&!window.NO_V27&&!window.NO_V26){const T=v27T(),r=trip.r,nm=pnom(r);
+    if(trip.phase===2&&!(trip.ev&&trip.ev.cur)){
+      if(r.fl&&T.flA!=="cancel"){const f=r.fl,el=T.flT0?(Date.now()-T.flT0)/v27spm()/1000:0,left=Math.max(.5,f.delay-el);T.flA=T.flA||"wait";
+        v27Wait({k:"vuelo",ic:"✈️",title:`Esperando a ${nm} en llegadas`,quote:`Vuelo ${f.no} desde ${f.from}: retrasado (simulado)`,min:r2(left),sub:"El pasajero sale cuando aterriza y recoge su equipaje.",cancel:"✋ Dejar de esperar y cancelar",data:{left}});}
+      else if(T.puW&&T.puW.length){const tot=r2(T.puW.reduce((a,x)=>a+x[0],0)),said=T.puW.find(x=>x[2])?2:null;
+        v27Wait({k:"recogida",ic:"⏳",title:`Esperando a ${nm} en la recogida`,quote:T.puW.map(x=>x[1]).join(" · "),said,min:tot,sub:"Esperas que acordasteis por teléfono (simulado).",data:{why:T.puW.map(x=>x[1])}});T.puW=[];}}
+    else if(T.puW)T.puW=[];}}catch(e){console.error(e);}
+  return v;};}
+V27DONE.vuelo=w=>{const r=trip.r,nm=pnom(r);v26Eff(v27Key(r),.18,"me esperó aunque el vuelo llegó con retraso",.05);(trip.v27.waits=trip.v27.waits||[]).push({k:"vuelo",min:w.real});
+  v27Log("✈️",`${nm} sale de llegadas tras ${fmtWait(w.real)} min de espera real (vuelo ${r.fl.no})`);v27alert("v27vuelve",`✈️ ${nm} ya está aquí`,"Sube al coche","✈️",`${nm} ya ha salido de llegadas y sube al coche.`);};
+V27DONE.vuelo_cancel=w=>{const T=trip.v27;T.w=null;T.flA="cancel";v27Log("✈️",`Dejas de esperar a ${pnom(trip.r)} (vuelo ${trip.r.fl.no}) y cancelas`);if(trip.ev)trip.ev.log.push({ic:"✈️",t:"Cancelado: el vuelo se retrasaba (simulado)"});cancelTrip();toast("✈️ Cancelado por el retraso del vuelo: cuenta como cancelación tuya");};
+V27DONE.recogida=w=>{const r=trip.r,nm=pnom(r);(trip.v27.waits=trip.v27.waits||[]).push({k:"recogida",min:w.real});v27Log("⏳",`${nm} sube al coche tras ${fmtWait(w.real)} min${w.said?" (dijo "+minW(w.said)+")":""}`);
+  v27alert("v27vuelve",`✅ ${nm} ha subido`,"","✅",`${nm} ya ha subido al coche.`);};
+
+// (7) Control policial (muy raro): Mossos en Cataluña; Guardia Civil o Policía en el resto
+function v27Control(){const r=trip.r,cat=inCatPt(S.driver),p2=trip.phase===2,long=(r.km||0)>25||r.svc!=="urbano";
+  const force=cat?"Mossos d'Esquadra":long?"Guardia Civil":wpick([["Policía Local",60],["Policía Nacional",40]]);const nm=pnom(r);
+  v27Ask({k:"v27control",ic:"🚓",title:`Control de ${force}`,body:`<div class="v26q">Un agente te da el alto: «Buenas. Control rutinario: licencia VTC, permiso de conducir y documentación del vehículo, por favor.»</div><div class="sub">Control simulado.${p2?` Llevas a ${esc(nm)} a bordo.`:""}</div>`,
+    okTxt:"✅ Enseñar la documentación",noTxt:"✋ Preguntar el motivo del control",snd:"v27control",voz:`Control de ${force}. Te piden la licencia VTC y la documentación.`,
+    on:a=>{const T=v27T();if(!T)return;const ask=a==="no",min=r2(ask?rnd(3,5):rnd(2,4)),out=wpick([["rutinario",50],["alcoholemia",30],["licencia",20]]);
+      T.ctl={force,a,out,p2};v27Log("🚓",`Control de ${force}: ${ask?"preguntas el motivo":"enseñas la documentación"}${p2?" con "+nm+" a bordo":""}`);
+      v27Wait({k:"control",ic:"🚓",title:`Control de ${force}`,quote:ask?"Es un control rutinario de transporte de viajeros. La documentación, por favor.":"Un momento, que lo comprobamos.",who:"Agente",min,sub:"Los agentes comprueban la documentación (simulado).",data:{force,out,ask,p2}});}});}
+V27DONE.control=w=>{const d=w.data,r=trip.r,p=r.per||{},nm=pnom(r),txt={rutinario:"Todo en regla, puede continuar.",alcoholemia:"Prueba de alcoholemia: 0,00. Todo en orden.",licencia:"Licencia VTC y documentación correctas. Buen servicio."}[d.out];
+  if(d.p2){const rx=String(p.rx||""),pr=p.temp==="prisa";let e=0,t="";if(/molest|seca|borde/i.test(rx)||pr){e=-.25;t="nos paró la policía y llegué tarde";}else if(Math.random()<.35){e=.05;t="hasta en el control de policía fue muy profesional";}if(e)v26Eff(v27Key(r),e,t);}
+  v27Log("🚓",`${d.force}: «${txt}» (${fmtWait(w.real)} min parado)`);v27alert("v27vuelve",`🚓 ${d.force}: puedes seguir`,txt,"🚓",`${txt}`);};
+// (12) Famoso simulado: pide discreción
+function v27Fam(){const r=trip.r,nm=pnom(r),f=r.fam;
+  v27Ask({k:"v27fam",ic:"⭐",title:`${nm} (famoso simulado: ${f.t})`,body:`<div class="v26q">«Oye… te habrás dado cuenta de quién soy. Te pido discreción: nada de fotos ni de comentarlo por ahí, ¿vale?»</div><div class="sub">Personaje ficticio inventado por el simulador.</div>`,
+    okTxt:"✅ Prometer discreción",noTxt:"✋ Pedirle un selfie",snd:"v27famoso",voz:`${nm}, ${f.t}, te pide discreción. Es un personaje simulado.`,
+    on:a=>{const T=v27T();if(!T)return;T.fam=a;if(a==="no"){v26Eff(v27Key(r),-.35,"me pidió un selfie aunque le pedí discreción");v27Log("⭐",`Pides un selfie a ${nm} (famoso simulado): no le hace gracia`);}
+      else{T.famOk=true;v26Eff(v27Key(r),.2,"muy discreta y profesional");v27Log("⭐",`Llevas a ${nm}, ${f.t} (famoso simulado): prometes discreción`);}S.trip=trip;save();}});}
+// (13) Pareja cariñosa detrás (descrito con discreción)
+const V27_CPL={respeto:{vergonzosa:[.1,"nos lo pidió con mucha educación"],descarada:[-.08,"un poco cortarrollos"],susceptible:[-.2,"se metió en lo que no le importaba"]},
+  dejar:{vergonzosa:[0,""],descarada:[.06,"muy discreta, ni se inmutó"],susceptible:[.05,""]},
+  mal:{vergonzosa:[-.45,"nos habló de muy malas maneras"],descarada:[-.55,"nos gritó, fatal"],susceptible:[-.65,"maleducada, nos humilló"]},
+  parar:{vergonzosa:[.04,"paró un momento y lo entendimos"],descarada:[-.12,"paró el coche por una tontería"],susceptible:[-.25,"paró el coche para echarnos la bronca"]}};
+const V27_CPLR={respeto:{vergonzosa:"Se ponen colorados: «¡Ay, perdona!». Se sientan bien el resto del viaje.",descarada:"Se ríen, paran un rato… y vuelven a las andadas.",susceptible:"«¿Perdona? Tampoco estamos haciendo nada.» Se pican."},
+  dejar:{vergonzosa:"Al rato se dan cuenta y se cortan solos.",descarada:"Siguen a lo suyo; subes un poco la música.",susceptible:"Siguen a lo suyo, sin más."},
+  mal:{vergonzosa:"Se quedan muertos de vergüenza y no vuelven a hablar.",descarada:"Te contestan mal y el ambiente se tensa.",susceptible:"Se ofenden muchísimo: «¡Vaya manera de hablar!»."},
+  parar:{vergonzosa:"Paras un minuto; se disculpan y seguís.",descarada:"Paras un minuto; resoplan, pero se comportan.",susceptible:"Paras un minuto; se enfadan por la parada."}};
+function v27Couple(){const r=trip.r,c=r.couple,nm=pnom(r),pa=c.with||"su pareja";
+  v27Ask({k:"v27pareja",ic:"💏",title:"La pareja de atrás se pone cariñosa",body:`<div class="v26q">Por el retrovisor ves que ${esc(nm)} y ${esc(pa)} se están poniendo muy cariñosos en el asiento de atrás: besos y arrumacos que van a más.</div><div class="sub">Situación simulada, descrita con discreción. La reacción depende de la pareja.</div>`,
+    opts:[["respeto","🙏 Pedir respetuosamente que paren","ok"],["dejar","🙈 Dejarlos y subir la música","mid"],["mal","😠 Llamarles la atención de malas maneras","no"],["parar","🛑 Parar el coche un momento",""]],
+    snd:"v27pareja",voz:`Atención: la pareja de atrás se está poniendo muy cariñosa. ¿Qué haces?`,
+    on:a=>{const T=v27T();if(!T)return;if(a==="ign")a="dejar";const t=c.type,ef=V27_CPL[a][t],res=V27_CPLR[a][t];T.couple={a,type:t};
+      if(ef[0])v26Eff(v27Key(r),a==="mal"?ef[0]-rnd(0,.1):ef[0],ef[1]);
+      const L={respeto:"les pides respetuosamente que paren",dejar:"los dejas tranquilos",mal:"les llamas la atención de malas maneras",parar:"paras el coche un momento"}[a];
+      v27Log("💏",`Pareja cariñosa detrás (${nm} y ${pa}): ${L}. ${res}`);toast("💏 "+res);v27say(res.replace(/[«»]/g,""));
+      if(a==="parar")v27Wait({k:"pareja",ic:"🛑",title:"Coche parado un momento",quote:"Perdonad, paro un minuto.",who:drvN(),min:1,sub:"Parada breve por la pareja de atrás (simulado).",data:{}});S.trip=trip;save();}});}
+V27DONE.pareja=w=>{v27Log("🛑",`Retomas la marcha tras ${fmtWait(w.real)} min parada`);v27say("Retomas la marcha.");};
+// (9) Despertar al cliente dormido y (11) avisar a quien reservó: antes de terminar
+const V27_WAKE={suave:[.12,"me despertó con mucha delicadeza","Le despiertas con suavidad: «Hemos llegado»."],claxon:[-.35,"me despertó con un bocinazo, qué susto","Un toque de claxon: se despierta sobresaltado."],
+  radio:[-.05,"","Subes la radio poco a poco hasta que se despierta."],voz:[0,"","Le llamas en voz alta: se despierta algo aturdido."]};
+{const _ft=finishTrip;finishTrip=function(){
+  try{if(trip&&trip.v27&&!window.NO_V27&&!animating&&!(trip.ev&&trip.ev.cur)&&!(trip.inc&&trip.inc.cur!=null)&&trip.r.svc!=="paquete"){
+    if(v27Busy()){toast("⏳ Espera en curso: el cronómetro no se puede saltar");return;}
+    const T=trip.v27,r=trip.r,nm=pnom(r),g=(r.per||{}).g;
+    if(T.asleep&&!T.woke){if(V26C||V26Q.some(q=>q.k==="v27dormido"))return;
+      v27Ask({k:"v27dormido",ic:"😴",title:`Has llegado, pero ${nm} está ${v27gw("dormido","dormida",g)}`,body:`<div class="v26q">¿Cómo ${g==="f"?"la":"le"} despiertas?</div><div class="sub">Situación simulada.</div>`,
+        opts:[["suave","🤚 Con suavidad: «Hemos llegado»","ok"],["claxon","📯 Un toque de claxon","no"],["radio","📻 Subiendo la radio","mid"],["voz","🗣️ Llamándole en voz alta",""]],snd:"v27dormido",voz:`Has llegado y ${nm} sigue ${v27gw("dormido","dormida",g)}. ¿Cómo le despiertas?`,
+        on:a=>{const T=v27T();if(!T)return;if(a==="ign")a="voz";const x=V27_WAKE[a];T.woke=a;if(x[0])v26Eff(v27Key(r),x[0],x[1]);v27Log("😴",x[2].replace("sobresaltado",v27gw("sobresaltado","sobresaltada",g)));toast("😴 "+x[2]);S.trip=trip;save();setTimeout(()=>{if(trip&&trip.v27===T)finishTrip();},450);}});return;}
+    if(r.forO&&r.forO.notify&&!T.forN){if(V26C||V26Q.some(q=>q.k==="v27notify"))return;const o=r.forO,who=o.kind==="empresa"?"a su empresa":`a ${o.by} (${o.rel})`;
+      v27Ask({k:"v27notify",ic:"📲",title:`Avisar ${who}`,body:`<div class="v26q">Pidieron que les avisaras cuando ${esc(nm)} llegara.</div><div class="sub">Mensaje simulado: no se envía nada real.</div>`,okTxt:"✅ 📲 Avisar de que ha llegado",noTxt:"✋ No avisar",snd:"v27llamada",voz:`Te pidieron avisar ${who} cuando llegara ${nm}.`,
+        on:a=>{const T=v27T();if(!T)return;T.forN=a;if(a==="ok"){v26Eff(v27Key(r),.1,o.kind==="empresa"?"avisó a la empresa al llegar":`avisó a mi ${o.rel} al llegar`);v27Log("📲",`Avisas ${who}: «${nm} ya ha llegado» (simulado)`);}
+          else{v26Eff(v27Key(r),-.12,"no avisó al llegar, como se le pidió");v27Log("📲",`No avisas ${who} de la llegada`);}S.trip=trip;save();setTimeout(()=>{if(trip&&trip.v27===T)finishTrip();},450);}});return;}}}catch(e){console.error(e);}
+  const T0=trip,r0=trip&&trip.r,V=trip&&trip.v27,V6=trip&&trip.v26,u0=S.history[0]&&S.history[0].uid;
+  const out=_ft.apply(this,arguments);
+  try{if(T0&&S.history[0]&&S.history[0].uid!==u0&&r0.svc!=="paquete"&&!window.NO_V27)v27After(T0,r0,V||{},V6||{},S.history[0]);}catch(e){console.error(e);}
+  return out;};}
+// Propina de famoso (si fue discreta)
+{const _ct=calcTip;calcTip=function(r,ev,rate,sat){let t=_ct.apply(this,arguments);try{if(!window.NO_V27&&r&&r.fam&&trip&&trip.r===r&&trip.v27&&trip.v27.famOk&&rate>=4&&!(FORCE&&FORCE.tip!=null))t=Math.max(t,Math.round(r.price*rnd(.6,1.1))+5);}catch(e){}return t;};}
+// (6) Coche sucio
+function v27Dirty(){return !window.NO_V27&&V27on("sucio")&&S.v27d&&S.v27d.lvl>0?S.v27d:null;}
+function v27DirtyUI(){let b=$("v27Dirty");const d=v27Dirty();if(!d){if(b)b.remove();return;}
+  if(!b){const a=$("btnOnline");if(!a)return;a.insertAdjacentHTML("afterend",`<div id="v27Dirty"></div>`);b=$("v27Dirty");}
+  b.innerHTML=`🧽 <b>Coche sucio</b> <span class="simtag">simulado</span>: ${esc(d.why)}. Baja las valoraciones hasta que lo limpies.<button class="btn" id="v27Clean">🧽 He limpiado el coche</button>`;
+  $("v27Clean").onclick=()=>{const w=S.v27d&&S.v27d.why;S.v27d={lvl:0,why:"",at:Date.now(),n:(S.v27d&&S.v27d.n||0)+1,last:w};save();v27DirtyUI();toast("✨ Coche limpio: vuelve a oler a nuevo");v27say("Coche limpio.");};}
+function v27SetDirty(lvl,why){const d=S.v27d||{};if(d.lvl>=lvl&&d.lvl>0){d.why=d.why+(d.why.includes(why)?"":" y "+why);}else S.v27d={lvl,why,at:Date.now(),n:d.n||0};save();v27DirtyUI();
+  v27alert("v27sucio","🧽 El coche se ha ensuciado",why,"🧽",`El coche se ha ensuciado: ${why}. Las valoraciones bajarán hasta que lo limpies.`);}
+{const _vr=v26Rate;v26Rate=function(T,P,k,sat){const out=_vr.apply(this,arguments);try{const d=v27Dirty();if(d&&(T.r.svc==="urbano"||P.main))out.push({w:-.3*d.lvl,k:"v26",t:d.lvl>=2?"el coche olía fatal":"el coche estaba sucio"});}catch(e){}return out;};}
+// Después del viaje: regalos, suciedad, historial
+const V27_GIFTS=["una caja de bombones","una entrada para el teatro (simulada)","una botella de vino de la tierra","un llavero de recuerdo","unas magdalenas caseras","una entrada para un partido (simulada)","un libro que le encantó","una planta pequeña","unos pasteles de la pastelería de su barrio","una invitación a un café (simulada)"];
+function v27After(T0,r,V,V6,e){const F=v27R(),rate=F.rate!=null?F.rate:(e.rate||0),nm=pnom(r),x={};
+  if(r.per&&r.per.seat)x.seat=r.per.seat;if(V.call)x.call=V.call;if(r.fl)x.fl={no:r.fl.no,from:r.fl.from,delay:r.fl.delay,a:V.flA||null};if(r.forO)x.forO={kind:r.forO.kind,by:r.forO.by,rel:r.forO.rel,a:V.forA||null,n:V.forN||null};
+  if(r.fam)x.fam={t:r.fam.t,a:V.fam||null};if(V.ctl)x.ctl=V.ctl;if(V.asleep)x.sleep=V.woke||true;if(V.couple)x.couple=V.couple;if(V.stops&&V.stops.length)x.stops=V.stops;if(V.waits)x.waits=V.waits;
+  if(S.v27d&&S.v27d.lvl>0&&V27on("sucio"))x.dirty=S.v27d.why;
+  // (8) Regalo
+  if(V27on("regalos")&&rate>=5&&r.svc==="urbano"&&(F.gift||Math.random()<(r.fam&&V.famOk?.5:.05))){const g=F.giftTxt||v27rn(V27_GIFTS);x.gift=g;
+    v27alert("v27regalo",`🎁 ${nm} te ha dejado un regalo`,g,"🎁",`${nm} te ha dejado un regalo: ${g}.`);toast(`🎁 ${nm} te ha dejado ${g} (simulado)`);
+    (V6.log=V6.log||[]);if(e.v26&&e.v26.log)e.v26.log.push({ic:"🎁",t:`${nm} me ha regalado ${g}`,k:"v27"});else e.v26={conv:0,priv:0,int:0,req:0,topics:[],log:[{ic:"🎁",t:`${nm} me ha regalado ${g}`,k:"v27"}]};}
+  if(Object.keys(x).length){e.v27=x;const uid=e.uid,v26=e.v26;HS.upd(uid,v=>{v.v27=x;if(v26)v.v26=v26;}).catch(()=>{});}
+  // (6) Se ensucia el coche
+  if(V27on("sucio")){const pet=(r.needs||[]).some(n=>n.k==="mascota"),rain=!!r.rain;
+    if(F.dirty)v27SetDirty(F.dirty===2?2:1,F.dirtyWhy||"barro en las alfombrillas");
+    else if(V6.sick==="dentro")v27SetDirty(2,"vómito en el asiento de atrás");
+    else if(pet&&Math.random()<.5)v27SetDirty(1,"pelos de mascota en el asiento");
+    else if(rain&&Math.random()<.22)v27SetDirty(1,"barro de la lluvia en las alfombrillas");}
+  save();}
+{const _vd=v26Diary;v26Diary=function(sh,rec){const d=_vd.apply(this,arguments);if(!d||window.NO_V27)return d;try{const L=S.history.filter(e=>e.shift===sh.id&&e.v27).map(e=>e.v27),c=f=>L.filter(f).length;
+  const s=[];const st=L.flatMap(x=>x.stops||[]);if(st.length)s.push(`He esperado en ${st.length} parada${st.length===1?"":"s"} extra (${st.filter(x=>x.kind==="late").length} tardaron más de lo dicho).`);
+  if(c(x=>x.ctl))s.push(`Me ha parado ${c(x=>x.ctl)===1?"un control":"algún control"} de policía: todo en regla.`);if(c(x=>x.gift))s.push(`Me han regalado ${L.filter(x=>x.gift).map(x=>x.gift).join(", ")}.`);
+  if(c(x=>x.fam))s.push("He llevado a un «famoso» (simulado): discreción absoluta.");if(c(x=>x.couple))s.push("Una pareja se puso cariñosa detrás… anécdota del día.");if(c(x=>x.sleep))s.push(`${c(x=>x.sleep)} pasajero${c(x=>x.sleep)===1?" se durmió":"s se durmieron"} en el viaje.`);
+  if(c(x=>x.seat==="copiloto"))s.push(`${c(x=>x.seat==="copiloto")} se sentaron de copiloto.`);d.lines.push(...s);d.st.v27=L.length;}catch(e){console.error(e);}return d;};}
+// CSV: columna v27
+{const _cs=csvOf;csvOf=function(list){const s=_cs.apply(this,arguments);if(window.NO_V27)return s;const rows=s.split("\r\n");if(rows.length!==list.length+1)return s;
+  const q=t=>{t=String(t==null?"":t);return /[";\r\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;};rows[0]+=";Situaciones v27 (simulado)";
+  list.forEach((x,i)=>{const v=x.v27,p=[];if(v){if(v.seat)p.push("asiento "+v.seat);if(v.stops)p.push(v.stops.map(y=>`parada ${y.n}: ${String(y.real).replace(".",",")} min (dijo ${y.said})`).join(", "));if(v.ctl)p.push("control "+v.ctl.force);if(v.gift)p.push("regalo: "+v.gift);if(v.fam)p.push("famoso simulado");if(v.couple)p.push("pareja: "+v.couple.a);if(v.sleep)p.push("dormido");if(v.fl)p.push("vuelo "+v.fl.no);if(v.forO)p.push("reservado por "+v.forO.rel);if(v.dirty)p.push("coche sucio");}rows[i+1]+=";"+q(p.join(" | "));});
+  return rows.join("\r\n");};}
+// ---------- Ajustes: «Situaciones en ruta (v27)» ----------
+{const a=$("secV26")||$("secEv");if(a&&!$("secV27")){v27S();a.insertAdjacentHTML("afterend",`<div class="sec" id="secV27"><h2>Situaciones en ruta <span class="simtag">simulado</span></h2>
+  <div class="v27chk" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px 10px;margin-top:6px">${Object.keys(V27_DEF).map(k=>`<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-v27="${k}"> ${V27_LBL[k]}</label>`).join("")}</div>
+  <div class="hint">Las esperas de paradas extra, vuelos, llamadas y controles van con <b>cronómetro real</b> y no se pueden saltar. Llamadas, vuelos, controles, regalos, famosos y parejas son <b>simulados</b> (los famosos son personajes ficticios); los lugares y pueblos son reales. Se guardan en exportar/importar.</div></div>`);
+  document.querySelectorAll("#secV27 input[data-v27]").forEach(c=>c.onchange=()=>{v27S()[c.dataset.v27]=c.checked;save();v27DirtyUI();toast(V27_LBL[c.dataset.v27]+": "+(c.checked?"activado":"desactivado"));});}}
+function syncV27UI(){if(!$("secV27"))return;const s=v27S();document.querySelectorAll("#secV27 input[data-v27]").forEach(c=>c.checked=!!s[c.dataset.v27]);try{v27DirtyUI();}catch(e){}}
+{const _se=syncEvUI;syncEvUI=function(){const v=_se.apply(this,arguments);try{syncV27UI();}catch(e){}return v;};}
+syncV27UI();
+window.V27={S:v27S,on:V27on,T:()=>trip&&trip.v27,wait:v27Wait,busy:v27Busy,tick:()=>v27Tick(),wtick:()=>v27WTick(),flags:v27Flags,call:()=>v27Call(),control:()=>v27Control(),couple:()=>v27Couple(),fam:()=>v27Fam(),
+  flight:()=>v27Flight(),forCall:()=>v27ForCall(),dirty:v27Dirty,setDirty:v27SetDirty,dirtyUI:v27DirtyUI,data:V27_DATA,DEF:V27_DEF,DONE:V27DONE,plan:v27StopPlan,ask:v27Ask};
+
 </script>
 </body>
 </html>
