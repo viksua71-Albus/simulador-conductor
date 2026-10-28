@@ -278,6 +278,14 @@ body.rain #rainFx{display:block}
   .achg{grid-template-columns:1fr;max-height:none}
   .needx{min-height:44px;min-width:44px}
 }
+/* v27.1 · Gráficos ligeros: evita la corrupción de la tarjeta (cuadros/píxeles) en GPU de Android */
+body.fxlite #rainFx{animation:none;opacity:.3}
+body.fxlite .evmk.on,body.fxlite .dot.on,body.fxlite .pulse{animation:none}
+body.fxlite .car-icon,body.fxlite .hub-icon{filter:none;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+body.fxlite #overlay{background:#161b22;contain:paint}
+body.fxlite #overlay *:not(.spin){animation:none!important}
+body.fxlite #overlay .req,body.fxlite #overlay .trip,body.fxlite #startBox,body.fxlite #mBar,body.fxlite #achToast{box-shadow:none}
+@media (max-width:899px),(max-height:520px) and (pointer:coarse){body.fxlite #overlay{border-radius:0}body.fxlite #overlay .req,body.fxlite #overlay .trip{border-radius:0}}
 </style>
 </head>
 <body>
@@ -333,7 +341,7 @@ body.rain #rainFx{display:block}
         <div id="sndList" class="sndl"></div>
         <div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><button class="btn-xs" id="sndTestAll" style="padding:4px 9px">▶ Probar sonidos</button><label class="ck"><input type="checkbox" id="notifOn"> Notificaciones</label></div>
         <div class="hint" id="notifTxt"></div>
-        <label class="ck" style="margin-top:6px"><input type="checkbox" id="wakeOn"> Mantener la pantalla encendida</label><div class="hint" id="wakeTxt"></div>
+        <label class="ck" style="margin-top:6px"><input type="checkbox" id="wakeOn"> Mantener la pantalla encendida</label><div class="hint" id="wakeTxt"></div><label class="ck" style="margin-top:6px"><input type="checkbox" id="fxLite"> Gráficos ligeros (recomendado en móvil)</label><div class="hint" id="fxLiteTxt">Quita animaciones, sombras y efectos que en algunos Android dejan la tarjeta del viaje con cuadros o píxeles rotos. Por defecto: activado en móvil, desactivado en PC.</div>
         <div class="hint">Sonidos generados con Web Audio (sin archivos). Se activan con tu primer clic. En segundo plano: el aviso de solicitud sigue sonando y el título de la pestaña parpadea.</div>
       </div>
       <div class="sec" id="secVoz">
@@ -2193,7 +2201,7 @@ function showTrip(fit){
   setStatus(trip.inc&&trip.inc.cur!=null?"Parado (parada tuya)":"Viaje en curso");
   clearInterval(elT);const upd=()=>{const s=Math.floor((Date.now()-trip.acceptedAt)/1000),e=$("tElapsed");
     if(e)e.textContent=(s>=3600?Math.floor(s/3600)+":":"")+String(Math.floor(s/60)%60).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
-    const tp=$("tPunct");if(tp&&trip)tp.innerHTML=punctTxt();};
+    const tp=$("tPunct");if(tp&&trip){const h=punctTxt();if(tp._h!==h){tp._h=h;tp.innerHTML=h;}}};
   upd();elT=setInterval(upd,1000);
   evWire();incWire();evArm();
 }
@@ -2497,7 +2505,7 @@ function pqShow(fit){const T=trip,r=T.r;if(!T.pq)T.pq={k:0,at:null,ev:null,wait:
   setStatus(stp?"Parado (parada tuya)":"Reparto en curso");
   clearInterval(elT);const upd=()=>{const t=Math.floor((Date.now()-trip.acceptedAt)/1000),el=$("tElapsed");
     if(el)el.textContent=(t>=3600?Math.floor(t/3600)+":":"")+String(Math.floor(t/60)%60).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
-    const tp=$("tPunct");if(tp&&trip)tp.innerHTML=pqPunct();};
+    const tp=$("tPunct");if(tp&&trip){const h=pqPunct();if(tp._h!==h){tp._h=h;tp.innerHTML=h;}}};
   upd();elT=setInterval(upd,1000);
   incWire();pqWire();pqArm();}
 function pqWire(){const P=trip.pq,on=(id,f)=>{const b=$(id);if(b)b.onclick=f;};
@@ -2543,7 +2551,7 @@ async function pqReroute(msg){const T=trip,r=T.r,P=T.pq;P.ev={type:"route",loadi
   P.ev=null;pqRecalc(r);pqSave();if(P.k>=r.seq.length)return pqFinish();pqShow(true);}
 function pqCall(){const T=trip,P=T.pq,e=P.ev;if(!e||P.wait)return;const J=T.r.jobs[e.j];P.wait={j:J.id,t0:Date.now(),spm:secMin(),arr:e.arr,kind:"ausente"};
   evLog("📞",`Llamas a ${J.rcp.name} y esperas`);pqSave();pqShow(false);}
-function pqWaitTick(){const T=trip;if(!T||!T.pq||!T.pq.wait)return clearInterval(pqTick);const w=T.pq.wait,m=(Date.now()-w.t0)/1000/w.spm,c=$("pqClock");if(c)c.textContent=fmtWait(m);
+function pqWaitTick(){const T=trip;if(!T||!T.pq||!T.pq.wait)return clearInterval(pqTick);const w=T.pq.wait,m=(Date.now()-w.t0)/1000/w.spm,c=$("pqClock");if(c){const v=fmtWait(m);if(c.textContent!==v)c.textContent=v;}
   if(w.arr!=null&&m>=w.arr){const J=T.r.jobs[w.j];pqEndWait(T);J.waited=r2(m);if(w.kind==="ausente"){J.why.push("espera");J.score+=.15;}pqEvDone();
     evLog("🚪",`${J.rcp.name} llega tras ${Math.max(1,Math.round(m))} min de espera`);alertUser("llega","🚪 "+J.rcp.nom+" ya está aquí",J.de.name,"🚪");
     say("tarde",`${J.rcp.nom} ya está aquí.`,{after:"llega"});pqCodeAnnounce(J);pqSave();pqShow(false);return;}
@@ -3191,7 +3199,7 @@ $("vozStop").onclick=()=>vozCancel();
 if(SS()){try{SS().addEventListener?SS().addEventListener("voiceschanged",vozFill):(SS().onvoiceschanged=vozFill);}catch(e){}}
 syncVozUI();setTimeout(vozFill,600);setTimeout(vozFill,2500);
 // ---------- Móvil (Android) y app instalable (PWA) ----------
-const APP_VER="27.0";
+const APP_VER="27.1";
 const MQ_MOB=window.matchMedia("(max-width:899px),(max-height:520px) and (pointer:coarse)");
 function isMob(){return MQ_MOB.matches;}
 // Márgenes al encuadrar la ruta: en PC la tarjeta está a la izquierda; en móvil, abajo (vertical) o a la izquierda (horizontal)
@@ -4000,7 +4008,7 @@ let pwT=null;
 function pwWire(){clearInterval(pwT);const T=trip;if(!T||!T.pq||!T.pq.pw||T.pq.pw.done)return;
   const tick=()=>{const w=T.pq&&T.pq.pw;if(trip!==T||!w||w.done){clearInterval(pwT);return;}
     const left=pwLeft(w);if(left<=0){clearInterval(pwT);pwEnd(T);return;}
-    const el=$("pwClock");if(el)el.textContent=fmtWait(left);const b=$("pwBar");if(b)b.style.width=Math.min(100,100*(1-left/w.min))+"%";};
+    const el=$("pwClock");if(el){const v=fmtWait(left);if(el.textContent!==v)el.textContent=v;}const b=$("pwBar");if(b){const v=Math.min(100,100*(1-left/w.min)).toFixed(1)+"%";if(b.style.width!==v)b.style.width=v;}};
   tick();pwT=setInterval(tick,250);}
 function pwHTML(){const T=trip,P=T&&T.pq,w=P&&P.pw;if(!w||w.done||w.k!==P.k)return "";const pr=PW_PROF[w.prof]||PW_PROF.listo,left=pwLeft(w);
   const nPend=new Set(T.r.jobs.filter(J=>!pqDone(J)).map(J=>J.rcp.nom)).size;
@@ -4649,7 +4657,7 @@ function v27WHTML(){const T=trip&&trip.v27,w=T&&T.w;if(!w||w.done)return "";cons
 function v27WTick(){if(!trip||!trip.v27||!trip.v27.w||trip.v27.w.done)return;const w=trip.v27.w;
   if(!w.t0){if(animating)return;w.t0=Date.now();S.trip=trip;save();}
   if(!animating&&!$("v27W")&&$("overlay").querySelector(".trip"))showTrip(false);
-  const el=v27WEl(w),c=$("v27Wc");if(c)c.textContent=v27mmss(el);
+  const el=v27WEl(w),c=$("v27Wc");if(c){const v=v27mmss(el);if(c.textContent!==v)c.textContent=v;}
   const said=w.said,b=$("v27Wb");if(b)b.style.width=(said?Math.min(100,el/(said*w.spm)*100):Math.min(100,el/(w.min*w.spm)*100))+"%";
   if(said&&el>said*w.spm){const box=$("v27W");if(box&&!box.classList.contains("over")){box.classList.add("over");const l=$("v27Wl");if(l)l.textContent="dijo "+minW(said)+" · ya tarda más de lo que dijo";}}
   if(el>=w.min*w.spm){if(animating)return;w.done=true;w.real=r2(el/w.spm);const T=trip.v27;T.w=null;S.trip=trip;save();
@@ -4944,6 +4952,13 @@ syncV27UI();
 window.V27={S:v27S,on:V27on,T:()=>trip&&trip.v27,wait:v27Wait,busy:v27Busy,tick:()=>v27Tick(),wtick:()=>v27WTick(),flags:v27Flags,call:()=>v27Call(),control:()=>v27Control(),couple:()=>v27Couple(),fam:()=>v27Fam(),
   flight:()=>v27Flight(),forCall:()=>v27ForCall(),dirty:v27Dirty,setDirty:v27SetDirty,dirtyUI:v27DirtyUI,data:V27_DATA,DEF:V27_DEF,DONE:V27DONE,plan:v27StopPlan,ask:v27Ask};
 
+
+// ===== v27.1: gráficos ligeros (ajuste fxLite; va en exportar/importar con S.settings) =====
+function fxLiteWanted(){const v=S.settings.fxLite;return v==null?isMob():!!v;}
+function fxLiteApply(){const on=fxLiteWanted();document.body.classList.toggle("fxlite",on);const c=$("fxLite");if(c&&c.checked!==on)c.checked=on;}
+$("fxLite").onchange=()=>{S.settings.fxLite=$("fxLite").checked;save();fxLiteApply();toast($("fxLite").checked?"🪶 Gráficos ligeros activados":"✨ Efectos completos activados");};
+fxLiteApply();setInterval(()=>{try{if(document.body.classList.contains("fxlite")!==fxLiteWanted())fxLiteApply();}catch(e){}},2000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&document.body.classList.contains("fxlite")){const o=$("overlay");if(o){o.style.transform="translateZ(0)";requestAnimationFrame(()=>{o.style.transform="";});}}});
 </script>
 </body>
 </html>
