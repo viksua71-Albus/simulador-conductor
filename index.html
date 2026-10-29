@@ -3205,7 +3205,7 @@ $("vozStop").onclick=()=>vozCancel();
 if(SS()){try{SS().addEventListener?SS().addEventListener("voiceschanged",vozFill):(SS().onvoiceschanged=vozFill);}catch(e){}}
 syncVozUI();setTimeout(vozFill,600);setTimeout(vozFill,2500);
 // ---------- Móvil (Android) y app instalable (PWA) ----------
-const APP_VER="27.2";
+const APP_VER="28.0";
 const MQ_MOB=window.matchMedia("(max-width:899px),(max-height:520px) and (pointer:coarse)");
 function isMob(){return MQ_MOB.matches;}
 // Márgenes al encuadrar la ruta: en PC la tarjeta está a la izquierda; en móvil, abajo (vertical) o a la izquierda (horizontal)
@@ -4973,6 +4973,429 @@ function fxLiteApply(){const on=fxLiteWanted();document.body.classList.toggle("f
 $("fxLite").onchange=()=>{S.settings.fxLite=$("fxLite").checked;save();fxLiteApply();toast($("fxLite").checked?"🪶 Gráficos ligeros activados":"✨ Efectos completos activados");};
 fxLiteApply();setInterval(()=>{try{if(document.body.classList.contains("fxlite")!==fxLiteWanted())fxLiteApply();}catch(e){}},2000);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")ovNudge();});
+
+// ==================== v28: más pasajeros y situaciones (todo SIMULADO; lugares reales) ====================
+const V28_DEF={cancela:true,acomp:true,policia:true,intens:true,ligar:true,espejo:true,poliligon:true,turistas:true,ocasiones:true,fumar:true,resenas:true,urgencias:true,discusion:true};
+const V28_LBL={cancela:"❌ Cancelaciones de plaza: se borra al cliente y sus acompañantes del viaje",acomp:"👥 Perfil completo de los acompañantes (viajes planificados)",
+  policia:"🚓 Controles con duración variable según el agente (40 s – 4 min)",intens:"🌡️ Medidor de intensidad de la conversación (0–10)",ligar:"😏 Botón «Intentar ligar» (con respeto)",
+  espejo:"🪞 Miradas por el retrovisor",poliligon:"👮 Agente que intenta ligar en un control (muy raro)",turistas:"🌍 Turistas extranjeros (inglés o francés) en lugares turísticos reales",
+  ocasiones:"🎉 Ocasiones especiales: cumpleaños, despedidas, aniversarios, pedidas",fumar:"🚬 Clientes que quieren fumar o vapear",resenas:"📝 Reseñas escritas de los clientes",
+  urgencias:"🏥 Urgencias (muy raras): hospital real cercano",discusion:"🗯️ Pasajeros que discuten entre ellos"};
+function v28S(){if(!S.settings.v28)S.settings.v28={};for(const k in V28_DEF)if(S.settings.v28[k]==null)S.settings.v28[k]=V28_DEF[k];return S.settings.v28;}
+const V28on=k=>!window.NO_V28&&!window.NO_V27&&!window.NO_V26&&!!v28S()[k];
+const v28R=()=>window.V28R||{};
+const v28nm=p=>p&&(p.nom||String(p.name||"").split(" ")[0])||"El pasajero";
+const v28gw=(m,f,g)=>g==="f"?f:m;
+const v28rn=a=>a[Math.floor(Math.random()*a.length)];
+const v28cl=(x,a,b)=>Math.max(a,Math.min(b,x));
+// ---------- Enfriamiento: que no se amontonen los eventos (tiempo real) ----------
+const V28_CD={ligar:240e3,espejo:300e3,poliligon:3*36e5,turistas:0,ocasiones:0,fumar:600e3,urgencias:6*36e5,discusion:900e3,intens:90e3,global:45e3};
+function v28CdOk(k){if(v28R().nocd)return true;const c=S.v28cd||{},n=Date.now();if(c[k]&&n-c[k]<(V28_CD[k]||0))return false;if(k!=="intens"&&c.global&&n-c.global<V28_CD.global)return false;return true;}
+function v28Cd(k){S.v28cd=S.v28cd||{};S.v28cd[k]=S.v28cd.global=Date.now();save();}
+// ---------- Sonidos y voz ----------
+if(!window.NO_V28)Object.assign(SND_R,{
+  v28int:[[0,523,.1,"sine",.18],[.12,659,.1,"sine",.18],[.24,784,.16,"sine",.18]],
+  v28baja:[[0,659,.12,"sine",.16],[.14,523,.18,"sine",.16]],
+  v28ligar:[[0,698,.1,"triangle",.18],[.12,880,.18,"triangle",.18]],
+  v28espejo:[[0,1046,.06,"sine",.16],[.1,880,.14,"sine",.16]],
+  v28turista:[[0,587,.1,"triangle",.2],[.12,740,.1,"triangle",.2],[.24,880,.2,"triangle",.2]],
+  v28fiesta:[[0,784,.08,"square",.13],[.1,988,.08,"square",.13],[.2,1175,.08,"square",.13],[.3,1568,.22,"square",.13]],
+  v28humo:[[0,392,.2,"sine",.16],[.24,349,.25,"sine",.16]],
+  v28urg:[[0,988,.18,"square",.16],[.22,740,.18,"square",.16],[.44,988,.18,"square",.16],[.66,740,.18,"square",.16]],
+  v28disc:[[0,330,.12,"sawtooth",.12],[.14,294,.12,"sawtooth",.12],[.28,330,.16,"sawtooth",.12]],
+  v28poli:[[0,880,.1,"triangle",.16],[.14,740,.16,"triangle",.16]]});
+for(const x of [["v28int","🌡️ Sube la intensidad"],["v28baja","🌡️ Baja la intensidad"],["v28ligar","😏 Intentar ligar"],["v28espejo","🪞 Mirada por el retrovisor"],["v28turista","🌍 Turista extranjero"],
+  ["v28fiesta","🎉 Ocasión especial"],["v28humo","🚬 Quiere fumar"],["v28urg","🏥 Urgencia"],["v28disc","🗯️ Discusión"],["v28poli","👮 Agente que liga"]])
+  if(!window.NO_V28&&!SND_KEYS.some(y=>y[0]===x[0]))SND_KEYS.push(x);
+if(!window.NO_V28&&!VOZ_KEYS.some(y=>y[0]==="v28"))VOZ_KEYS.push(["v28","Intensidad, miradas, turistas, ocasiones y situaciones v28"]);
+const v28say=(t,snd)=>{try{say("v28",t,{after:snd||undefined,tag:"v28"});}catch(e){}};
+const v28alert=(snd,title,body,ic,voz)=>{try{alertUser(snd,title,body,ic);}catch(e){}if(voz)v28say(voz,snd);};
+function v28Ask(q){q.vcat="v28";return v27Ask(q);}
+// ---------- Estado v28 del viaje ----------
+function v28T(){if(!trip)return null;if(!trip.v28)trip.v28={log:[],int:0,lvl:0,init:0,lig:0,ligAt:0};return trip.v28;}
+function v28Log(ic,t){const T=v28T();if(T){T.log.push({ic,t});if(T.log.length>30)T.log.shift();}try{v26Log(ic,t,"v28");}catch(e){}}
+const v28Key=r=>{try{return mainKey(r);}catch(e){return "main";}};
+// Personas a bordo AHORA (solo pasajeros confirmados que ya han subido y no se han bajado)
+function v28Aboard(){if(!trip||!trip.r||trip.phase!==2)return [];try{return v26Speakers();}catch(e){return [];}}
+const v28Adults=()=>v28Aboard().filter(x=>(+x.p.edad||30)>=18);
+const v28Kids=()=>v28Aboard().some(x=>(+x.p.edad||30)<18);
+// ---------- Las preguntas del panel se etiquetan con la persona (para poder borrarlas si cancela o se baja) ----------
+let V28CUR=null;
+{const _sp=v26Special;v26Special=function(sp){V28CUR=sp&&sp.P?sp.P.key:null;try{return _sp.apply(this,arguments);}finally{V28CUR=null;}};}
+{const _ak=v26Ask;v26Ask=function(q){try{if(q&&q.pkey==null&&V28CUR!=null)q.pkey=V28CUR;if(q&&!window.NO_V28)v28HookAsk(q);}catch(e){console.error(e);}return _ak.apply(this,arguments);};}
+function v28HookAsk(q){if(!V28on("intens"))return;const on=q.on,d={intensa:{ok:3,no:-2,ign:-1},priv:{ok:1,no:-1,ign:0},req:{ok:.5,no:-.5,ign:0}}[q.k];if(!d||!on)return;
+  q.on=a=>{const v=on(a);try{if(d[a])v28IntAdd(d[a],q.k==="intensa"?(a==="ok"?"le sigues la conversación":"la cortas"):q.k==="priv"?(a==="ok"?"contestas algo personal":"no contestas"):"");}catch(e){console.error(e);}return v;};}
+// Claves válidas: pasajeros confirmados del viaje (y su estado)
+function v28Valid(key){if(!trip||!trip.r)return false;try{const P=paxList(trip.r).find(x=>x.key===key);if(!P)return false;return trip.r.svc==="urbano"||paxState(P)!=="gone";}catch(e){return true;}}
+function v28PurgeQ(){if(window.NO_V28||!trip)return;for(let i=V26Q.length-1;i>=0;i--){const q=V26Q[i];if(q.trip&&q.pkey!=null&&!v28Valid(q.pkey))V26Q.splice(i,1);}
+  if(V26C&&V26C.trip&&V26C.pkey!=null&&!v28Valid(V26C.pkey)){V26C.on=null;v26Answer("ign");}}
+setInterval(()=>{try{if(V28on("cancela"))v28PurgeQ();}catch(e){console.error(e);}},1000);
+document.head.insertAdjacentHTML("beforeend",`<style>
+.v28m{margin:6px 0;padding:6px 9px;border-radius:10px;border:2px solid #555;background:#15181f}
+.v28m .v28s{display:flex;gap:3px;margin-top:4px}.v28m .v28s i{flex:1;height:12px;border-radius:3px;background:#333}
+.v28m .v28s i.on0{background:#3fb27f}.v28m .v28s i.on1{background:#e0b040}.v28m .v28s i.on2{background:#e07a30}.v28m .v28s i.on3{background:#e04a6a}
+.v28m.l1{border-color:#e0b040}.v28m.l2{border-color:#e07a30}.v28m.l3{border-color:#e04a6a}.v28m b.n{font-size:18px}
+#v28Lig{width:100%;margin-top:6px;min-height:50px;font-size:17px;font-weight:800;background:#7a3a6e;color:#fff;border:0;border-radius:12px}
+#v28Lig:disabled{opacity:.5}
+.v28pf{margin:4px 0 2px;font-size:13px}.v28pf summary{cursor:pointer;color:var(--acc);min-height:30px;line-height:30px}
+.v28pf .v28who{margin:4px 0 2px;font-weight:700}.v28pl{font-size:12.5px;color:var(--mut)}
+.v26tag.v28{border-color:#c08ad8;background:#21142a}.v26tag.v28t{border-color:#4ac0a0;background:#0f2622}.v26tag.v28o{border-color:#e0b040;background:#2a230c}
+.v28rev{font-size:12.5px;margin-top:3px;color:#cfd6e4}.v28rev b{color:#ffe08a}
+#v26P.v26k-v28urg .v26box{border-color:#e04a4a;background:#2a1212}#v26P.v26k-v28tur .v26box{border-color:#4ac0a0}#v26P.v26k-v28fiesta .v26box{border-color:#e0b040}
+#v26P.v26k-v28espejo .v26box,#v26P.v26k-v28int .v26box{border-color:#c08ad8}#v26P.v26k-v28poli .v26box{border-color:#3a7bd5}
+</style>`);
+
+// ---------- (1) Cancelación de plaza: se borra al cliente y a sus acompañantes del viaje ----------
+function v28PruneStops(r,minK){if(!r.pts||!r.pts.length||!r.bookings)return 0;let n=0;
+  for(let k=r.pts.length;k>=1;k--){const s=r.pts[k-1];if(s.kind!=="stop"||k<=minK)continue;if(r.bookings.some(b=>b.from===k||b.to===k))continue;
+    const sg=r.route.segs;if(!sg[k-1]||!sg[k])continue;
+    sg[k-1]=sg[k-1].concat(sg[k].slice(1));sg.splice(k,1);r.segKm[k-1]+=r.segKm[k];r.segKm.splice(k,1);
+    r.segMin[k-1]=Math.max(1,r.segMin[k-1]-(typeof STOP_MIN!=="undefined"?STOP_MIN:0)+r.segMin[k]);r.segMin.splice(k,1);r.pts.splice(k-1,1);
+    for(const b of r.bookings){if(b.from>k)b.from--;if(b.to>k)b.to--;}
+    if(trip&&trip.r===r&&trip.ev)for(const e of trip.ev.plan||[]){if(e.k===k&&e.st==="pending")e.st="skip";else if(e.k>k)e.k--;}n++;}
+  if(n){const L=r.pts.length+1,nm=k=>k===0?r.fromCity||r.from:k===L?r.toCity||r.to:r.pts[k-1].n;for(const b of r.bookings){b.fromN=nm(b.from);b.toN=nm(b.to);}recompute(r);}
+  return n;}
+function v28Purge(r,b,why){if(!r||!b)return;const T=trip&&trip.r===r?trip:null,key=b.id,ppl=[b.per].concat(b.comps||[]).filter(Boolean);
+  const others=paxList(r).flatMap(P=>[P.per].concat(((r.bookings||[]).find(x=>x.id===P.key)||{}).comps||[])).filter(Boolean),dup=new Set(others.map(p=>p.nom));
+  const names=ppl.flatMap(p=>[p.name,dup.has(p.nom)?null:p.nom]).filter(Boolean),hit=t=>names.some(n=>String(t||"").includes(n));
+  const minK=T&&T.phase===2?(T.si||1)-1:0,cut=v28PruneStops(r,minK);
+  r.seats=(r.bookings||[]).reduce((a,x)=>a+(x.seats||1),0)||r.seats;
+  if(T){const V=T.v26;if(V){if(V.eff)delete V.eff[key];if(V.next&&typeof V.next==="object")delete V.next[key];if(V.cur&&(V.cur===key||V.cur.key===key))V.cur=null;
+      if(V.log)V.log=V.log.filter(l=>!hit(l.t));}
+    for(const X of [T.v27,T.v28])if(X&&X.log)X.log=X.log.filter(l=>!hit(l.t));
+    if(T.ev&&T.ev.log)T.ev.log=T.ev.log.filter(l=>/canceló su reserva|no se presentó/.test(l.t)||!hit(l.t));
+    if(T.ev&&T.ev.plan)for(const e of T.ev.plan)if(e.st==="pending"&&(e.bi!=null||e.name)&&e.name&&hit(e.name))e.st="skip";
+    for(let i=V26Q.length-1;i>=0;i--){const q=V26Q[i];if(q.trip&&(q.pkey===key||hit(q.title)))V26Q.splice(i,1);}
+    if(V26C&&V26C.trip&&(V26C.pkey===key||hit(V26C.title))){V26C.on=null;v26Answer("ign");}
+    const V8=v28T();V8.gone=(V8.gone||[]).concat(names);S.trip=T;}
+  save();return cut;}
+{const _ea=evAct;evAct=function(a){let snap=null;
+  try{if(!window.NO_V28&&V28on("cancela")&&trip&&trip.ev&&trip.ev.cur&&!animating){const c=trip.ev.cur,r=trip.r;
+    if(c.type==="bbCancela"||c.type==="bbTarde"&&a==="noshow"){let b=r.bookings[c.bi];
+      if(!b||b.main||b.name!==c.name){const i=r.bookings.findIndex(x=>!x.main&&x.name===c.name);if(i>=0){c.bi=i;b=r.bookings[i];}}
+      if(b&&!b.main)snap={r,b};}}}catch(e){console.error(e);}
+  const v=_ea.apply(this,arguments);
+  try{if(snap&&!snap.r.bookings.includes(snap.b)){const n=v28Purge(snap.r,snap.b);if(n){toast(`🗺️ Ruta actualizada: ${n} parada${n>1?"s":""} menos`);if(trip&&!animating)showTrip(false);}}}catch(e){console.error(e);}
+  return v;};}
+
+// ---------- (2) Acompañantes con perfil completo (viajes planificados / BlaBlaCar) ----------
+const v28Sex=p=>p.g==="f"?"♀ Mujer":"♂ Hombre";
+function v28PLine(p){const c=p.conv&&CONV[p.conv]?CONV[p.conv][2]+" "+convName(p):"";
+  return [v28Sex(p),p.edad!=null?p.edad+" años":"",p.prof||"",p.asp?"aspecto: "+String(p.asp).toLowerCase():"",c].filter(Boolean).map(esc).join(" · ");}
+function v28Prep(b){try{const ctx={};if(b.per&&!b.per.temp)assignTemp(b.per,ctx);for(const c of b.comps||[])if(c&&!c.temp)assignTemp(c,ctx);}catch(e){}return b;}
+function v28BkProf(b,open){const ppl=[[b.per,"Reserva"]].concat((b.comps||[]).map(c=>[c,c.rel||"Acompañante"]));
+  return `<details class="v28pf" data-v28b="${esc(b.id||"")}"${open?" open":""}><summary>👥 Ver perfil${ppl.length>1?"es ("+ppl.length+" personas)":""} <span class="simtag">simulado</span></summary>`+
+    ppl.map(([p,rel])=>`<div class="v28who">${p===b.per?"👤":"➕"} ${esc(p.name||p.nom||"")} <span class="v28pl">(${esc(rel)})</span></div><div class="v28pl">${v28PLine(p)}</div>${profileGrid(p)}`).join("")+`</details>`;}
+{const _pb=pubBook;pubBook=function(P){const b=_pb.apply(this,arguments);try{if(b&&!window.NO_V28&&V28on("acomp"))v28Prep(b);}catch(e){console.error(e);}return b;};}
+const V28OPEN=new Set();
+{const _pu=pubUI;pubUI=function(){const v=_pu.apply(this,arguments);try{const ls=$("pubList"),P=S.pub;if(!ls||!P||window.NO_V28||!V28on("acomp"))return v;
+  if(ls.dataset.v28===ls.dataset.h)return v;ls.dataset.v28=ls.dataset.h;
+  ls.querySelectorAll(".pubb[data-bid]").forEach(el=>{const b=P.B.find(x=>x.id===el.dataset.bid);if(!b||!/^(ok|pend|chg)$/.test(b.st))return;v28Prep(b);
+    el.insertAdjacentHTML("beforeend",v28BkProf(b,V28OPEN.has(b.id)));});}catch(e){console.error(e);}return v;};}
+document.addEventListener("toggle",e=>{const d=e.target;if(d&&d.dataset&&d.dataset.v28b!=null){if(d.open)V28OPEN.add(d.dataset.v28b);else V28OPEN.delete(d.dataset.v28b);}},true);
+{const _bh=bookingsHTML;bookingsHTML=function(r){const h=_bh.apply(this,arguments);if(!h||window.NO_V28||!V28on("acomp"))return h;
+  try{const B=r.bookings||[];return h.replace(/<\/div>\s*$/,"")+B.map(b=>{v28Prep(b);return `<div class="v28bk">${esc(b.per&&b.per.nom||b.name.split(" ")[0])} (${esc(b.fromN)}→${esc(b.toN)}): ${v28BkProf(b,V28OPEN.has(b.id))}</div>`;}).join("")+"</div>";}catch(e){console.error(e);return h;}};}
+
+// ---------- (3) Controles policiales: duración según el agente y la situación ----------
+const V28_COPS={rapido:["rápido","Va al grano: mira los papeles y listo.",40,75,25],normal:["normal","Hace las comprobaciones de siempre.",60,120,45],
+  charlatan:["charlatán","Le gusta charlar mientras comprueba.",90,180,15],meticuloso:["meticuloso","Lo revisa todo con calma, papel por papel.",120,240,15]};
+const V28_WHY=[["Control rutinario de transporte de viajeros (VTC)","rutinario",35],["Control preventivo de alcohol y drogas","alcoholemia",25],["Control de documentación del vehículo","licencia",20],
+  ["Campaña de control de cinturón y uso del móvil","rutinario",10],["Control de seguridad en la zona","rutinario",10]];
+function v28CopPlan(F){const k=F.cop&&V28_COPS[F.cop]?F.cop:wpick(Object.entries(V28_COPS).map(([k,c])=>[k,c[4]])),c=V28_COPS[k],w=F.copWhy!=null?V28_WHY[F.copWhy]:wpick(V28_WHY.map(x=>[x,x[2]]));return {k,c,why:w[0],out:w[1]};}
+function v28CopSec(pl,ask,p2,F){const c=pl.c;let s=F.copSec!=null?+F.copSec:rnd(c[2],c[3]);if(F.copSec==null){if(ask)s+=pl.k==="charlatan"?40:20;if(pl.out==="alcoholemia")s+=30;if(p2)s-=10;const h=simNow().h;if(h>=23||h<6)s+=15;}
+  return Math.round(v28cl(s,40,240));}
+const _v27C0=v27Control;
+v27Control=function(){if(window.NO_V28||!V28on("policia"))return _v27C0.apply(this,arguments);
+  const r=trip.r,cat=inCatPt(S.driver),p2=trip.phase===2,long=(r.km||0)>25||r.svc!=="urbano",F=v28R();
+  const force=cat?"Mossos d'Esquadra":long?"Guardia Civil":wpick([["Policía Local",60],["Policía Nacional",40]]),nm=pnom(r),pl=v28CopPlan(F);
+  v27Ask({k:"v27control",ic:"🚓",title:`Control de ${force}`,body:`<div class="v26q">Un agente te da el alto: «Buenas. ${esc(pl.why)}. Licencia VTC, permiso de conducir y documentación, por favor.»</div>
+    <div class="sub">🛑 <b>Motivo:</b> ${esc(pl.why)} · 👮 <b>Agente ${esc(pl.c[0])}</b>: ${esc(pl.c[1])} Control simulado.${p2?` Llevas a ${esc(nm)} a bordo.`:""}</div>`,
+    okTxt:"✅ Enseñar la documentación",noTxt:"✋ Preguntar el motivo del control",snd:"v27control",voz:`Control de ${force}. Motivo: ${pl.why}. Te piden la licencia VTC y la documentación.`,
+    on:a=>{const T=v27T();if(!T)return;const ask=a==="no",sec=v28CopSec(pl,ask,p2,F),min=sec/60;
+      T.ctl={force,a,out:pl.out,p2,why:pl.why,cop:pl.k,sec};v27Log("🚓",`Control de ${force} (${pl.why}; agente ${pl.c[0]}): ${ask?"preguntas el motivo":"enseñas la documentación"}${p2?" con "+nm+" a bordo":""}`);
+      const fl=V28on("poliligon")&&(F.copFlirt||!p2&&v28CdOk("poliligon")&&Math.random()<.08)?rnd(.25,.45):0;
+      const w=v27Wait({k:"control",ic:"🚓",title:`Control de ${force}`,quote:ask?`Es por esto: ${pl.why.toLowerCase()}. La documentación, por favor.`:"Un momento, que lo comprobamos.",who:`Agente (${pl.c[0]})`,min,
+        sub:`🛑 Motivo: ${pl.why}. 👮 Agente ${pl.c[0]}: ${pl.c[1]} Duración prevista ~${sec<90?sec+" s":Math.round(sec/6)/10+" min"} (simulada).`,data:{force,out:pl.out,ask,p2,why:pl.why,cop:pl.k,sec,fl}});
+      if(fl&&w)v28Cd("poliligon");}});};
+// (7) Agente que intenta ligar durante el control (muy raro): Alba decide
+const V28_POLI={firme:[.8,"Amable pero firme: «Gracias, muy amable, pero estoy trabajando.»","El agente sonríe, se disculpa y termina rápido."],
+  sigue:[.65,"Le sigues un poco la broma, sin pasarte.","El agente se ríe, te devuelve los papeles enseguida."],
+  corta:[1.35,"Le cortas: «Mejor terminamos el control, por favor.»","El agente se pone serio y lo revisa todo con calma."]};
+function v28PoliTick(){if(!trip||!trip.v27||!trip.v27.w)return;const w=trip.v27.w;if(w.k!=="control"||!w.data||!w.data.fl||w.data.flDone||!w.t0)return;
+  const el=(Date.now()-w.t0)/1000,tot=w.min*w.spm;if(el<tot*w.data.fl||V26C)return;w.data.flDone=1;const g=Math.random()<.85?"m":"f";
+  v28Ask({k:"v28poli",ic:"👮",title:`El agente intenta ligar contigo`,body:`<div class="v26q">«${g==="m"?"Oye, perdona que te lo diga, pero… ¿te han dicho alguna vez que tienes una sonrisa preciosa? ¿Haces muchas noches por aquí?":"Perdona la confianza, pero tienes una sonrisa preciosa. ¿Trabajas mucho por esta zona?"}»</div><div class="sub">${g==="m"?"El agente":"La agente"} se pone simpático/a de más (simulado, nada explícito). Tú decides.</div>`,
+    opts:[["firme","🙂 Amable pero firme","ok"],["sigue","😊 Seguirle un poco","mid"],["corta","✋ Cortarle","no"]],snd:"v28poli",voz:"El agente se pone simpático de más e intenta ligar contigo. ¿Qué haces?",trip:true,
+    on:a=>{if(a==="ign")a="firme";const x=V28_POLI[a],W=trip&&trip.v27&&trip.v27.w;if(W===w&&!w.done){const el=(Date.now()-w.t0)/1000/w.spm,left=Math.max(.2,w.min-el);w.min=r2(el+left*x[0]);w.data.flA=a;S.trip=trip;save();}
+      v28Log("👮",`El agente del control intenta ligar: ${x[1]} ${x[2]}`);toast("👮 "+x[2]);const T=v27T();if(T&&T.ctl)T.ctl.flirt=a;}});}
+setInterval(()=>{try{if(!window.NO_V28)v28PoliTick();}catch(e){console.error(e);}},500);
+
+// ---------- (4) Medidor de intensidad de la conversación (0–10) ----------
+const V28_LV=[["Tranquila","🟢"],["Animada","🟡"],["Intensa","🟠"],["Muy intensa","🔴"]];
+const v28Lvl=x=>x>=9?3:x>=7?2:x>=4?1:0;
+function v28Att(p){if(!p)return .5;if(p.v28a==null)p.v28a=r2(v28cl((p.flirt?.7:.4)+(p.g==="m"?.08:0)+(Math.random()-.5)*.5,0,1));return p.v28a;}
+function v28Base(){const r=trip.r,A=v28Adults();let b=1;for(const x of A){const p=x.p;if(p.flirt)b=Math.max(b,3);if(p.conv==="muy"||p.conv==="pesado")b=Math.max(b,2);}
+  if(r.drunk)b+=1.5;if(r.couple)b+=1;if(r.v28o&&/despedida|cumple/.test(r.v28o.k))b+=2;if(v28Kids())b=Math.min(b,2);return v28cl(b,0,6);}
+function v28IntHTML(){const T=trip&&trip.v28;if(!T)return "";const x=Math.round(T.int),l=v28Lvl(x),L=V28_LV[l];
+  return `<div class="v28m l${l}" id="v28Int" title="Intensidad de la conversación (simulada): sube o baja según el cliente y lo que tú elijas">🌡️ Intensidad: <b class="n">${x}/10</b> · ${L[1]} <b>${L[0]}</b> <span class="simtag">simulado</span>
+    <div class="v28s">${Array.from({length:10},(_,i)=>`<i class="${i<x?"on"+v28Lvl(i+1):""}"></i>`).join("")}</div><div class="v28pl">0–3 tranquila · 4–6 animada · 7–8 intensa · 9–10 muy intensa</div></div>`;}
+function v28IntUI(){const e=$("v28Int");if(e)e.outerHTML=v28IntHTML();}
+function v28IntAdd(d,why){if(!V28on("intens")||!trip||trip.phase!==2)return;const T=v28T(),o=T.int,ol=v28Lvl(Math.round(o));
+  T.int=v28cl(r2(o+d),0,v28Kids()?3:10);T.intAt=Date.now();const n=Math.round(T.int),nl=v28Lvl(n);
+  if(nl!==ol){T.lvl=nl;const up=nl>ol,L=V28_LV[nl];T.intMax=Math.max(T.intMax||0,n);
+    v28alert(up?"v28int":"v28baja",`🌡️ Intensidad: ${L[0]} (${n}/10)`,why||"","🌡️",`${up?"Sube":"Baja"} la intensidad: ${L[0].toLowerCase()}.`);
+    if(up&&nl>=2)v28Log("🌡️",`La conversación se pone ${L[0].toLowerCase()} (${n}/10)${why?": "+why:""}`);
+    if(up&&nl>=2)T.hiAt=Date.now()+(v28R().hiAt!=null?v28R().hiAt*1000:rnd(4,12)*1000);}
+  S.trip=trip;save();v28IntUI();}
+// A partir de 7: ¿seguir, cambiar de tema o cortar?
+const V28_HI={seguir:{ligon:[.12,1,"buen rollo y simpatía"],otro:[.04,.5,""]},tema:{ligon:[-.03,-3,""],otro:[.03,-3,"supo llevar la conversación"]},corta:{ligon:[-.12,-5,"me cortó un poco seca"],otro:[-.05,-5,""]}};
+function v28Hi(){const A=v28Adults();if(!A.length)return;const x=A.find(y=>y.p.flirt)||A[0],p=x.p,nm=v28nm(p),lig=p.flirt||v28Att(p)>.65?"ligon":"otro";v28Cd("intens");
+  v28Ask({k:"v28int",ic:"🌡️",title:`La conversación con ${nm} sube de tono`,body:`<div class="v26q">«${esc(v28rn(lig==="ligon"?["Oye, que se está muy a gusto contigo, ¿eh? Cuéntame más de ti…","Me caes genial, de verdad. ¿Tienes pareja?","Si todas las conductoras fueran como tú, cogería el coche a diario."]:["¡Madre mía, qué conversación! ¿Y tú qué opinas de verdad?","Esto se pone interesante… sigue, sigue.","¡Uf, qué tema! ¿Lo dejamos aquí o seguimos?"]))}»</div><div class="sub">Intensidad ${Math.round(v28T().int)}/10 (simulado, nada explícito). Tú marcas el límite.</div>`,
+    opts:[["seguir","💬 Seguir la conversación","ok"],["tema","🔄 Cambiar de tema","mid"],["corta","✋ Cortar con educación","no"]],snd:"v28int",voz:`La conversación con ${nm} sube de tono. ¿Sigues, cambias de tema o la cortas?`,trip:true,pkey:x.P.key,
+    on:a=>{if(a==="ign")a="tema";const e=V28_HI[a][lig];let w=e[0];if(a==="corta"&&p.rx==="molesta")w-=.08;if(a==="corta"&&lig==="otro"&&p.rx!=="molesta")w=.05;
+      if(w)v26Eff(x.P.key,w,e[2]||(a==="corta"&&w>0?"muy profesional, supo poner límites":""),a==="seguir"&&lig==="ligon"?.04:0);
+      v28Log("🌡️",{seguir:`Sigues la conversación con ${nm}`,tema:`Cambias de tema con ${nm}`,corta:`Cortas la conversación con ${nm} con educación`}[a]);
+      const T=v28T();(T.hi=T.hi||[]).push(a);v28IntAdd(e[1],"");}});}
+
+// ---------- (5) Botón «Intentar ligar» ----------
+function v28LigTarget(){const A=v28Adults();if(!A.length||v28Kids())return null;return A.find(x=>x.p.seat==="copiloto")||A.find(x=>x.P.main!==false&&x.p===x.P.per)||A[0];}
+function v28Partner(x){const r=trip.r,b=(r.bookings||[]).find(y=>y.id===x.P.key),cs=r.svc==="urbano"?(r.comps||[]):(b&&b.comps)||[];
+  if(x.p===x.P.per)return cs.find(c=>c.rel==="Pareja")||null;return x.p.rel==="Pareja"?x.P.per:null;}
+function v28LigWait(){const T=trip&&trip.v28;if(!T)return 0;const c=S.v28cd&&S.v28cd.ligar||0,F=v28R();if(F.nocd)return 0;return Math.max(0,Math.ceil((V28_CD.ligar-(Date.now()-c))/1000));}
+function v28LigHTML(){if(!V28on("ligar")||!trip||trip.phase!==2||trip.r.svc==="paquete")return "";const x=v28LigTarget();if(!x)return "";const T=v28T(),w=v28LigWait(),max=(T.lig||0)>=2;
+  return `<button class="btn" id="v28Lig"${w||max?" disabled":""} title="Simulado y con respeto: la respuesta depende del perfil">😏 Intentar ligar con ${esc(v28nm(x.p))}${max?" (ya lo has intentado)":w?` (espera ${w>=60?Math.ceil(w/60)+" min":w+" s"})`:""}</button>`;}
+function v28LigProb(p,partner){const T=v28T(),e=+p.edad||35;let s=.3+(p.g==="m"?.1:-.06)-(e<21?.15:e>60?.2:e>48?.08:0)-(partner?.45:0)+({simpatico:.12,exigente:-.12,prisa:-.15,paciente:.03}[tempOf(p)]||0)
+    +(p.flirt?.25:0)+({callado:-.1,poco:-.04,hablador:.05,muy:.08,pesado:.04}[p.conv]||0)+(v28Att(p)-.5)*.5+((T.int||0)-3)*.03-(p.rx==="molesta"?.1:0);return v28cl(s,.03,.9);}
+const V28_LIGL=["Oye, tienes una sonrisa muy bonita, ¿lo sabías?","Da gusto llevar a alguien tan simpático… si vuelves a necesitar coche, pídeme a mí.","Pues el turno se me está pasando volando contigo."];
+function v28Ligar(){if(!trip||trip.phase!==2||v28LigWait())return;const x=v28LigTarget();if(!x)return;const T=v28T();if((T.lig||0)>=2)return;
+  const p=x.p,nm=v28nm(p),pa=v28Partner(x),F=v28R(),pr=v28LigProb(p,pa),q=Math.random(),out=F.lig||(q<pr?"si":q<pr+.3?"risa":"no"),line=v28rn(V28_LIGL),g=p.g;
+  T.lig=(T.lig||0)+1;v28Cd("ligar");
+  const R={si:[.2,.06,3,g==="m"?"«Vaya… me has alegrado el día. ¿Te puedo pedir a ti la próxima vez?»":"«Jaja, qué maja… me lo apunto, ¿eh?»","muy simpática, hubo buen rollo 😉",`${nm} te sigue el juego (con buen gusto)`],
+    risa:[.03,0,1,"«Jaja, qué graciosa. ¡Gracias!»","simpática y con sentido del humor",`${nm} se lo toma con humor, sin más`],
+    no:[pa?-.5:-.3,-.06,-2,pa?`${v28nm(pa)} (su pareja): «Perdona, ¿que estoy aquí al lado?»`:"«Eh… mejor no, gracias.»",pa?"intentó ligar estando mi pareja delante, fuera de lugar":"intentó ligar y fue un poco incómodo",`${nm} no quiere${pa?": va con su pareja":""}`]}[out];
+  v26Eff(x.P.key,R[0],R[4],R[1]);v28IntAdd(R[2],"intento de ligar");(T.ligs=T.ligs||[]).push({n:nm,out});
+  v28Log("😏",`Intentas ligar con ${nm} («${line}»): ${R[5]}`);
+  v28alert("v28ligar",`😏 ${out==="si"?"Le sigue el juego":out==="risa"?"Se lo toma con humor":"No quiere"}`,R[3],"😏",`Le dices a ${nm}: ${line} ${R[3].replace(/[«»]/g,"")}`);
+  toast(`😏 ${R[5]} (simulado)`);S.trip=trip;save();if(!animating)showTrip(false);}
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#v28Lig");if(b&&!b.disabled)v28Ligar();},true);
+
+// ---------- (6) Miradas por el retrovisor ----------
+function v28MirType(p){return p.flirt||v28Att(p)>.7?"ligon":(tempOf(p)==="paciente"||p.conv==="callado"||p.conv==="poco")?"timido":(p.rx==="molesta"||tempOf(p)==="exigente")?"susceptible":"curioso";}
+const V28_MIR={ligon:{sonrisa:[.1,2,"«Es que no todos los días me lleva alguien tan simpática… perdona, ¿eh?»","simpática y natural"],seca:[-.08,-3,"«Vale, vale… perdona.»","un poco seca"],pasar:[0,1,"Sigue mirando de vez en cuando.",""]},
+  timido:{sonrisa:[.08,0,"«¡Uy! Perdona, estaba en las nubes…» (se pone colorado/a)","muy maja, me hizo reír"],seca:[-.05,-1,"«Perdón, perdón…» y mira por la ventanilla",""],pasar:[0,0,"Deja de mirar enseguida.",""]},
+  susceptible:{sonrisa:[.02,0,"«¿Yo? Qué va, miraba el tráfico.»",""],seca:[-.18,-1,"«Oye, tampoco hace falta ponerse así.»","un poco borde"],pasar:[0,0,"Mira por la ventanilla.",""]},
+  curioso:{sonrisa:[.06,1,"«Jaja, perdona, es que me suena tu cara.»","agradable y con humor"],seca:[-.06,-1,"«Perdona, no quería molestar.»",""],pasar:[0,0,"Deja de mirar.",""]}};
+function v28MirPick(){const A=v28Adults();if(!A.length||v28Kids())return null;const F=v28R();let best=null,bw=0;
+  for(const x of A){const p=x.p;let w=(p.g==="m"?.12:.04)+(p.flirt?.3:0)+(v28Att(p)>.7?.1:0);if(v28Partner(x))w*=.3;if(F.mir)w+=1;if(w>bw){bw=w;best=x;}}
+  return best&&Math.random()<bw?best:null;}
+function v28Mirror(x){const p=x.p,nm=v28nm(p),cop=p.seat==="copiloto",t=v28R().mirType||v28MirType(p),how=cop?"de reojo desde el asiento del copiloto":"por el retrovisor";v28Cd("espejo");
+  v28Ask({k:"v28espejo",ic:"🪞",title:`${nm} te mira mucho ${cop?"de reojo":"por el retrovisor"}`,body:`<div class="v26q">Te das cuenta de que ${esc(nm)} no deja de mirarte ${how}.</div><div class="sub">Situación simulada, nada explícito. ¿Cómo reaccionas?</div>`,
+    opts:[["sonrisa","😊 «Me miras mucho, ¿eh?» (con una sonrisa)","ok"],["seca","😐 Firme y seca: «Por favor, deja de mirarme así»","no"],["pasar","🙈 Ignorarlo","mid"]],
+    snd:"v28espejo",voz:`${nm} te mira mucho ${how}. ¿Le dices algo con una sonrisa, eres firme o lo ignoras?`,trip:true,pkey:x.P.key,
+    on:a=>{if(a==="ign")a="pasar";const e=V28_MIR[t][a],T=v28T();if(e[0])v26Eff(x.P.key,e[0],e[3]);v28IntAdd(e[1],"miradas por el retrovisor");
+      (T.mir=T.mir||[]).push({n:nm,a,t});v28Log("🪞",`${nm} te mira ${how}: ${{sonrisa:"le dices sonriendo «Me miras mucho, ¿eh?»",seca:"le pides con firmeza que deje de mirarte",pasar:"lo ignoras"}[a]}. ${e[2]}`);
+      toast("🪞 "+e[2]);if(t==="ligon"&&a==="pasar"&&!T.mir2){T.mir2=1;T.mirAt=Date.now()+rnd(60,150)*1000;}}});}
+
+// ---------- Tick v28 (cada segundo; respeta esperas, imprevistos y el panel) ----------
+function v28Init(){const T=v28T(),now=Date.now(),F=v28R();if(T.init)return T;T.init=now;S.trip=trip;save();return T;}
+function v28P2(T){const r=trip.r,now=Date.now(),F=v28R(),at=(s,a,b)=>now+(F[s]!=null?F[s]*1000:rnd(a,b)*1000);T.p2=now;
+  if(V28on("intens")){T.int=F.int!=null?+F.int:v28Base();T.lvl=v28Lvl(Math.round(T.int));T.intAt=now;}
+  if(V28on("espejo")&&(F.mir||Math.random()<.5)){const x=v28MirPick();if(x)T.mirAt=at("mirAt",30,140);}
+  try{v28P2more(T,at);}catch(e){console.error(e);}S.trip=trip;save();}
+let v28P2more=()=>{};
+function v28Tick(){if(window.NO_V28||window.NO_V27||window.NO_V26||!trip||!trip.r||trip.r.svc==="paquete")return;const T=v28Init(),now=Date.now();
+  if(trip.phase===2&&!T.p2){v28P2(T);if(!animating)showTrip(false);}
+  if(animating||(typeof v27Busy==="function"&&v27Busy())||(trip.ev&&trip.ev.cur)||(trip.inc&&trip.inc.cur!=null))return;
+  if(trip.v27&&trip.v27.asleep&&!trip.v27.woke)return;
+  if(V26C||V26Q.some(q=>q.trip))return;
+  if(trip.phase!==2)return;
+  if(V28on("intens")&&T.intAt&&now-T.intAt>75e3){const b=v28Base();if(T.int>b+.4)v28IntAdd(-1,"");else T.intAt=now;}
+  if(T.hiAt&&now>=T.hiAt){T.hiAt=0;if(Math.round(T.int)>=7&&v28CdOk("intens"))return v28Hi();}
+  if(T.mirAt&&now>=T.mirAt){if(!V28on("espejo")){T.mirAt=0;return;}if(!v28CdOk("espejo")&&!v28R().mir){T.mirAt=now+60e3;return;}T.mirAt=0;const x=v28MirPick()||(v28R().mir&&v28Adults()[0]);if(x)return v28Mirror(x);}
+  try{v28TickMore(T,now);}catch(e){console.error(e);}
+  const lb=$("v28Lig");if(lb){const h=v28LigHTML();if(!h)lb.remove();else{const d=document.createElement("div");d.innerHTML=h;const n=d.firstElementChild;if(n.textContent!==lb.textContent)lb.textContent=n.textContent;if(n.disabled!==lb.disabled)lb.disabled=n.disabled;}}}
+let v28TickMore=()=>{};
+setInterval(()=>{try{v28Tick();}catch(e){console.error(e);}},1000);
+// Etiquetas y medidor en la tarjeta del viaje
+{const _cx=ctxHTML;ctxHTML=function(r){let h=_cx.apply(this,arguments);if(window.NO_V28||window.NO_V27||window.NO_V26||!r||r.svc==="paquete")return h;
+  try{const inTrip=trip&&trip.r===r,T=inTrip&&trip.v28,tags=v28Tags(r,inTrip);
+    if(tags.length){if(/class="v26tags"/.test(h))h=h.replace(/(<div class="v26tags"[^>]*>)/,"$1"+tags.join(""));else h+=`<div class="v26tags v28tags" style="margin:4px 0">${tags.join("")}</div>`;}
+    if(inTrip&&trip.phase===2&&T&&T.p2){if(V28on("intens"))h+=v28IntHTML();h+=v28LigHTML();}}catch(e){console.error(e);}
+  return h;};}
+let v28Tags=()=>[];
+
+// ---------- (8) Turistas extranjeros: lugares turísticos REALES ----------
+const V28_SPOTS=[["Museo del Prado",40.4138,-3.6921],["Puerta del Sol",40.4169,-3.7035],["Palacio Real de Madrid",40.4179,-3.7143],["Plaza Mayor de Madrid",40.4155,-3.7074],["Templo de Debod",40.4240,-3.7178],["Puerta de Alcalá (Retiro)",40.4200,-3.6887],["Museo Reina Sofía",40.4086,-3.6943],["Estadio Santiago Bernabéu",40.4531,-3.6883],
+  ["Sagrada Família",41.4036,2.1744],["Park Güell",41.4145,2.1527],["Casa Batlló",41.3916,2.1649],["La Pedrera (Casa Milà)",41.3954,2.1619],["Plaça de Catalunya",41.3870,2.1700],["Catedral de Barcelona",41.3839,2.1762],["Museu Picasso",41.3852,2.1810],["Platja de la Barceloneta",41.3784,2.1925],
+  ["Ciutat de les Arts i les Ciències",39.4545,-0.3505],["Mercado Central de Valencia",39.4736,-0.3790],["Catedral de Valencia",39.4753,-0.3753],["Torres de Serranos",39.4790,-0.3759],["Playa de la Malvarrosa",39.4780,-0.3240],
+  ["Catedral de Sevilla y Giralda",37.3861,-5.9926],["Real Alcázar de Sevilla",37.3831,-5.9902],["Plaza de España de Sevilla",37.3772,-5.9869],["Setas de Sevilla (Metropol Parasol)",37.3933,-5.9917],["Torre del Oro",37.3824,-5.9964],
+  ["Alhambra",37.1761,-3.5881],["Mirador de San Nicolás",37.1811,-3.5926],["Catedral de Granada",37.1765,-3.5995],["Alcazaba de Málaga",36.7212,-4.4157],["Museo Picasso Málaga",36.7216,-4.4183],["Playa de la Malagueta",36.7192,-4.4087],
+  ["Museo Guggenheim Bilbao",43.2687,-2.9340],["Casco Viejo de Bilbao",43.2573,-2.9238],["Playa de La Concha",43.3177,-1.9862],["Parte Vieja de Donostia",43.3238,-1.9851],["Catedral de Santiago de Compostela",42.8806,-8.5446],["Mezquita-Catedral de Córdoba",37.8789,-4.7794],
+  ["Catedral de Toledo",39.8569,-4.0237],["Plaza Mayor de Salamanca",40.9650,-5.6640],["Acueducto de Segovia",40.9479,-4.1185],["Basílica del Pilar",41.6567,-0.8784],["Catedral de Palma",39.5675,2.6481],["Catedral de Cádiz",36.5292,-6.2950],
+  ["Castillo de Santa Bárbara",38.3489,-0.4777],["Explanada de España",38.3410,-0.4810],["Playa de Las Canteras",28.1405,-15.4380],["Auditorio de Tenerife",28.4565,-16.2510],["Playa de Levante (Benidorm)",38.5370,-0.1230],["Catedral de Murcia",37.9839,-1.1285],
+  ["Plaza del Castillo (Pamplona)",42.8169,-1.6431],["Puente Nuevo de Ronda",36.7409,-5.1659],["Catedral de León",42.5994,-5.5669],["Catedral de Burgos",42.3405,-3.7044],["Teatro Romano de Mérida",38.9159,-6.3385],["Torre de Hércules",43.3859,-8.4065]];
+const V28_NAT={en:[["Reino Unido","🇬🇧",["Oliver","James","Harry","George","Jack","Thomas","Daniel"],["Emily","Sophie","Charlotte","Olivia","Amelia","Hannah"],["Smith","Jones","Taylor","Brown","Wilson","Evans","Walker"],["Londres","Mánchester","Liverpool","Bristol"]],
+    ["Estados Unidos","🇺🇸",["Michael","Ryan","Tyler","Brandon","Jacob","Matthew"],["Ashley","Madison","Emily","Megan","Lauren"],["Johnson","Miller","Davis","Anderson","Thompson"],["Nueva York","Chicago","Boston","San Francisco"]],
+    ["Irlanda","🇮🇪",["Seán","Conor","Ciarán","Patrick"],["Aoife","Siobhán","Niamh","Ciara"],["Murphy","O'Brien","Kelly","Byrne","Walsh"],["Dublín","Cork","Galway"]],
+    ["Australia","🇦🇺",["Lachlan","Jack","Liam","Cooper"],["Chloe","Mia","Isla","Ruby"],["Williams","Mitchell","Campbell","Stewart"],["Sídney","Melbourne","Brisbane"]]],
+  fr:[["Francia","🇫🇷",["Lucas","Hugo","Louis","Théo","Antoine","Julien"],["Camille","Léa","Manon","Chloé","Inès","Margaux"],["Martin","Bernard","Dubois","Durand","Leroy","Moreau","Lefèvre"],["París","Lyon","Burdeos","Toulouse","Marsella"]],
+    ["Bélgica","🇧🇪",["Arthur","Noah","Louis"],["Emma","Louise","Élise"],["Peeters","Dubois","Lambert","Dupont"],["Bruselas","Lieja","Namur"]],
+    ["Suiza","🇨🇭",["Luca","Nicolas","Yannick"],["Laura","Mélanie","Chloé"],["Favre","Rochat","Bonvin","Morel"],["Ginebra","Lausana"]],
+    ["Canadá","🇨🇦",["William","Félix","Gabriel"],["Florence","Alice","Rosalie"],["Tremblay","Gagnon","Roy","Côté","Bouchard"],["Montreal","Quebec"]]]};
+const v28Spot=(c,maxKm,minKm,ex)=>{const L=V28_SPOTS.map(s=>({s,d:hav(c,[s[1],s[2]])})).filter(x=>x.d<=maxKm&&x.d>=(minKm||0)&&(!ex||hav(ex,[x.s[1],x.s[2]])>.8));return L.length?v28rn(L).s:null;};
+const v28SpotPlace=(s,det)=>({name:s[0],cat:"Lugar turístico",detail:det||"lugar turístico",lat:s[1],lon:s[2],kind:"poi",src:"lugar real",tour:true});
+let V28TUR=null;
+{const _ep=evtPickPu;evtPickPu=function(pos,rad){if(V28TUR&&V28TUR.mode==="pu"){const s=v28Spot(pos,+rad||3);if(s){V28TUR.ok=1;return {pt:[s[1],s[2]],place:v28SpotPlace(s,"turistas esperando a la salida")};}}return _ep.apply(this,arguments);};}
+function v28Foreign(p,lang,nat){const g=p.g==="f"?3:2,fn=v28rn(nat[g]),sn=v28rn(nat[4]);p.name=fn+" "+sn;p.nom=fn;p.orig=v28rn(nat[5])+" ("+nat[0]+")";p.v28lang=lang;p.v28nat=nat[0];p.catL=false;return p;}
+function v28MakeTourist(r,lang){const F=v28R();lang=lang||F.turLang||(Math.random()<.6?"en":"fr");const nat=V28_NAT[lang][F.turNat!=null?F.turNat:Math.floor(Math.random()*V28_NAT[lang].length)];
+  v28Foreign(r.per,lang,nat);const sn=r.per.name.split(" ").slice(1).join(" ");for(const c of r.comps||[]){v28Foreign(c,lang,nat);if(c.rel==="Pareja"||/hij/i.test(c.rel||""))c.name=c.nom+" "+(Math.random()<.6?sn:c.name.split(" ").slice(1).join(" "));}
+  r.name=r.per.name;r.ca=false;r.v28=Object.assign(r.v28||{},{tur:{lang,nat:nat[0],fl:nat[1]}});if(r.per.pref==null||/cat/.test(r.per.pref))r.per.pref=Math.random()<.4?"facil":"solo";return r;}
+async function v28Route(r,from,place,pt){const R=await osrmRoute([from,pt||[place.lat,place.lon]]);if(!R||!R.legs||!R.legs.length)return false;const k=r.route.segs.length-1;
+  r.de=place;r.to=place.name;r.dest=R.wps[1].loc;r.route.segs[k]=R.geo[0];r.segKm[k]=R.legs[0].km;r.segMin[k]=R.legs[0].s*1.2/60;recompute(r);refare(r);return true;}
+// Plan de situaciones de cada viaje (se decide al crear la petición)
+const V28_OCC={cumple:["🎂","Cumpleaños"],despedidaF:["👰","Despedida de soltera"],despedidaM:["🤵","Despedida de soltero"],aniversario:["💞","Aniversario"],pedida:["💍","Pedida de mano"]};
+function v28Plan(r){const F=v28R(),V=r.v28=r.v28||{},isU=r.svc==="urbano",cs=r.comps||[],p=r.per||{},h=simNow().h,night=h>=21||h<4,adult=(+p.edad||30)>=18,kids=cs.some(c=>(+c.edad||30)<18),pa=cs.some(c=>c.rel==="Pareja");
+  if(V28on("ocasiones")&&adult&&!kids&&(F.occ||Math.random()<.08)){let k=F.occ;if(!k){const C=[["cumple",3]];if(night&&cs.length>=2)C.push([p.g==="f"?"despedidaF":"despedidaM",3]);if(pa)C.push(["aniversario",2],["pedida",1]);k=wpick(C);}
+    if(k==="despedida")k=p.g==="f"?"despedidaF":"despedidaM";if(V28_OCC[k])V.occ={k,who:k==="cumple"&&cs.length&&Math.random()<.4?v28nm(v28rn(cs)):v28nm(p)};}
+  if(V28on("fumar")&&adult&&(F.smk||Math.random()<.06))V.smk=F.smkKind||(Math.random()<.55?"vapear":"fumar");
+  const ad=1+cs.filter(c=>(+c.edad||30)>=18).length;
+  if(V28on("discusion")&&(F.disc||(ad>=2||!isU&&(r.bookings||[]).length>=2)&&Math.random()<.07))V.disc=1;
+  if(V28on("urgencias")&&isU&&(F.urg||Math.random()<.012)){const f=[p].concat(cs).find(x=>x.g==="f"&&(+x.edad||0)>=20&&(+x.edad||0)<=42);V.urg=F.urg==="malestar"||!f||F.urg!=="parto"&&Math.random()<.6?"malestar":"parto";}
+  return V;}
+{const _mr=makeRequest;makeRequest=async function(){const F=v28R(),st=S.settings,svc=PUBX?"compartido":HAILX?"urbano":st.svc;let tur=null;
+  if(!window.NO_V28&&V28on("turistas")&&svc==="urbano"&&!HAILX){const near=v28Spot(S.driver,(+st.radius||3)+2);if(F.tur||near&&Math.random()<.12)tur={mode:F.turMode||(Math.random()<.5?"pu":"de")};}
+  V28TUR=tur;let r;try{r=await _mr.apply(this,arguments);}finally{V28TUR=null;}
+  if(!r||window.NO_V28)return r;
+  try{const air=r.pu&&r.pu.hub==="air"||r.de&&r.de.hub==="air";
+    if(!tur&&air&&V28on("turistas")&&!r.per.reg&&Math.random()<.3)tur={mode:"air",ok:1};
+    if(tur&&tur.mode==="de"&&!(r.de&&r.de.hub)&&r.routed){const s=v28Spot(r.pickup,(+st.radius||3)+2,1,r.pickup);if(s&&await v28Route(r,r.pickup,v28SpotPlace(s,"visita turística")))tur.ok=1;}
+    if(tur&&tur.ok&&!r.per.reg)v28MakeTourist(r);
+    if(r.svc!=="paquete")v28Plan(r);}catch(e){console.error(e);}
+  return r;};}
+{const _cp=v26CatPrompt;v26CatPrompt=function(){if(!window.NO_V28&&trip&&trip.r&&trip.r.v28&&trip.r.v28.tur)return;return _cp.apply(this,arguments);};}
+const V28_TL={en:{hi:d=>v28rn([`Hi! Could you take us to ${d}, please? Is it far?`,`Hello! We're going to ${d}. Sorry, my Spanish is terrible!`,`Hi there! ${d}, please. Is it a nice place?`]),
+    ans:(m,c)=>`Of course! It's about ${m} minutes. Welcome to ${c}!`,th:["Great driver, so friendly!","Lovely ride, she spoke English with us. Thanks!","Amazing driver, very helpful. Highly recommend!"],lbl:"inglés",bt:"🇬🇧 Answer in English"},
+  fr:{hi:d=>v28rn([`Bonjour ! Vous pouvez nous emmener à ${d}, s'il vous plaît ? C'est loin ?`,`Bonsoir ! On va à ${d}. Désolé, je parle très mal espagnol !`,`Bonjour ! ${d}, s'il vous plaît. C'est joli ?`]),
+    ans:(m,c)=>`Bien sûr ! C'est à environ ${m} minutes. Bienvenue à ${c} !`,th:["Super chauffeuse, très sympa !","Très bon trajet, elle nous a parlé en français. Merci !","Chauffeuse adorable et serviable. Je recommande !"],lbl:"francés",bt:"🇫🇷 Répondre en français"}};
+function v28Tourist(){const r=trip.r,t=r.v28.tur,p=r.per,nm=v28nm(p),L=V28_TL[t.lang],d=plOf(r,"de").name,ph=L.hi(d),key=v28Key(r),m=Math.max(3,Math.round(r.min||10)),city=(nearestCity(S.driver,40)||{}).n||"España";v28Cd("turistas");
+  v28Ask({k:"v28tur",ic:t.fl,title:`${nm} es turista (${t.nat}) y te habla en ${L.lbl}`,body:`<div class="v26q" lang="${t.lang}">«${esc(ph)}»</div><div class="sub">${t.fl} Turista simulado; el lugar es real. ¿En qué idioma le respondes?</div>`,
+    okTxt:L.bt,noTxt:"🇪🇸 Responder en castellano",snd:"v28turista",voz:`${nm} es turista y te habla en ${L.lbl}.`,trip:true,pkey:key,
+    on:a=>{const T=v28T();T.tur=a;if(a==="ok"){v26Eff(key,.2,v28rn(L.th),.04);v28Log(t.fl,`${nm} (${t.nat}): «${ph}» — Le respondes en ${L.lbl}: «${L.ans(m,city)}»`);toast(`${t.fl} ¡Le encanta que le hables en ${L.lbl}!`);}
+      else if(a==="no"){const w=p.pref==="facil"?.05:p.rx==="molesta"?-.15:-.05;v26Eff(key,w,w>0?"me habló despacito en español, ¡aprendí palabras!":"no entendía bien el español, costó comunicarse");v28Log("🇪🇸",`${nm}: «${ph}» — Le respondes en castellano${p.pref==="facil"?"; chapurrea español y se ríe":"; no entiende mucho y tira de gestos"}`);}
+      else{v26Eff(key,-.06,"");v28Log("🔇",`${nm} te habla en ${L.lbl} y no le contestas`);}}});}
+// ---------- (9) Ocasiones especiales ----------
+const V28_OCCQ={cumple:w=>`¡Hoy es el cumple de ${w}! ¿Nos pones algo para cantar?`,despedidaF:()=>"¡Que es la despedida de nuestra amiga! ¡Sube la música, por favor!",despedidaM:()=>"¡Despedida de soltero! ¿Nos pones algo para cantar todos?",
+  aniversario:()=>"Hoy hacemos aniversario… ¿podrías poner algo romántico?",pedida:()=>"(te dice en voz baja) Voy a pedirle matrimonio esta noche… ¿me pones algo romántico?"};
+const V28_SONGS={cumple:["«Cumpleaños feliz»","«La Bamba»","«Danza Kuduro»"],despedidaF:["«Quédate» de Quevedo","«Waka Waka»","«Despechá»"],despedidaM:["«Paquito el Chocolatero»","«Bailando»","«Despacito»"],aniversario:["«Contigo» de Joaquín Sabina","«Perfect» de Ed Sheeran","«Bésame mucho»"],pedida:["«Perfect» de Ed Sheeran","«Contigo aprendí»","«A thousand years»"]};
+function v28Occ(){const r=trip.r,o=r.v28.occ,I=V28_OCC[o.k],nm=pnom(r),key=v28Key(r),q=V28_OCCQ[o.k](o.who),song=v28rn(V28_SONGS[o.k]),rom=o.k==="aniversario"||o.k==="pedida";v28Cd("ocasiones");
+  v28Ask({k:"v28fiesta",ic:I[0],title:`${I[1]}: ${nm}${rom?"":" y compañía"} lo celebran`,body:`<div class="v26q">«${esc(q)}»</div><div class="sub">Piden ${esc(song)}. Ocasión simulada.</div>`,
+    opts:[["pon",`🎶 Poner ${song}`,"ok"],["baja","🔉 Música, pero bajita","mid"],["no","✋ Mejor sin música","no"]],snd:"v28fiesta",voz:`${I[1]}. Te piden música para celebrarlo.`,trip:true,pkey:key,
+    on:a=>{const T=v28T();if(a==="ign")a="baja";T.occA=a;T.occOk=a==="pon";
+      const R={pon:[.22,.06,rom?1:3,rom?"«¡Qué detalle!» Se emocionan.":"¡Euforia! Todo el coche cantando."],baja:[.05,0,1,"Sonríen y la tararean bajito."],no:[-.15,-.04,-2,"Se quedan un poco cortados."]}[a];
+      v26Eff(key,R[0],R[0]>0?(rom?"nos puso nuestra canción, ¡qué detalle!":"nos puso música para celebrarlo, ¡un 10!"):R[0]<0?"no quiso poner música en nuestra celebración":"",R[1]);v28IntAdd(R[2],"celebración");
+      v28Log(I[0],`${I[1]}: «${q}» — ${{pon:"pones "+song,baja:"pones música bajita",no:"prefieres no poner música"}[a]}. ${R[3]}`);toast(I[0]+" "+R[3]);
+      if(o.k==="pedida"&&a!=="no")setTimeout(()=>{if(trip&&trip.v28===T){v28alert("v28fiesta","💍 ¡Ha dicho que sí!",`${nm} se lo ha pedido en el coche. ¡Enhorabuena! (simulado)`,"💍",`${nm} se lo ha pedido y ha dicho que sí. ¡Enhorabuena!`);v28Log("💍",`${nm} pide matrimonio en el coche: ¡ha dicho que sí!`);v28IntAdd(2,"pedida de mano");}},4000);}});}
+// ---------- (10) Fumar o vapear ----------
+function v28Smoke(){const r=trip.r,k=r.v28.smk,A=v28Adults(),x=A.find(y=>y.P.key===v28Key(r))||A[0];if(!x)return;const p=x.p,nm=v28nm(p),vap=k==="vapear";v28Cd("fumar");
+  v28Ask({k:"v28humo",ic:vap?"💨":"🚬",title:`${nm} quiere ${vap?"vapear":"fumar"}`,body:`<div class="v26q">«¿Te importa si ${vap?"vapeo un poco":"me fumo un cigarro"}? Bajo la ventanilla.»</div><div class="sub">Si le dejas, el coche olerá (afecta al siguiente cliente hasta que lo limpies). Simulado.</div>`,
+    okTxt:"✅ Vale, con la ventanilla bajada",noTxt:"✋ No, en el coche no se fuma",snd:"v28humo",voz:`${nm} pregunta si puede ${vap?"vapear":"fumar"} en el coche.`,trip:true,pkey:x.P.key,
+    on:a=>{const T=v28T();T.smk=a;const why=vap?"olor a vapeo":"olor a tabaco";
+      if(a==="ok"){v26Eff(x.P.key,.06,"me dejó "+(vap?"vapear":"fumar")+", enrollada");T.smell=why;S.trip=trip;save();if(!animating)try{showTrip(false);}catch(e){}v28Log(vap?"💨":"🚬",`Dejas que ${nm} ${vap?"vapee":"fume"} con la ventanilla bajada. El coche se queda con ${why}.`);
+        for(const y of v28Adults())if(y.P.key!==x.P.key)v26Eff(y.P.key,-.12,"dejó fumar a otro pasajero dentro del coche");}
+      else{const t=tempOf(p),w=p.rx==="molesta"||t==="exigente"?-.15:t==="paciente"||t==="simpatico"?.03:-.04;if(w)v26Eff(x.P.key,w,w<0?"no me dejó "+(vap?"vapear":"fumar"):"normas claras, lo entiendo");
+        v28Log("🚭",`No dejas ${vap?"vapear":"fumar"} a ${nm}: ${w<0?"se molesta un poco":"«Claro, sin problema»"}`);}}});}
+// ---------- (12) Urgencias (muy raras): hospital REAL cercano ----------
+const V28_HOSP=[["Hospital Universitario La Paz",40.4806,-3.6870],["Hospital General Universitario Gregorio Marañón",40.4185,-3.6705],["Hospital Clínico San Carlos",40.4405,-3.7193],["Hospital Universitario 12 de Octubre",40.3755,-3.6985],["Hospital Universitario Ramón y Cajal",40.4882,-3.6943],
+  ["Hospital Clínic de Barcelona",41.3897,2.1525],["Hospital de la Santa Creu i Sant Pau",41.4130,2.1745],["Hospital del Mar",41.3842,2.1945],["Hospital Universitari Vall d'Hebron",41.4275,2.1428],
+  ["Hospital Universitari i Politècnic La Fe",39.4440,-0.3760],["Hospital Clínico Universitario de Valencia",39.4880,-0.3610],["Hospital Universitario Virgen del Rocío",37.3612,-5.9805],["Hospital Universitario Virgen Macarena",37.4065,-5.9892],
+  ["Hospital Regional Universitario de Málaga",36.7155,-4.4335],["Hospital Clínico Virgen de la Victoria",36.7155,-4.4750],["Hospital Universitario Virgen de las Nieves",37.1910,-3.6085],["Hospital Universitario Miguel Servet",41.6355,-0.9020],
+  ["Hospital Universitario de Basurto",43.2619,-2.9560],["Hospital Universitario Cruces",43.2840,-2.9870],["Hospital Universitario Donostia",43.2965,-1.9750],["Hospital General Universitario Dr. Balmis",38.3640,-0.4980],
+  ["Hospital Clínico Universitario Virgen de la Arrixaca",37.9420,-1.1650],["Hospital Universitari Son Espases",39.6070,2.6440],["Hospital Universitario de Gran Canaria Doctor Negrín",28.1130,-15.4500],["Hospital Universitario Nuestra Señora de Candelaria",28.4500,-16.2930],
+  ["Hospital Clínico Universitario de Valladolid",41.6560,-4.7180],["Hospital Universitario Reina Sofía (Córdoba)",37.8700,-4.7900],["Hospital Universitario Puerta del Mar",36.5050,-6.2750],["Complejo Hospitalario Universitario de Santiago",42.8700,-8.5650],
+  ["Complejo Hospitalario Universitario de A Coruña",43.3440,-8.3890],["Hospital Universitario Central de Asturias",43.3770,-5.8640],["Hospital Universitario de Navarra",42.8060,-1.6650],["Hospital Universitario de Toledo",39.8770,-4.0090]];
+function v28Hosp(c){let b=null,bd=1e9;for(const h of V28_HOSP){const d=hav(c,[h[1],h[2]]);if(d<bd){bd=d;b=h;}}return b&&bd<=30?{h:b,d:bd}:null;}
+const v28HospPlace=h=>({name:h[0],cat:"Hospital",detail:"urgencias",lat:h[1],lon:h[2],kind:"poi",src:"hospital real"});
+async function v28GoHosp(H,x,why){const r=trip.r,T=v28T(),ok=await v28Route(r,S.driver,v28HospPlace(H.h));
+  if(ok){T.urgH=H.h[0];v28Log("🏥",`Cambias el destino a urgencias del ${H.h[0]} (${num1(r.km)} km en total)${why?": "+why:""}`);toast("🏥 Nuevo destino: "+H.h[0]);v28say(`Vamos a urgencias del ${H.h[0]}.`);}
+  else{v28Log("🏥",`No se pudo calcular la ruta al ${H.h[0]}: sigues hacia el destino`);toast("⚠️ Sin ruta al hospital (sin conexión)");}
+  S.trip=trip;save();if(!animating)showTrip(false);}
+function v28Urg(){const r=trip.r,kind=r.v28.urg,A=v28Adults(),F=v28R();let x=kind==="parto"?A.find(y=>y.p.g==="f"&&(+y.p.edad||0)>=20&&(+y.p.edad||0)<=42):A[0];if(!x)x=A[0];if(!x)return;
+  const H=v28Hosp(S.driver);if(!H)return;const p=x.p,nm=v28nm(p),key=x.P.key,pa=kind==="parto";v28Cd("urgencias");const T=v28T();T.urg=kind;
+  const q=pa?"¡Ay! Creo que he roto aguas… tengo contracciones cada pocos minutos.":v28rn(["No me encuentro nada bien… me mareo mucho y me falta un poco el aire.","Perdona… me ha dado un dolor muy fuerte en la tripa, no puedo ni moverme."]);
+  v28Ask({k:"v28urg",ic:"🏥",title:pa?`¡${nm} se ha puesto de parto!`:`${nm} se encuentra muy mal`,body:`<div class="v26q">«${esc(q)}»</div><div class="sub">🏥 Hospital real más cercano: <b>${esc(H.h[0])}</b> (${num1(H.d)} km en línea recta). Urgencia simulada; la llamada al 112 también es simulada.</div>`,
+    opts:[["hosp",`🏥 Ir a urgencias del ${H.h[0]}`,"ok"],["112","📞 Llamar al 112 (simulado)","mid"],["seguir","➡️ Seguir el viaje","no"]],snd:"v28urg",voz:pa?`${nm} se ha puesto de parto. El hospital más cercano es el ${H.h[0]}.`:`${nm} se encuentra muy mal. El hospital más cercano es el ${H.h[0]}.`,trip:true,pkey:key,
+    on:a=>{const T=v28T();if(a==="ign")a="112";T.urgA=a;
+      if(a==="hosp"){v26Eff(key,.35,pa?"me llevó al hospital volando cuando me puse de parto, ¡gracias, Alba!":"me llevó a urgencias enseguida, mil gracias",.1);v28GoHosp(H,x,pa?"parto":"malestar");}
+      else if(a==="112"){v28Log("📞",`Llamas al 112 (simulado): «${pa?"Tengo una pasajera con contracciones":"Tengo un pasajero que se encuentra muy mal"} en el coche»`);
+        v27Wait({k:"v28112",ic:"📞",title:"Hablando con el 112 (simulado)",quote:"112, ¿cuál es su emergencia? Tranquila, le vamos guiando.",who:"Operadora del 112 (simulada)",min:F.urgMin!=null?F.urgMin:rnd(.8,1.6),sub:"Te dan instrucciones mientras paras en un lugar seguro.",data:{H,key,pa,nm,calm:!pa&&(F.urgCalm!=null?!!F.urgCalm:Math.random()<.5)}});}
+      else{const fine=!pa&&Math.random()<.6;v26Eff(key,pa?-.6:fine?-.1:-.4,pa?"me puse de parto y no quiso llevarme al hospital":fine?"":"me encontraba fatal y siguió como si nada");v28Log("➡️",`Sigues el viaje${fine?`: a ${nm} se le pasa poco a poco`:`; ${nm} lo pasa mal`}`);}}});}
+V27DONE.v28112=w=>{const d=w.data||{},T=v28T();if(!T)return;T.urg112=1;
+  if(d.calm){v26Eff(d.key,.25,"paró y llamó al 112 cuando me encontré mal, muy profesional",.05);v28Log("📞",`El 112 (simulado): «Parece una bajada de tensión. Que respire tranquilo y beba agua.» ${d.nm} se recupera.`);v28alert("v28urg","📞 112: todo bajo control",`${d.nm} se encuentra mejor (simulado).`,"📞",`${d.nm} se encuentra mejor.`);}
+  else{v26Eff(d.key,.3,"llamó al 112 y me llevó al hospital, gracias",.08);v28Log("📞",`El 112 (simulado) te indica ir a urgencias del ${d.H.h[0]}.`);v28GoHosp(d.H,null,"indicación del 112");}};
+// ---------- (13) Pasajeros que discuten ----------
+const V28_DT=[["dónde ir a cenar luego","«¡Siempre elegimos lo que tú quieres!»"],["quién se dejó las llaves","«¡Te dije que las cogieras tú!»"],["el fútbol del domingo","«¡Ese penalti no era ni de broma!»"],["llegar tarde","«¡Si hubieras salido a tu hora…!»"],["la ventanilla abierta","«¡Que me estoy helando, ciérrala ya!»"]];
+function v28Disc(){const A=v28Adults();if(A.length<2)return;const a=A[0],b=A.find(y=>y.p!==a.p),t=v28rn(V28_DT),na=v28nm(a.p),nb=v28nm(b.p),ex=[a,b].some(y=>tempOf(y.p)==="exigente"||y.p.rx==="molesta");v28Cd("discusion");
+  v28Ask({k:"v28disc",ic:"🗯️",title:`${na} y ${nb} discuten`,body:`<div class="v26q">Discuten por ${esc(t[0])}: ${esc(t[1])}</div><div class="sub">Discusión simulada, sin insultos. ¿Qué haces?</div>`,
+    opts:[["mediar","🕊️ Mediar con calma","ok"],["musica","🔊 Subir la música","mid"],["nada","🤐 No meterte","no"]],snd:"v28disc",voz:`${na} y ${nb} están discutiendo. ¿Medias, subes la música o no te metes?`,trip:true,
+    on:x=>{const T=v28T();if(x==="ign")x="nada";T.disc=x;const keys=[...new Set([a.P.key,b.P.key])],fail=x==="mediar"&&ex&&Math.random()<.5;
+      const R=x==="mediar"?(fail?[-.1,0,1,"«¿Y a ti quién te ha preguntado?» Mejor no insistir."]:[.12,.03,-3,"Se calman y hasta se ríen."]):x==="musica"?[ex?-.05:.05,0,-2,"La música corta la tensión."]:[-.05,0,1,"Siguen un rato hasta que se cansan."];
+      for(const k of keys)v26Eff(k,R[0],R[0]>0?(x==="mediar"?"supo calmar los ánimos":"cortó la tensión con música"):x==="nada"?"el viaje fue incómodo por la discusión":"se metió donde no la llamaban",R[1]);
+      v28IntAdd(R[2],"discusión");v28Log("🗯️",`${na} y ${nb} discuten por ${t[0]}: ${{mediar:"medias",musica:"subes la música",nada:"no te metes"}[x]}. ${R[3]}`);toast("🗯️ "+R[3]);}});}
+// Programación en la fase 2 y tick
+v28P2more=(T,at)=>{const r=trip.r,V=r.v28||{},d=typeof v27Dirty==="function"&&v27Dirty();
+  if(V.tur&&V28on("turistas"))T.turAt=at("turAt",3,12);if(V.occ&&V28on("ocasiones"))T.occAt=at("occAt",10,40);if(V.smk&&V28on("fumar"))T.smkAt=at("smkAt",40,150);
+  if(V.urg&&V28on("urgencias")&&v28Hosp(S.driver))T.urgAt=at("urgAt",30,120);if(V.disc&&V28on("discusion"))T.discAt=at("discAt",40,160);
+  if(d&&/olor a (tabaco|vapeo)/.test(d.why)&&V28on("fumar")){const nm=pnom(r);T.smellC=1;v28Log("😷",`${nm}: «Uf… aquí huele a ${/vapeo/.test(d.why)?"vapeo":"tabaco"}, ¿no?»`);v28alert("v28humo","😷 El cliente nota el olor",`${nm}: «Aquí huele a ${/vapeo/.test(d.why)?"vapeo":"tabaco"}…» Limpia el coche para que no baje la nota.`,"😷",`${nm} se queja: el coche huele.`);}};
+v28TickMore=(T,now)=>{const due=k=>T[k]&&now>=T[k],F=v28R(),r=trip.r;
+  for(const [k,cd,fn,ok] of [["urgAt","urgencias",v28Urg,()=>r.svc==="urbano"&&(trip.si||1)>=r.route.segs.length],["turAt","turistas",v28Tourist],["occAt","ocasiones",v28Occ],["smkAt","fumar",v28Smoke],["discAt","discusion",v28Disc,()=>v28Adults().length>=2]]){
+    if(!due(k))continue;if(ok&&!ok()){T[k]=0;continue;}if(!v28CdOk(cd)&&!F.nocd){T[k]=now+30e3;continue;}T[k]=0;S.trip=trip;save();return fn();}};
+v28Tags=(r,inTrip)=>{const V=r.v28||{},t=[];if(V.tur)t.push(`<span class="v26tag v28t">${V.tur.fl} Turista (${V28_TL[V.tur.lang].lbl})</span>`);if(V.occ)t.push(`<span class="v26tag v28o">${V28_OCC[V.occ.k][0]} ${V28_OCC[V.occ.k][1]}</span>`);
+  if(inTrip&&trip.v28&&trip.v28.smell)t.push(`<span class="v26tag v28">💨 Ha ${trip.r.v28.smk==="vapear"?"vapeado":"fumado"}</span>`);if(inTrip&&trip.v28&&trip.v28.urgH)t.push(`<span class="v26tag v28">🏥 A urgencias</span>`);return t;};
+// Propinas y regalos de las celebraciones
+{const _ct=calcTip;calcTip=function(r,ev,rate,sat){let t=_ct.apply(this,arguments);try{if(!window.NO_V28&&r&&r.v28&&r.v28.occ&&trip&&trip.r===r&&trip.v28&&trip.v28.occOk&&rate>=4&&!(FORCE&&FORCE.tip!=null))t=r2(t+Math.round(rnd(2,8)));}catch(e){}return t;};}
+// ---------- (11) Reseñas escritas ----------
+function v28Rev(r,V,e){const F=v28R(),rate=F.rate!=null?F.rate:(e.rate||0),o=r.v28||{},s=[];
+  if(o.tur&&V.tur==="ok")s.push(v28rn(V28_TL[o.tur.lang].th));
+  s.push(rate>=5?v28rn(["Conductora de 10.","Viaje perfecto, Alba es un encanto.","Muy profesional y simpática."]):rate>=4?v28rn(["Buen viaje, todo correcto.","Muy bien, conduce con mucha calma."]):rate>=3?v28rn(["Correcto, sin más.","Bien, aunque mejorable."]):v28rn(["No repetiría.","Experiencia mejorable."]));
+  if(o.occ&&V.occOk)s.push(o.occ.k==="pedida"?"¡Nos ayudó con la pedida! ¡Ha dicho que sí! 💍":o.occ.k==="aniversario"?"Nos puso nuestra canción en el aniversario. ❤️":"¡Nos animó la celebración con música! 🎉");
+  if(V.urgA==="hosp"||V.urg112)s.push("Me ayudó muchísimo con la urgencia. ¡Gracias, Alba!");else if(V.urgA==="seguir")s.push("Me encontraba fatal y no me ayudó.");
+  const L=V.ligs||[];if(L.some(x=>x.out==="si"))s.push("Hubo muy buen rollo 😉");else if(L.some(x=>x.out==="no"))s.push("Intentó ligar y fue incómodo.");
+  if(V.smk==="no"&&rate<=3)s.push("No me dejó fumar.");if(V.smellC)s.push("El coche olía a tabaco.");if(V.disc==="mediar")s.push("Supo calmar una discusión.");
+  return s.slice(0,3).join(" ");}
+function v28After(T0,r,V,e){if(!V28on("resenas")&&!r.v28)return;const x={};if(r.v28&&Object.keys(r.v28).length)x.plan=JSON.parse(JSON.stringify(r.v28));
+  for(const k of ["tur","occA","smk","smellC","urg","urgA","urgH","disc","lig","ligs","mir","hi","intMax"])if(V[k]!=null&&V[k]!==0)x[k]=V[k];if(V.int!=null&&V.p2)x.int=Math.round(V.int);
+  const F=v28R(),rate=F.rate!=null?F.rate:(e.rate||0);
+  if(r.v28&&r.v28.occ&&V.occOk&&rate>=4&&(F.gift28||Math.random()<.25)){const g=v28rn(r.v28.occ.k==="cumple"?["un trozo de tarta de cumpleaños","un globo de cumpleaños"]:/despedida/.test(r.v28.occ.k)?["una pulsera de la despedida","una diadema con lucecitas"]:["una rosa","un bombón"]);
+    x.gift=g;v28alert("v27regalo",`🎁 Te han dejado un detalle`,g,"🎁",`Te han dejado ${g}.`);}
+  if(e.status==="ok"&&V28on("resenas"))x.rev=v28Rev(r,V,e);
+  if(!Object.keys(x).length)return;e.v28=x;HS.upd(e.uid,v=>{v.v28=x;}).catch(()=>{});save();}
+{const _ft=finishTrip;finishTrip=function(){const T0=trip,r0=trip&&trip.r,V=trip&&trip.v28,u0=S.history[0]&&S.history[0].uid;const out=_ft.apply(this,arguments);
+  try{if(T0&&!window.NO_V28&&S.history[0]&&S.history[0].uid!==u0&&r0.svc!=="paquete"){if(V&&V.smell&&V27on("sucio"))v27SetDirty(1,V.smell);v28After(T0,r0,V||{},S.history[0]);}}catch(e){console.error(e);}return out;};}
+{const _hm=hmRender;hmRender=function(){const v=_hm.apply(this,arguments);try{if(window.NO_V28)return v;const rows=HM.f.slice(HM.page*HM.per,(HM.page+1)*HM.per),tr=$("hmBody").querySelectorAll("tr");
+  rows.forEach((x,i)=>{if(x.v28&&x.v28.rev&&tr[i]){const td=tr[i].lastElementChild;if(td&&!td.querySelector(".v28rev"))td.insertAdjacentHTML("beforeend",`<div class="v28rev">📝 ${esc(x.v28.rev)} <span class="simtag">reseña simulada</span></div>`);}});}catch(e){console.error(e);}return v;};}
+{const _vd=v26Diary;v26Diary=function(sh,rec){const d=_vd.apply(this,arguments);if(!d||window.NO_V28)return d;try{const L=S.history.filter(e=>e.shift===sh.id&&e.v28).map(e=>e.v28),c=f=>L.filter(f).length,s=[];
+  if(c(x=>x.plan&&x.plan.tur))s.push(`He llevado a ${c(x=>x.plan&&x.plan.tur)} turista${c(x=>x.plan&&x.plan.tur)===1?"":"s"} extranjero${c(x=>x.plan&&x.plan.tur)===1?"":"s"}.`);
+  if(c(x=>x.plan&&x.plan.occ))s.push(`Celebraciones a bordo: ${L.filter(x=>x.plan&&x.plan.occ).map(x=>V28_OCC[x.plan.occ.k][1].toLowerCase()).join(", ")}.`);
+  if(c(x=>x.ligs))s.push(`He intentado ligar ${L.reduce((a,x)=>a+(x.ligs?x.ligs.length:0),0)} vez/veces (${L.flatMap(x=>x.ligs||[]).filter(y=>y.out==="si").length} con éxito).`);
+  if(c(x=>x.mir))s.push("Alguien no dejaba de mirarme por el retrovisor…");if(c(x=>x.urgA))s.push("He tenido una urgencia en el coche: todo salió bien.");if(c(x=>x.disc))s.push("Unos pasajeros discutieron en el coche.");
+  if(c(x=>x.intMax>=7))s.push(`${c(x=>x.intMax>=7)} conversación${c(x=>x.intMax>=7)===1?"":"es"} subieron mucho de tono (nada explícito).`);
+  const rv=S.history.filter(e=>e.shift===sh.id&&e.v28&&e.v28.rev).slice(0,3).map(e=>`📝 «${e.v28.rev}» (${String(e.pax||"").split(",")[0]}, ${e.rate}★)`);if(rv.length)s.push("Reseñas: "+rv.join(" · "));
+  d.lines.push(...s);d.st.v28=L.length;}catch(e){console.error(e);}return d;};}
+{const _cs=csvOf;csvOf=function(list){const s=_cs.apply(this,arguments);if(window.NO_V28)return s;const rows=s.split("\r\n");if(rows.length!==list.length+1)return s;
+  const q=t=>{t=String(t==null?"":t);return /[";\r\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;};rows[0]+=";Situaciones v28 y reseña (simulado)";
+  list.forEach((x,i)=>{const v=x.v28,p=[];if(v){if(v.plan&&v.plan.tur)p.push("turista "+v.plan.tur.nat);if(v.plan&&v.plan.occ)p.push(V28_OCC[v.plan.occ.k][1]);if(v.urgA)p.push("urgencia: "+v.urgA);if(v.ligs)p.push("ligar: "+v.ligs.map(y=>y.out).join(","));if(v.int!=null)p.push("intensidad "+v.int);if(v.rev)p.push("reseña: "+v.rev);}rows[i+1]+=";"+q(p.join(" | "));});
+  return rows.join("\r\n");};}
+// ---------- Ajustes: «Más pasajeros y situaciones (v28)» ----------
+{const a=$("secV27")||$("secV26")||$("secEv");if(a&&!$("secV28")){v28S();a.insertAdjacentHTML("afterend",`<div class="sec" id="secV28"><h2>Más pasajeros y situaciones <span class="simtag">simulado</span></h2>
+  <div class="v28chk" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px 10px;margin-top:6px">${Object.keys(V28_DEF).map(k=>`<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-v28="${k}"> ${V28_LBL[k]}</label>`).join("")}</div>
+  <div class="hint">Turistas, celebraciones, urgencias, controles y reseñas son <b>simulados</b>; los lugares turísticos y los hospitales son <b>reales</b>. Cada situación tiene un tiempo de espera para no repetirse. Se guardan en exportar/importar.</div></div>`);
+  document.querySelectorAll("#secV28 input[data-v28]").forEach(c=>c.onchange=()=>{v28S()[c.dataset.v28]=c.checked;save();toast(V28_LBL[c.dataset.v28]+": "+(c.checked?"activado":"desactivado"));});}}
+function syncV28UI(){if(!$("secV28"))return;const s=v28S();document.querySelectorAll("#secV28 input[data-v28]").forEach(c=>c.checked=!!s[c.dataset.v28]);}
+{const _se=syncEvUI;syncEvUI=function(){const v=_se.apply(this,arguments);try{syncV28UI();}catch(e){}return v;};}
+syncV28UI();
+window.V28={S:v28S,on:V28on,T:()=>trip&&trip.v28,R:v28R,DEF:V28_DEF,int:v28IntAdd,intUI:v28IntUI,hi:()=>v28Hi(),ligar:()=>v28Ligar(),ligProb:v28LigProb,mirror:()=>{const x=v28Adults()[0];if(x)v28Mirror(x);},
+  tourist:()=>v28Tourist(),makeTourist:v28MakeTourist,occ:()=>v28Occ(),smoke:()=>v28Smoke(),urg:()=>v28Urg(),disc:()=>v28Disc(),purge:v28Purge,prune:v28PruneStops,rev:v28Rev,
+  spots:V28_SPOTS,hosp:V28_HOSP,nearHosp:v28Hosp,cops:V28_COPS,copPlan:v28CopPlan,copSec:v28CopSec,tick:()=>v28Tick(),plan:v28Plan,cd:()=>S.v28cd};
+
 </script>
 </body>
 </html>
