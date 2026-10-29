@@ -280,6 +280,10 @@ body.rain #rainFx{display:block}
 }
 /* v27.1 · Gráficos ligeros: evita la corrupción de la tarjeta (cuadros/píxeles) en GPU de Android */
 body.fxlite #rainFx{animation:none;opacity:.3}
+body.fxlite .leaflet-zoom-animated,body.fxlite .leaflet-pane,body.fxlite .leaflet-tile{will-change:auto!important}
+body.fxlite .leaflet-tile,body.fxlite .leaflet-fade-anim .leaflet-popup,body.fxlite .leaflet-zoom-anim .leaflet-zoom-animated{transition:none!important}
+body.fxlite .pqtrip,body.fxlite .pqtrip *,body.fxlite .pqreq,body.fxlite .pqreq *{animation:none!important;transition:none!important;filter:none!important;will-change:auto!important}
+body.fxlite .pq-ic.done{opacity:1;background:#3a3f46}body.fxlite .pqstops .pl.pqdone{opacity:1;color:#8b949e}
 body.fxlite .evmk.on,body.fxlite .dot.on,body.fxlite .pulse{animation:none}
 body.fxlite .car-icon,body.fxlite .hub-icon{filter:none;text-shadow:0 1px 3px rgba(0,0,0,.8)}
 body.fxlite #overlay{background:#161b22;contain:paint}
@@ -2169,7 +2173,9 @@ function accept(){
   if(isP)trip.pq={k:0,at:null,ev:null,wait:null,plan:pqPlan(r)};
   S.trip=trip;save();renderStats();
   toast(isP?"📦 Envío aceptado: ve a recoger a "+r.from:"Viaje aceptado: ve a recoger a "+r.name);
+  if(isP&&document.body.classList.contains("fxlite"))try{map.stop();}catch(e){}
   showTrip(true);
+  if(isP)ovSettle();
 }
 function showTrip(fit){
   const r=trip.r;if(!trip.ev)trip.ev=evNew();clearTimeout(sumT);
@@ -3199,11 +3205,12 @@ $("vozStop").onclick=()=>vozCancel();
 if(SS()){try{SS().addEventListener?SS().addEventListener("voiceschanged",vozFill):(SS().onvoiceschanged=vozFill);}catch(e){}}
 syncVozUI();setTimeout(vozFill,600);setTimeout(vozFill,2500);
 // ---------- Móvil (Android) y app instalable (PWA) ----------
-const APP_VER="27.1";
+const APP_VER="27.2";
 const MQ_MOB=window.matchMedia("(max-width:899px),(max-height:520px) and (pointer:coarse)");
 function isMob(){return MQ_MOB.matches;}
 // Márgenes al encuadrar la ruta: en PC la tarjeta está a la izquierda; en móvil, abajo (vertical) o a la izquierda (horizontal)
-function fitPad(){if(!isMob())return {paddingTopLeft:[400,60],paddingBottomRight:[60,60],maxZoom:15};
+function fitPad(){const o=fitPad0();if(document.body.classList.contains("fxlite"))o.animate=false;return o;}
+function fitPad0(){if(!isMob())return {paddingTopLeft:[400,60],paddingBottomRight:[60,60],maxZoom:15};
   const ov=$("overlay"),land=innerWidth>innerHeight&&innerHeight<=520;
   return land?{paddingTopLeft:[Math.min(ov.offsetWidth,innerWidth*.55)+20,20],paddingBottomRight:[20,20],maxZoom:15}
     :{paddingTopLeft:[20,20],paddingBottomRight:[20,Math.min(ov.offsetHeight,mapEl.clientHeight*.7)+20],maxZoom:15};}
@@ -4955,10 +4962,17 @@ window.V27={S:v27S,on:V27on,T:()=>trip&&trip.v27,wait:v27Wait,busy:v27Busy,tick:
 
 // ===== v27.1: gráficos ligeros (ajuste fxLite; va en exportar/importar con S.settings) =====
 function fxLiteWanted(){const v=S.settings.fxLite;return v==null?isMob():!!v;}
-function fxLiteApply(){const on=fxLiteWanted();document.body.classList.toggle("fxlite",on);const c=$("fxLite");if(c&&c.checked!==on)c.checked=on;}
+let _mapFx0=null;
+function mapFxApply(on){try{if(!_mapFx0)_mapFx0={z:map._zoomAnimated,f:map._fadeAnimated};if(on&&map._animatingZoom)map.stop();map._zoomAnimated=on?false:_mapFx0.z;map._fadeAnimated=on?false:_mapFx0.f;
+  map.getContainer().classList.toggle("leaflet-fade-anim",!on&&!!_mapFx0.f);}catch(e){}}
+function ovNudge(){const o=$("overlay");if(!o||!document.body.classList.contains("fxlite"))return;o.style.transform="translateZ(0)";requestAnimationFrame(()=>{o.style.transform="";});}
+// 27.2: tras aceptar paquetería, cuando el mapa termina de recolocarse se fuerza un repintado limpio de la tarjeta (Android)
+function ovSettle(){if(!document.body.classList.contains("fxlite"))return;let done=false;const go=()=>{if(done)return;done=true;ovNudge();setTimeout(ovNudge,400);};
+  try{map.once("moveend",()=>requestAnimationFrame(go));}catch(e){}setTimeout(go,700);}
+function fxLiteApply(){const on=fxLiteWanted();document.body.classList.toggle("fxlite",on);mapFxApply(on);const c=$("fxLite");if(c&&c.checked!==on)c.checked=on;}
 $("fxLite").onchange=()=>{S.settings.fxLite=$("fxLite").checked;save();fxLiteApply();toast($("fxLite").checked?"🪶 Gráficos ligeros activados":"✨ Efectos completos activados");};
 fxLiteApply();setInterval(()=>{try{if(document.body.classList.contains("fxlite")!==fxLiteWanted())fxLiteApply();}catch(e){}},2000);
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&document.body.classList.contains("fxlite")){const o=$("overlay");if(o){o.style.transform="translateZ(0)";requestAnimationFrame(()=>{o.style.transform="";});}}});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")ovNudge();});
 </script>
 </body>
 </html>
