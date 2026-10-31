@@ -972,7 +972,7 @@ function toast(t){const e=$("toast");e.textContent=t;e.style.display="block";cle
 function groupOf(c){let best=null,bd=1e9;for(const x of CITIES.concat(EXTRA_DEST)){const d=hav(c,x.c);if(d<bd){bd=d;best=x;}}return best?best.g:"p";}
 
 // ---------- Mapa ----------
-const map = L.map("map",Object.assign({zoomControl:true},window.V291_MOB?{preferCanvas:true,renderer:L.canvas({padding:0}),zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false}:{})).setView(S.driver,13);
+const map = L.map("map",Object.assign({zoomControl:true},window.V291_MOB?{renderer:L.svg({padding:0}),zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false}:{})).setView(S.driver,13);
 // Proveedores de mapa (sin API key y sin depender de Referer, válidos al abrir desde file://)
 const ESRI="https://server.arcgisonline.com/ArcGIS/rest/services/";
 const PROVIDERS=[
@@ -3207,7 +3207,7 @@ $("vozStop").onclick=()=>vozCancel();
 if(SS()){try{SS().addEventListener?SS().addEventListener("voiceschanged",vozFill):(SS().onvoiceschanged=vozFill);}catch(e){}}
 syncVozUI();setTimeout(vozFill,600);setTimeout(vozFill,2500);
 // ---------- Móvil (Android) y app instalable (PWA) ----------
-const APP_VER="29.1";
+const APP_VER="29.3";
 const MQ_MOB=window.matchMedia("(max-width:899px),(max-height:520px) and (pointer:coarse)");
 function isMob(){return MQ_MOB.matches;}
 // Márgenes al encuadrar la ruta: en PC la tarjeta está a la izquierda; en móvil, abajo (vertical) o a la izquierda (horizontal)
@@ -5785,6 +5785,15 @@ function cdBg(c){const b=$("cdBar");if(b&&b.style.background!==c)b.style.backgro
 if(window.V291_MOB){document.documentElement.classList.add("v291m");
   map.on("layeradd",e=>{try{const l=e.layer;if(l&&l.setStyle&&l.options&&l.options.dashArray){l.options.v291dash=l.options.dashArray;l.setStyle({dashArray:null});}}catch(_){}});}
 window.V291={mob:!!window.V291_MOB,canvas:()=>!!(map.options.preferCanvas),any3d:()=>!!L.Browser.any3d};
+
+// ---------- v29.3: insignia de versión en el Mapa (móvil) y «Forzar actualización» ----------
+async function v293Force(){try{toast("🔄 Actualizando…");}catch(e){}
+  try{if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations)for(const r of await navigator.serviceWorker.getRegistrations())await r.unregister();}catch(e){}
+  try{if(window.caches)for(const k of await caches.keys())if(k.startsWith("simconductor-"))await caches.delete(k);}catch(e){}
+  try{save();}catch(e){}location.reload();}
+{const h=$("secV29");if(h&&!$("v293Force"))h.querySelector("h2").insertAdjacentHTML("afterend",'<button class="mbtn" id="v293Force" type="button" style="margin:4px 0">🔄 Forzar actualización</button><div class="hint">Borra solo la copia guardada de la app (no tus datos) y recarga.</div>');
+  if($("v293Force"))$("v293Force").onclick=v293Force;}
+if(window.V291_MOB){const m=$("map");if(m&&!$("v293Ver"))m.insertAdjacentHTML("beforeend",'<div id="v293Ver" style="position:absolute;left:12px;top:96px;z-index:500;font-size:11px;font-weight:700;color:#9fb3c8;background:#11161d;border:1px solid #2c3644;border-radius:8px;padding:0 6px;pointer-events:none">v'+APP_VER+'</div>');}
 </script>
 </body>
 </html>
