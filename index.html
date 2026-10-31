@@ -3207,7 +3207,7 @@ $("vozStop").onclick=()=>vozCancel();
 if(SS()){try{SS().addEventListener?SS().addEventListener("voiceschanged",vozFill):(SS().onvoiceschanged=vozFill);}catch(e){}}
 syncVozUI();setTimeout(vozFill,600);setTimeout(vozFill,2500);
 // ---------- Móvil (Android) y app instalable (PWA) ----------
-const APP_VER="29.1";
+const APP_VER="29.2";
 const MQ_MOB=window.matchMedia("(max-width:899px),(max-height:520px) and (pointer:coarse)");
 function isMob(){return MQ_MOB.matches;}
 // Márgenes al encuadrar la ruta: en PC la tarjeta está a la izquierda; en móvil, abajo (vertical) o a la izquierda (horizontal)
@@ -5771,6 +5771,19 @@ html.v291m #overlay *,html.v291m #v26P *{will-change:auto!important;filter:none!
 html.v291m #overlay *:not(.spin),html.v291m #v26P *:not(.spin){animation:none!important}
 html.v291m #overlay .req,html.v291m #overlay .trip{border-radius:0!important;box-shadow:none!important}
 html.v291m .leaflet-tile,html.v291m .leaflet-pane,html.v291m .leaflet-zoom-animated{will-change:auto!important}
+
+/* v29.2: en móvil el Mapa es un documento normal: mapa arriba con alto fijo, hoja en el flujo, scroll nativo de la página */
+html.v292m,html.v292m body{height:auto!important;min-height:100%;overflow-x:hidden!important;overflow-y:visible!important;overscroll-behavior:auto!important}
+html.v292m body.m-panel{overflow:hidden!important}
+html.v292m{scroll-padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+html.v292m #overlay,html.v292m #overlay *{overflow-wrap:anywhere;min-width:0;white-space:normal!important}
+html.v292m #app{display:block!important;height:auto!important;min-height:0!important;overflow:visible!important}
+html.v292m #mapWrap{position:static!important;height:auto!important;overflow:visible!important;isolation:auto!important;flex:none!important;display:block!important}
+html.v292m #mapWrap>#map,html.v292m #map{height:var(--v292h,300px)!important;flex:none!important}
+html.v292m #overlay{position:static!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;width:auto!important;max-width:none!important;max-height:none!important;overflow:visible!important;z-index:auto!important;contain:none!important;-webkit-overflow-scrolling:auto!important;scroll-snap-type:none!important}
+html.v292m #overlay *{overflow:visible!important;text-overflow:clip!important;-webkit-overflow-scrolling:auto!important;scroll-snap-type:none!important;scroll-snap-align:none!important;position:static;max-height:none!important}
+html.v292m #overlay .req,html.v292m #overlay .trip{min-height:0!important;padding-bottom:14px!important}
+html.v292m #v292Ver{position:absolute;left:6px;bottom:52px;z-index:1001;font-size:11px;font-weight:700;color:#9fb3c8;background:#11161d;border:1px solid #2c3644;border-radius:8px;padding:0 6px;pointer-events:none}
 </style>`);}
 window.V29={S:v29S,on:V29on,R:v29R,DEF:V29_DEF,M:V29M,big:v29BigCheck,shrink:v29Shrink,tick:v29Tick,rep:()=>trip&&trip.v28&&v29RepStart(trip.v28),pide:v29Pide,pideProb:v29PideProb,
   block:v29Block,blk:v29Blk,isBlk:v29IsBlk,unblock:v29Unblock,stop:v29StopToggle,stOn:v29StOn,street:v29Street,stTick:v29StTick,amb:v29Amb,ets:v29EtsTxt,etsApply:v29EtsApply,
@@ -5785,6 +5798,23 @@ function cdBg(c){const b=$("cdBar");if(b&&b.style.background!==c)b.style.backgro
 if(window.V291_MOB){document.documentElement.classList.add("v291m");
   map.on("layeradd",e=>{try{const l=e.layer;if(l&&l.setStyle&&l.options&&l.options.dashArray){l.options.v291dash=l.options.dashArray;l.setStyle({dashArray:null});}}catch(_){}});}
 window.V291={mob:!!window.V291_MOB,canvas:()=>!!(map.options.preferCanvas),any3d:()=>!!L.Browser.any3d};
+
+// ---------- v29.2: Mapa en flujo normal en móvil + forzar actualización ----------
+async function v292Force(){try{toast("🔄 Actualizando…");}catch(e){}
+  try{if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations)for(const r of await navigator.serviceWorker.getRegistrations())await r.unregister();}catch(e){}
+  try{if(window.caches)for(const k of await caches.keys())if(k.startsWith("simconductor-"))await caches.delete(k);}catch(e){}
+  try{save();}catch(e){}location.reload();}
+{const h=$("secV29");if(h&&!$("v292Force"))h.querySelector("h2").insertAdjacentHTML("afterend",'<button class="mbtn" id="v292Force" type="button" style="margin:4px 0">🔄 Forzar actualización</button><div class="hint">Borra solo la copia guardada de la app (no tus datos) y recarga.</div>');
+  if($("v292Force"))$("v292Force").onclick=v292Force;}
+window.V292={mob:false};
+if(window.V291_MOB&&!window.NO_V292){(function(){const de=document.documentElement;de.classList.add("v292m");window.V292.mob=true;
+  const hh=Math.round(Math.max(200,Math.min(300,innerHeight*.42)));de.style.setProperty("--v292h",hh+"px");
+  try{v29Shrink=function(){const m=$("map");if(m&&m.style.height){m.style.height="";}document.body.classList.remove("v29sh");};v29Shrink();}catch(e){}
+  const m=$("map");if(m&&!$("v292Ver"))m.insertAdjacentHTML("beforeend",'<div id="v292Ver">v'+APP_VER+'</div>');
+  try{map.invalidateSize({pan:false,animate:false});}catch(e){}
+  const ov=$("overlay");let had=!!(ov&&ov.firstElementChild);
+  if(ov)new MutationObserver(()=>{const now=!!ov.firstElementChild;if(now&&!had){try{scrollTo(0,0);}catch(e){}}had=now;}).observe(ov,{childList:true});
+})();}
 </script>
 </body>
 </html>
