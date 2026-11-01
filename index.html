@@ -1388,12 +1388,13 @@ async function makeRequest(){
     const pf=PROFILES[slotOf(simNow())];let pu=null,de=null,t=0;
     if(isU){
       const fp=FORCE&&FORCE.puHub,fd=FORCE&&FORCE.deHub;
-      if(HAILX)pu={pt:pos.slice(),place:HAILX.place};else if(air&&air.d<=st.radius&&(fp==="air"||(!fp&&Math.random()<.2)))pu={pt:air.c,place:hubPlace(air,"air")};
+      if(HAILX)pu={pt:pos.slice(),place:HAILX.place};else if(air&&air.d<=st.radius&&(fp==="air"||(!fp&&Math.random()<v30AirP(air))))pu={pt:air.c,place:hubPlace(air,"air")};
       else if(sta&&hav(pos,sta.c)<=st.radius&&(fp==="st"||(!fp&&Math.random()<.14)))pu={pt:sta.c,place:hubPlace(sta,"st")};
       if(!pu){const ez=evtPickPu(pos,st.radius);if(ez)pu=ez;}
       if(!pu)pu=await genEnd(pos,st.radius,pf.pu,pf.puP);
       if(air&&air.d<=35&&hav(pu.pt,air.c)>1.5&&(fd==="air"||(!fd&&Math.random()<.1+.04*lb)))de={pt:air.c,place:hubPlace(air,"air")};
       else if(sta&&hav(pos,sta.c)<=st.radius+1&&hav(pu.pt,sta.c)>.8&&(fd==="st"||(!fd&&Math.random()<.08)))de={pt:sta.c,place:hubPlace(sta,"st")};
+      if(!de&&!window.NO_V30){de=await v30TownDe(pos,pu,genEnd);window.V30_LAST=de&&de.v30town||null;}
       if(!de)do{de=await genEnd(pos,st.radius,pf.de,pf.deP);}while((hav(pu.pt,de.pt)<Math.min(.8,st.radius*.5)||(lbLong&&t<4&&hav(pu.pt,de.pt)<st.radius*.6))&&++t<6);
     }else{pu=PUBX?{pt:PUBX.meet.pt,place:PUBX.meet.place}:await genEnd(pos,st.radius,POI_GROUPS,.5);de=await genEnd(dst.c,4,CITY_GROUPS,.75);}
     return {pu,de};
@@ -3207,7 +3208,7 @@ $("vozStop").onclick=()=>vozCancel();
 if(SS()){try{SS().addEventListener?SS().addEventListener("voiceschanged",vozFill):(SS().onvoiceschanged=vozFill);}catch(e){}}
 syncVozUI();setTimeout(vozFill,600);setTimeout(vozFill,2500);
 // ---------- Móvil (Android) y app instalable (PWA) ----------
-const APP_VER="29.4";
+const APP_VER="30.0";
 const MQ_MOB=window.matchMedia("(max-width:899px),(max-height:520px) and (pointer:coarse)");
 function isMob(){return MQ_MOB.matches;}
 // Márgenes al encuadrar la ruta: en PC la tarjeta está a la izquierda; en móvil, abajo (vertical) o a la izquierda (horizontal)
@@ -5818,6 +5819,200 @@ html.v294c #v293Ver{top:52px}
    const now=c&&!V294.map;if(was!==now)scrollTo(0,0);if(was&&!now)requestAnimationFrame(showMap);};
  if(!$("v294Btn"))return;$("v294Btn").onclick=()=>{V294.map=!V294.map;sync();if(V294.map)requestAnimationFrame(showMap);};
  new MutationObserver(sync).observe($("overlay"),{childList:true,subtree:true});sync();})();
+
+// ==================== v30: ETS2 por tiempo, más Comunidad de Madrid, retos semanales, fechas especiales, huelga, Barajas de noche, taller e ITV (lo inventado es SIMULADO; lugares reales) ====================
+const V30_DEF={ets2:true,datos:true,retos:true,fechas:true,huelga:true,barajas:true,taller:true};
+const V30_LBL={ets2:"🚚 Consejo de ETS2 por tiempo (no por escala)",datos:"🏘️ Más pueblos y ciudades de la Comunidad de Madrid, nombres y profesiones",retos:"🏆 Retos semanales con premio y resumen de la semana en «Hoy»",
+  fechas:"📅 Fechas especiales: Navidad, Nochevieja, Halloween, San Isidro, festivos",huelga:"🚇 Huelga de Metro / Cercanías en Madrid",barajas:"✈️ Llegadas nocturnas a Barajas",taller:"🔧 Avisos de taller e ITV con averías leves"};
+const V30_FR=[["0.25","1/4 del tiempo real"],["0.3333","1/3 del tiempo real"],["0.5","1/2 del tiempo real"],["1","Tiempo real"]];
+const V30off=()=>!!(window.NO_V30||V29off());
+function v30S(){if(!S.settings.v30)S.settings.v30={};const s=S.settings.v30;for(const k in V30_DEF)if(s[k]==null)s[k]=V30_DEF[k];if(!V30_FR.some(f=>f[0]===String(s.fr)))s.fr="0.3333";if(!s.fecha)s.fecha="auto";if(!s.hm)s.hm="auto";return s;}
+const V30on=k=>!V30off()&&!!v30S()[k];
+const v30R=()=>window.V30R||{};
+const v30rn=a=>a[Math.floor(Math.random()*a.length)];
+function v30St(){if(!S.v30||typeof S.v30!=="object")S.v30={};const v=S.v30;if(!v.car)v.car={km:0,next:900+Math.round(Math.random()*700),n:0,cost:0,itv:null,itvAsk:0,pend:null};return v;}
+const v30hash=s=>{let h=7;for(const c of String(s))h=(h*31+c.charCodeAt(0))>>>0;return h;};
+const v30nowP=()=>tzParts(new Date(),"Europe/Madrid");
+// ---------- (1) ETS2 por tiempo: fracción del tiempo real; km a ~30 km/h (ciudad) o ~70 km/h (carretera); mínimo 5 min ----------
+function v30Road(r){return !!r&&r.svc!=="urbano"&&r.svc!=="paquete";}
+function v30Ets(min,road,fr){const f=+(fr!=null?fr:v30S().fr)||1/3,v=road?70:30,m=Math.max(5,Math.round((+min||0)*f)),km=m/60*v;return {min:m,km:km<10?Math.round(km*10)/10:Math.round(km),v,f};}
+const v30FrTxt=f=>(V30_FR.find(x=>Math.abs(+x[0]-f)<.01)||[0,"1/3 del tiempo real"])[1];
+function v30EtsTxt(min,road,fr){const e=v30Ets(min,road,fr);return `🚚 ETS2: conduce ~${e.min} min (≈${num1(e.km).replace(/,0$/,"")} km a ${e.v} km/h) · ${v30FrTxt(e.f)}`;}
+// ---------- (4) Fechas especiales (fecha real de Madrid; el efecto en la demanda es SIMULADO) ----------
+function v30Easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+  return new Date(Date.UTC(y,Math.floor((h+l-7*m+114)/31)-1,(h+l-7*m+114)%31+1));}
+const V30_DAYS={
+  nochebuena:{n:"Nochebuena",ic:"🎄",f:h=>h>=19&&h<22?.7:h>=0&&h<4?1.6:1,s:h=>h<4?.2:0,line:"Cenas familiares: poca demanda a las 20–22 h y mucha de madrugada."},
+  navidad:{n:"Navidad (festivo)",ic:"🎅",f:h=>h<11?.6:h>=13&&h<16?1.3:1,s:()=>0,line:"Mañana tranquila; comidas familiares a mediodía."},
+  nochevieja:{n:"Nochevieja",ic:"🥂",f:h=>h>=21?(h>=23?.8:1.3):1.1,s:h=>h>=21?.2:0,line:"Uvas en la Puerta del Sol; a las 00:00 casi nadie pide coche."},
+  anonuevo:{n:"Año Nuevo (festivo)",ic:"🎆",f:h=>h<7?2:h<12?.6:1,s:h=>h<7?.4:0,line:"Madrugada con muchísima demanda tras las fiestas."},
+  reyesv:{n:"Víspera de Reyes",ic:"👑",f:h=>h>=17&&h<22?1.4:1,s:h=>h>=17&&h<22?.1:0,line:"Cabalgatas por la tarde: calles cortadas en el centro."},
+  reyes:{n:"Reyes (festivo)",ic:"🎁",f:h=>h<11?.6:1,s:()=>0,line:"Mañana de regalos, poca demanda hasta mediodía."},
+  halloween:{n:"Halloween",ic:"🎃",f:h=>h>=21||h<4?1.4:1,s:h=>h>=21||h<4?.2:0,line:"Fiestas de disfraces: mucha noche."},
+  sanisidro:{n:"San Isidro (Madrid)",ic:"🌼",f:h=>h>=11&&h<22?1.3:1,s:h=>h>=17&&h<22?.1:0,line:"Romería en la Pradera de San Isidro (Carabanchel)."},
+  festivo:{n:"Festivo",ic:"📅",f:h=>h<10?.7:1.05,s:()=>0,line:"Día de fiesta: mañanas flojas; aeropuertos y estaciones, más."}};
+function v30DayOf(y,mo,d){const k=mo*100+d,E=v30Easter(y),ed=(E.getUTCMonth()+1)*100+E.getUTCDate(),js=new Date(Date.UTC(y,E.getUTCMonth(),E.getUTCDate()-3)),vs=new Date(Date.UTC(y,E.getUTCMonth(),E.getUTCDate()-2));
+  const md=x=>(x.getUTCMonth()+1)*100+x.getUTCDate();
+  if(k===1224)return "nochebuena";if(k===1225)return "navidad";if(k===1231)return "nochevieja";if(k===101)return "anonuevo";if(k===105)return "reyesv";if(k===106)return "reyes";if(k===1031)return "halloween";if(k===515)return "sanisidro";
+  const fest={501:"Día del Trabajo",502:"Fiesta de la Comunidad de Madrid",815:"Asunción",1012:"Fiesta Nacional",1101:"Todos los Santos",1109:"La Almudena (Madrid)",1206:"Día de la Constitución",1208:"Inmaculada"};
+  if(fest[k])return "festivo:"+fest[k];if(k===md(js))return "festivo:Jueves Santo";if(k===md(vs))return "festivo:Viernes Santo";return null;}
+function v30Day(){if(!V30on("fechas"))return null;const s=v30S(),F=v30R();let id=F.day||(s.fecha!=="auto"?s.fecha:null),sub="";
+  if(!id){const p=v30nowP();id=v30DayOf(p.y,p.mo,p.d);if(!id&&p.h<6){const y=new Date(Date.UTC(p.y,p.mo-1,p.d-1)),yi=v30DayOf(y.getUTCFullYear(),y.getUTCMonth()+1,y.getUTCDate());if(yi==="nochevieja")id="anonuevo";else if(yi==="halloween"||yi==="nochebuena")id=yi;}}
+  if(!id)return null;if(id.startsWith("festivo:")){sub=id.slice(8);id="festivo";}const D=V30_DAYS[id];if(!D)return null;return Object.assign({id,sub},D,{n:id==="festivo"&&sub?`Festivo: ${sub}`:D.n});}
+// ---------- (5) Huelga de Metro / Cercanías (SIMULADA) ----------
+function v30InMad(pt){try{return hav(pt||S.driver,[40.4168,-3.7038])<=60;}catch(e){return false;}}
+function v30Week(d){const p=d||v30nowP(),t=Date.UTC(p.y,p.mo-1,p.d),dw=(new Date(t).getUTCDay()+6)%7,th=new Date(t+(3-dw)*864e5),y0=Date.UTC(th.getUTCFullYear(),0,4),w=1+Math.round(((th-y0)/864e5-3+((new Date(y0).getUTCDay()+6)%7))/7);
+  const mon=new Date(t-dw*864e5),sun=new Date(t+(6-dw)*864e5);return {id:th.getUTCFullYear()+"-S"+String(w).padStart(2,"0"),dw,mon,sun};}
+function v30Strike(pt){if(!V30on("huelga")||!v30InMad(pt))return null;const s=v30S(),F=v30R(),W=v30Week(),p=v30nowP(),h=p.h+p.m/60;
+  const who=v30hash(W.id)%2?"Metro de Madrid":"Cercanías Madrid";
+  if(F.strike||s.hm==="si")return {who:F.strikeWho||who,on:true,txt:"todo el día"};if(s.hm==="no")return null;
+  if(v30hash(W.id+"h")%5!==0||![0,2,4].includes(W.dw))return null;const on=(h>=6.5&&h<9.5)||(h>=17&&h<20);return {who,on,txt:"paros de 6:30 a 9:30 y de 17:00 a 20:00",day:true};}
+function v30DemF(pt){let f=1;const D=v30Day();if(D)f*=D.f(v30nowP().h);const H=v30Strike(pt);if(H&&H.on)f*=1.5;return Math.max(.4,Math.min(2.5,f));}
+function v30SurgeAdd(pt){let a=0;const D=v30Day();if(D)a+=D.s(v30nowP().h);const H=v30Strike(pt);if(H&&H.on)a+=.2;return a;}
+if(!window.NO_V30){
+  {const _ng=nextGap;nextGap=function(){const g=_ng.apply(this,arguments);if(V30off()||S.settings.svc!=="urbano")return g;try{return g/v30DemF(S.driver);}catch(e){return g;}};}
+  {const _sf=surgeFor;surgeFor=function(pt){const o=_sf.apply(this,arguments);if(V30off()||(window.FORCE&&FORCE.surge))return o;try{const a=v30SurgeAdd(pt);if(a>0)o.x=Math.min(2,Math.round((o.x+a)*10)/10);}catch(e){}return o;};}
+  {const _uc=updateClock;updateClock=function(){const v=_uc.apply(this,arguments);try{v30Banner();}catch(e){}return v;};}}
+function v30Banner(){const st=$("surgeTxt");if(!st)return;let b=$("v30Ban");if(!b){st.insertAdjacentHTML("afterend",'<div class="hint v30ban" id="v30Ban"></div>');b=$("v30Ban");}
+  const L=[];if(!V30off()){const D=v30Day();if(D)L.push(`${D.ic} <b>${esc(D.n)}</b>: ${esc(D.line)} <span class="simtag">simulado</span>`);
+    const H=v30Strike();if(H)L.push(`🚇 <b>Huelga de ${esc(H.who)}</b> (${esc(H.txt)})${H.on?": más gente pide coche":": ahora sin paros"} <span class="simtag">simulado</span>`);}
+  const h=L.join("<br>");if(b.innerHTML!==h)b.innerHTML=h;b.hidden=!h;}
+// ---------- (6) Llegadas nocturnas a Barajas (vuelos SIMULADOS; terminal real) ----------
+const V30_FROM=["Londres","París","Ámsterdam","Fráncfort","Roma","Lisboa","Bruselas","Múnich","Zúrich","Milán","Nueva York","Bogotá","Lima","Buenos Aires","Ciudad de México","Miami","Santo Domingo","Tenerife Norte","Gran Canaria","Palma","Barcelona","Bilbao","A Coruña","Sevilla"];
+const v30NightH=h=>h>=22||h<2||(h>=5&&h<7);
+function v30AirP(air){const base=.2;try{if(!V30on("barajas")||!air||air.iata!=="MAD")return base;const F=v30R();if(F.air)return 1;return v30NightH(v30nowP().h)?.45:base;}catch(e){return base;}}
+function v30Flight(){const p=v30nowP(),late=p.h>=22||p.h<2;let t=p.h*60+p.m-Math.round(10+Math.random()*25);t=(t+1440)%1440;const sz=Math.random();
+  return {from:v30rn(V30_FROM),hm:String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0"),late,maleta:sz<.6?"maleta grande":sz<.9?"maleta de cabina":"solo mochila"};}
+// ---------- (2) Comunidad de Madrid: municipios reales (centro aproximado; población aproximada del INE) ----------
+const V30_CAM=[["Alcalá de Henares",40.4818,-3.3643,196000],["Móstoles",40.3223,-3.8649,211000],["Fuenlabrada",40.2842,-3.7942,194000],["Leganés",40.3272,-3.7635,191000],["Getafe",40.3083,-3.7327,186000],
+  ["Alcorcón",40.3458,-3.8249,172000],["Torrejón de Ardoz",40.4550,-3.4697,136000],["Parla",40.2360,-3.7675,134000],["Alcobendas",40.5475,-3.6420,119000],["Rivas-Vaciamadrid",40.3530,-3.5390,98000],
+  ["Las Rozas de Madrid",40.4929,-3.8737,97000],["San Sebastián de los Reyes",40.5474,-3.6261,92000],["Pozuelo de Alarcón",40.4351,-3.8136,90000],["Valdemoro",40.1908,-3.6736,82000],["Coslada",40.4238,-3.5613,81000],
+  ["Majadahonda",40.4735,-3.8718,73000],["Collado Villalba",40.6350,-4.0050,66000],["Aranjuez",40.0311,-3.6025,61000],["Boadilla del Monte",40.4050,-3.8780,60000],["Arganda del Rey",40.3008,-3.4382,58000],
+  ["Pinto",40.2416,-3.6996,54000],["Colmenar Viejo",40.6590,-3.7676,52000],["Tres Cantos",40.6006,-3.7083,50000],["San Fernando de Henares",40.4253,-3.5338,40000],["Galapagar",40.5786,-4.0013,36000],
+  ["Arroyomolinos",40.2695,-3.9195,35000],["Navalcarnero",40.2894,-4.0136,31000],["Villaviciosa de Odón",40.3575,-3.9003,28000],["Paracuellos de Jarama",40.5047,-3.5280,27000],["Ciempozuelos",40.1594,-3.6195,26000],
+  ["Torrelodones",40.5765,-3.9293,24000],["Villanueva de la Cañada",40.4466,-4.0047,23000],["Mejorada del Campo",40.3953,-3.4887,23000],["Algete",40.5972,-3.4975,20000],["Humanes de Madrid",40.2505,-3.8279,19000],
+  ["San Lorenzo de El Escorial",40.5914,-4.1474,19000],["Guadarrama",40.6727,-4.0889,16000],["Chinchón",40.1402,-3.4224,5500],["Buitrago del Lozoya",40.9917,-3.6375,2000],["Navacerrada",40.7296,-4.0137,3200]];
+const V30_TOWNS=V30_CAM.map(c=>c[0]+"|Madrid").concat(["Villarejo de Salvanés|Madrid","Colmenarejo|Madrid","Moralzarzal|Madrid","Cercedilla|Madrid","El Molar|Madrid","Rascafría|Madrid","Manzanares el Real|Madrid","Soto del Real|Madrid","Villa del Prado|Madrid","San Martín de Valdeiglesias|Madrid","Brunete|Madrid","Griñón|Madrid","Meco|Madrid","Velilla de San Antonio|Madrid","Loeches|Madrid","Nuevo Baztán|Madrid","Torrelaguna|Madrid","Robledo de Chavela|Madrid"]);
+const V30_NM={m:[["Ulises",20],["Teo",-2],["Bastián",4],["Biel",0],["Nil",2],["Liam",-3],["Noah",-3],["Telmo",2],["Rayan",2],["Adam",2],["Omar",18],["Yeray",12],["Airam",12],["Roque",50],["Ciro",5],["Damián",15],["Fermín",48],["Patricio",45],["Leandro",20],["Brian",12],["Mohamed",20],["Youssef",15],["Santino",-2],["Lucio",30],["Baltasar",52],["Gaspar",50],["Tristán",5]],f:[["Nahia",2],["Zoe",2],["Chloe",0],["Gala",4],["Luna",-1],["Mía",-2],["Greta",-1],["Ona",-1],["Jana",2],["Irati",5],["Yaiza",12],["Nayara",12],["Rosalía",45],["Renata",-1],["Ximena",5],["Antonella",8],["Camila",5],["Isabella",2],["Yasmina",18],["Salma",5],["Lía",-2],["Iris",10],["Ruth",30],["Estrella",45],["Sagrario",55]]};
+const V30_AP=["Barrios", "Bermejo", "Cid", "Luengo", "Polo", "Tejedor", "Valle", "Yuste", "Galindo", "Mota", "Sevilla", "Toledo", "Benavente", "Palomo", "Salinas", "Bustos", "Cobos", "Collado", "Requena", "Ayuso", "Lorente", "Hervás", "Arribas", "Mayoral", "Tapia", "Olmedo", "Maroto", "Pozo", "Aguado", "Meléndez", "Recio", "Barroso", "Rojo", "Vela", "Sacristán", "Peinado", "Arranz"];
+const V30_PROFS=[["Maquinista de Metro","Maquinista de Metro",25,64,.15,""],["Conductor de autobús","Conductora de autobús",25,64,.4,""],["Agente de handling","Agente de handling",20,60,.25,"p"],["Técnico de mantenimiento aeronáutico","Técnica de mantenimiento aeronáutico",22,64,.1,"p"],
+  ["Tripulante de cabina","Tripulante de cabina",20,55,.2,""],["Controlador de tráfico ferroviario","Controladora de tráfico ferroviario",25,64,.05,""],["Mozo de almacén","Moza de almacén",18,60,.6,"p"],["Carretillero","Carretillera",20,62,.3,"p"],
+  ["Funcionario de la Comunidad","Funcionaria de la Comunidad",25,66,.6,""],["Investigador del CSIC","Investigadora del CSIC",26,66,.1,""],["Profesor de universidad","Profesora de universidad",28,67,.3,""],["Técnico de sonido","Técnica de sonido",20,60,.1,""],
+  ["Feriante","Feriante",20,65,.05,"p"],["Agente inmobiliario","Agente inmobiliaria",22,66,.3,""],["Peluquero canino","Peluquera canina",20,60,.1,""],["Repartidor de última milla","Repartidora de última milla",19,58,.4,"p"],["Ingeniero de telecomunicaciones","Ingeniera de telecomunicaciones",24,64,.3,""],["Guía turístico","Guía turística",21,66,.15,""]];
+const V30_DATA={cit:0,towns:0,nm:0,ap:0,prof:0};
+if(!window.NO_V30&&!V30off()&&v30S().datos){try{
+  for(const [n,la,lo,pop] of V30_CAM)if(!CITIES.some(c=>c.n===n)){CITIES.push({n,c:[la,lo],g:"p",pop,popMun:n,cam:1});V30_DATA.cit++;}
+  for(const t of V30_TOWNS)if(!TOWNS.includes(t)){TOWNS.push(t);V30_DATA.towns++;}
+  for(const g of ["m","f"])for(const [n,ed] of V30_NM[g]){const NL=g==="m"?NAMES_M:NAMES_F;if(NL.includes(n)||INE_NOM[g].some(x=>x[0]===n))continue;NL.push(n);INE_NOM[g].push([n,9000,ed+10]);V30_DATA.nm++;}
+  for(const a of V30_AP)if(!INE_NOM.a.some(x=>x[0]===a)){INE_NOM.a.push([a,9000]);if(!SURNAMES.includes(a))SURNAMES.push(a);V30_DATA.ap++;}
+  for(const p of V30_PROFS)if(!PROFS.some(x=>x[0]===p[0])){PROFS.push(p);V30_DATA.prof++;}}catch(e){console.error(e);}}
+// Viaje urbano a otro municipio cercano de la Comunidad de Madrid (destino: lugar real del centro de ese municipio)
+async function v30TownDe(pos,pu,genEnd){try{if(!V30on("datos")||!v30InMad(pos))return null;const F=window.FORCE||{},R=v30R();
+  if(!(F.v30town||R.town)&&Math.random()>=.1)return null;const here=nearestCity(pos,40),maxD=Math.max(8,(S.settings.radius||10)*1.6);
+  let L=CITIES.filter(c=>c.cam&&(!here||c.n!==here.n)&&hav(pos,c.c)>=4&&hav(pos,c.c)<=Math.min(35,maxD));const want=F.v30town||R.town;if(typeof want==="string")L=L.filter(c=>c.n===want).concat(CITIES.filter(c=>c.n===want&&!L.includes(c)));
+  if(!L.length)return null;const T=v30rn(L),e=await genEnd(T.c,1.2,CITY_GROUPS,.6);if(e)e.v30town=T.n;return e;}catch(e){return null;}}
+// ---------- Líneas nuevas en la tarjeta: ETS2, Barajas, fecha especial, huelga, municipio ----------
+function v30CardLines(r,trip){const L=[];const isT=!!trip;
+  if(V30on("ets2")&&r.km>0)L.push(`<div class="sub v29ets v30ets">${v30EtsTxt(r.min,v30Road(r))}${r.pickupDist>0&&!isT?` · recogida ~${Math.max(1,Math.round((r.pickupMin||0)*(+v30S().fr||1/3)))} min`:""} <span class="simtag">estimado</span></div>`);
+  if(r.v30air)L.push(`<div class="sub v30x">✈️ Llegada nocturna: vuelo de ${esc(r.v30air.from)} aterrizado a las ${r.v30air.hm} · ${esc(r.v30air.maleta)} <span class="simtag">simulado</span></div>`);
+  if(r.v30town)L.push(`<div class="sub v30x">🏘️ Viaje a ${esc(r.v30town)} (Comunidad de Madrid)</div>`);
+  if(r.v30strike&&!isT)L.push(`<div class="sub v30x">🚇 Pide coche por la huelga de ${esc(r.v30strike)} <span class="simtag">simulado</span></div>`);
+  if(r.v30day&&!isT)L.push(`<div class="sub v30x">${r.v30day.ic} ${esc(r.v30day.n)} <span class="simtag">simulado</span></div>`);
+  return L.join("");}
+v29EtsApply=function(){const ov=$("overlay");if(!ov)return;const c=ov.querySelector(".req,.trip");if(!c||c.classList.contains("tsum")||c.querySelector(".v30mk"))return;
+  const isT=c.classList.contains("trip"),r=isT?(trip&&trip.r):curReq;if(!r)return;
+  if(V30off()){if(!V29on("ets2")||c.querySelector(".v29ets")||!(r.km>0))return;const k=+v29S().escala||19;
+    const h=`<div class="sub v29ets">${v29EtsTxt(r.km,r.min)}${r.pickupDist/k>=.05?` · recogida ~${v29Num(r.pickupDist/k)} km`:""} <span class="simtag">estimado</span></div>`;const p=c.querySelector(".price");if(p)p.insertAdjacentHTML("afterend",h);else c.insertAdjacentHTML("afterbegin",h);return;}
+  const h=`<i class="v30mk" hidden></i>`+v30CardLines(r,isT);
+  const s=[...c.querySelectorAll(".sub")].find(e=>/\d km/.test(e.textContent));if(s)s.insertAdjacentHTML("afterend",h);else{const p=c.querySelector(".price");if(p)p.insertAdjacentHTML("afterend",h);else{const tr=[...c.querySelectorAll("div")].find(e=>e.children.length<=3&&/^Trayecto/.test(e.textContent.trim()));if(tr)tr.insertAdjacentHTML("afterend",h);else c.insertAdjacentHTML("afterbegin",h);}}};
+if(!window.NO_V30){const _mr=makeRequest;makeRequest=async function(){const r=await _mr.apply(this,arguments);if(!r||V30off())return r;try{
+  if(r.svc==="urbano"){const pl=JSON.stringify(r.pu||r.from||"");if(V30on("barajas")&&/Madrid-Barajas/.test(pl)&&(v30R().air||v30NightH(v30nowP().h)))r.v30air=v30Flight();
+    if(window.V30_LAST){r.v30town=V30_LAST;window.V30_LAST=null;}
+    const H=v30Strike(r.pickup);if(H&&H.on&&Math.random()<(v30R().strike?1:.4))r.v30strike=H.who;}
+  const D=v30Day();if(D)r.v30day={id:D.id,n:D.n,ic:D.ic};}catch(e){console.error(e);}return r;};}
+// ---------- (3) Retos semanales con premio (SIMULADOS) y resumen de la semana ----------
+const V30_RETOS={viajes:{t:n=>`Haz ${n} viajes`,n:[20,30,40],b:[12,18,25]},km:{t:n=>`Recorre ${n} km con clientes`,n:[150,250,350],b:[10,15,22]},noche:{t:n=>`${n} viajes de noche (21–6 h)`,n:[6,10,14],b:[10,14,18]},
+  aero:{t:n=>`${n} viajes a o desde un aeropuerto`,n:[3,5,8],b:[8,12,16]},pq:{t:n=>`${n} envíos de paquetería entregados`,n:[4,8,12],b:[8,12,16]},cinco:{t:n=>`${n} valoraciones de 5 ★`,n:[10,15,20],b:[8,12,16]},
+  muni:{t:n=>`${n} viajes que cambian de municipio`,n:[3,5,8],b:[8,12,16]},dias:{t:n=>`Conduce ${n} días distintos`,n:[3,4,5],b:[10,14,18]}};
+function v30Wk(){const V=v30St(),W=v30Week();if(!V.wk||V.wk.id!==W.id){if(V.wk&&V.wk.trips)V.prev={id:V.wk.id,trips:V.wk.trips,net:V.wk.net,km:V.wk.km,bonus:V.wk.bonus,done:(V.wk.retos||[]).filter(x=>x.ok).length,nr:(V.wk.retos||[]).length};
+    const ks=Object.keys(V30_RETOS),h=v30hash(W.id),pick=[];let i=0;while(pick.length<3&&i<40){const k=ks[(h>>>(i%24))%ks.length+0];if(!pick.includes(k))pick.push(k);i++;h;}
+    for(const k of ks)if(pick.length<3&&!pick.includes(k))pick.push(k);
+    V.wk={id:W.id,trips:0,net:0,km:0,bonus:0,days:{},cnt:{},retos:pick.map((k,j)=>{const lv=(h>>>(j*3))%3;return {k,n:V30_RETOS[k].n[lv],b:V30_RETOS[k].b[lv],ok:false};})};save();}
+  return V.wk;}
+function v30Count(r,e){if(!e||e.status!=="ok")return;const w=v30Wk(),c=w.cnt,km=+(e.kmTot||e.km)||0,net=+e.net||0;
+  w.trips++;w.net=r2(w.net+net);w.km=Math.round((w.km+km)*10)/10;const dk=v30nowP().ymd;w.days[dk]=r2((w.days[dk]||0)+net);
+  const hh=+(String(e.time||"").split(":")[0]);const inc=(k,v)=>{c[k]=(c[k]||0)+(v==null?1:v);};
+  inc("viajes");inc("km",km);if(hh>=21||hh<6)inc("noche");if(/Aeropuerto/.test(JSON.stringify([r.pu,r.de,r.from,r.to])))inc("aero");if(r.svc==="paquete")inc("pq",Math.max(1,(r.jobs||[]).filter(j=>{try{return pqOk(j);}catch(x){return true;}}).length));
+  if(e.rate===5)inc("cinco");if(r.v30town||(r.svc!=="urbano"&&r.svc!=="paquete"))inc("muni");c.dias=Object.keys(w.days).length;
+  v30RetoCheck();}
+function v30RetoCheck(){if(!V30on("retos"))return;const w=v30Wk();for(const x of w.retos){if(x.ok)continue;const v=w.cnt[x.k]||0;if(v>=x.n){x.ok=true;x.at=Date.now();w.bonus=r2(w.bonus+x.b);S.stats.net=r2((S.stats.net||0)+x.b);S.stats.earn=r2((S.stats.earn||0)+x.b);S.stats.v30b=r2((S.stats.v30b||0)+x.b);
+    try{toast(`🏆 Reto semanal cumplido: ${V30_RETOS[x.k].t(x.n)} · +${eur(x.b)} (simulado)`);playSound&&SND_R.v29calle&&playSound("v29calle");}catch(e){}}}save();}
+if(!window.NO_V30){const _he=historyEntry;historyEntry=function(r,status){const v=_he.apply(this,arguments);try{if(!V30off())v30Count(r,S.history[0]);v30Car(r,S.history[0]);}catch(e){console.error(e);}return v;};}
+const V30_DN=["Lu","Ma","Mi","Ju","Vi","Sá","Do"];
+function v30WeekUI(){const sec=$("secHoy");if(!sec)return;let b=$("v30Wk");if(V30off()||!V30on("retos")){if(b)b.remove();return;}
+  if(!b){const st=sec.querySelector(".stats");(st||sec).insertAdjacentHTML("afterend",'<div id="v30Wk" class="v30wk"></div>');b=$("v30Wk");}
+  const w=v30Wk(),W=v30Week(),f=d=>d.getUTCDate()+"/"+(d.getUTCMonth()+1),V=v30St();
+  const days=V30_DN.map((n,i)=>{const d=new Date(W.mon.getTime()+i*864e5),k=d.toISOString().slice(0,10),v=w.days[k];return `<div class="v30d${i===W.dw?" hoy":""}"><b>${n}</b><span>${v!=null?eur(v):"–"}</span></div>`;}).join("");
+  const best=Object.entries(w.days).sort((a,b)=>b[1]-a[1])[0];
+  const R=w.retos.map(x=>{const v=Math.min(x.n,Math.floor(w.cnt[x.k]||0)),p=Math.round(100*v/x.n);return `<div class="v30r${x.ok?" v30ok":""}"><div>${x.ok?"✅":"🏁"} ${esc(V30_RETOS[x.k].t(x.n))} · <b>+${eur(x.b)}</b></div><div class="v30rn">${v}/${x.n}</div><div class="v30bar"><i style="width:${p}%"></i></div></div>`;}).join("");
+  const h=`<h2>📅 Esta semana <span class="v30sub">${f(W.mon)}–${f(W.sun)}</span></h2>
+  <div class="v30sum">${w.trips} viaje${w.trips===1?"":"s"} · <b>${eur(w.net)}</b> netos · ${num1(w.km)} km · ${Object.keys(w.days).length} día${Object.keys(w.days).length===1?"":"s"}${w.bonus?` · premios ${eur(w.bonus)}`:""}${best?` · mejor día: ${V30_DN[(new Date(best[0]+"T12:00:00Z").getUTCDay()+6)%7]} (${eur(best[1])})`:""}</div>
+  <div class="v30days">${days}</div><h2 style="margin-top:8px">🏆 Retos semanales <span class="simtag">simulado</span></h2>${R}
+  ${V.prev?`<div class="hint">Semana anterior: ${V.prev.trips} viajes · ${eur(V.prev.net)} · ${num1(V.prev.km)} km · retos ${V.prev.done}/${V.prev.nr}</div>`:""}
+  <div class="hint">Los retos cambian cada lunes. El premio se suma a las ganancias de «Hoy». Premios simulados.</div>`;
+  if(b.innerHTML!==h)b.innerHTML=h;}
+if(!window.NO_V30){const _rs=renderStats;renderStats=function(){const v=_rs.apply(this,arguments);try{const t=(S.v30&&S.v30.car&&S.v30.car.today===S.day)?S.v30.car.todayCost:0;if(t&&$("sExp")){const s=S.stats;$("sExp").textContent=eur(s.energy+s.com+fixedCost()+(s.ferry||0)+t);$("sExp").title+=` · taller ${eur(t)}`;}v30WeekUI();}catch(e){console.error(e);}return v;};}
+// ---------- (7) Taller e ITV: averías leves (SIMULADAS), sin combustible ----------
+const V30_AV=[["🛞","Testigo de presión: una rueda trasera va algo baja","Inflar y revisar la válvula",12],["🛞","Pinchazo lento en una rueda delantera","Reparar el pinchazo",22],["💡","Bombilla de cruce fundida","Cambiar la bombilla",15],
+  ["🛑","Ruido al frenar: pastillas gastadas","Cambiar las pastillas",95],["❄️","El aire acondicionado no enfría bien","Recarga del climatizador",65],["🔋","Batería de 12 V floja","Batería nueva",110],
+  ["🔩","Ruido en la suspensión delantera","Cambiar una bieleta",70],["🪟","Elevalunas del copiloto lento","Ajustar el elevalunas",45],["🧰","Revisión periódica pendiente","Revisión del fabricante",120]];
+function v30Car(r,e){if(V30off()||!V30on("taller")||!e||e.status!=="ok")return;const C=v30St().car,F=v30R();C.km=Math.round((C.km+(+(e.kmTot||e.km)||0))*10)/10;
+  const p=v30nowP(),ymd=p.ymd;if(!C.itv){const d=new Date(Date.UTC(p.y,p.mo-1,p.d+20+Math.floor(Math.random()*160)));C.itv=d.toISOString().slice(0,10);}
+  save();setTimeout(()=>v30CarCheck(0),F.delay!=null?F.delay:1500);}
+function v30CarCheck(n){if(V30off()||!V30on("taller"))return;const C=v30St().car,F=v30R(),p=v30nowP(),ymd=p.ymd;
+  if(trip||curReq||(typeof animating!=="undefined"&&animating)||document.querySelector("#v26P:not([hidden]) .v26box")){if(n<60)setTimeout(()=>v30CarCheck(n+1),3000);return;}
+  const days=Math.round((Date.parse(C.itv)-Date.parse(ymd))/864e5);
+  if((F.itv||(days<=30&&Date.now()-(C.itvAsk||0)>(F.nocd?0:6*36e5)))){C.itvAsk=Date.now();save();return v30ItvAsk(days);}
+  if(F.taller||C.km>=C.next)return v30TallerAsk();}
+function v30TallerAsk(){const C=v30St().car,F=v30R();const a=C.pend||(C.pend=F.av!=null?V30_AV[F.av]:v30rn(V30_AV));const cost=r2(a[3]*(C.late?1.2:1));C.ask=Date.now();save();
+  (()=>v29Ask({k:"v30taller",ic:"🔧",title:"Aviso del coche",body:`<div class="sub">${a[0]} ${esc(a[1])}. <span class="simtag">simulado</span></div><div class="sub">Taller: ${esc(a[2])} · <b>${eur(cost)}</b> · unos 30 min.</div><div class="sub">Llevas ${num1(C.km)} km desde la última visita.</div>`,
+    okTxt:`🔧 Ir al taller (${eur(cost)})`,noTxt:"⏳ Más tarde",trip:false,voz:`Aviso del coche: ${a[1]}. ¿Vas al taller?`,on:x=>v30TallerAns(x,cost)}))();}
+function v30TallerAns(x,cost){const C=v30St().car;if(x==="ok"){C.n++;C.cost=r2(C.cost+cost);if(C.today!==S.day){C.today=S.day;C.todayCost=0;}C.todayCost=r2(C.todayCost+cost);S.stats.net=r2((S.stats.net||0)-cost);
+    C.last={t:C.pend[1],cost,at:Date.now()};C.km=0;C.next=900+Math.round(Math.random()*700);C.pend=null;C.late=0;toast(`🔧 Arreglado en el taller: ${eur(cost)} (simulado)`);try{v29Note(`He pasado por el taller: ${C.last.t} (${eur(cost)}).`);}catch(e){}}
+  else{C.late=(C.late||0)+1;C.next=C.km+150;toast(`⏳ Lo dejas para más tarde: te lo recordará en ~150 km${C.late>1?" (cada vez sale algo más caro)":""}`);}save();try{renderStats();}catch(e){}}
+function v30ItvAsk(days){const C=v30St().car,F=v30R(),d=C.itv.split("-").reverse().join("/");
+  (()=>v29Ask({k:"v30itv",ic:"📋",title:"ITV",body:`<div class="sub">${days<0?`La ITV venció el ${d}: no puedes trabajar así.`:`Te toca la ITV antes del ${d} (${days} día${days===1?"":"s"}).`} <span class="simtag">simulado</span></div><div class="sub">Estación de ITV · <b>${eur(45)}</b> · unos 40 min.</div>`,
+    okTxt:"📋 Pasar la ITV (45 €)",noTxt:"📅 Recordármelo",trip:false,voz:"Te toca pasar la ITV.",on:x=>{if(x==="ok"){if(C.today!==S.day){C.today=S.day;C.todayCost=0;}C.todayCost=r2(C.todayCost+45);S.stats.net=r2((S.stats.net||0)-45);
+      const p=v30nowP();C.itv=new Date(Date.UTC(p.y+1,p.mo-1,p.d)).toISOString().slice(0,10);C.itvOk=Date.now();toast("📋 ITV favorable. Próxima: "+C.itv.split("-").reverse().join("/")+" (simulado)");}else toast("📅 Te lo recordaremos más tarde");save();try{renderStats();}catch(e){}}}))();}
+// ---------- Ajustes v30 ----------
+{const a=$("secV29")||$("secV28");if(a&&!$("secV30")&&!V30off()){v30S();a.insertAdjacentHTML("afterend",`<div class="sec" id="secV30"><h2>Versión 30 <span class="v29ver">v${APP_VER}</span> <span class="simtag">simulado</span></h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px 10px;margin-top:6px">${Object.keys(V30_DEF).map(k=>`<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-v30k="${k}"> ${V30_LBL[k]}</label>`).join("")}</div>
+  <label style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap">🚚 Tiempo en ETS2: <select id="v30Fr">${V30_FR.map(f=>`<option value="${f[0]}">${f[1]}</option>`).join("")}</select></label>
+  <div class="hint" id="v30FrEx"></div>
+  <label style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap">📅 Fecha: <select id="v30Fecha"><option value="auto">Automática (fecha real)</option>${Object.keys(V30_DAYS).map(k=>`<option value="${k}">${V30_DAYS[k].ic} ${V30_DAYS[k].n}</option>`).join("")}</select></label>
+  <label style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap">🚇 Huelga: <select id="v30Hm"><option value="auto">Automática (a veces)</option><option value="si">Hoy hay huelga</option><option value="no">Nunca</option></select></label>
+  <div class="hint">La huelga, los vuelos, los retos, las averías y el efecto de las fechas son <b>simulados</b>; los lugares y las fechas son <b>reales</b>.</div>
+  <div class="hint" id="v30Car"></div></div>`);
+  document.querySelectorAll("#secV30 input[data-v30k]").forEach(c=>c.onchange=()=>{v30S()[c.dataset.v30k]=c.checked;save();toast(V30_LBL[c.dataset.v30k]+": "+(c.checked?"activado":"desactivado"));try{renderStats();v30Banner();}catch(e){}});
+  $("v30Fr").onchange=()=>{v30S().fr=$("v30Fr").value;save();syncV30UI();toast("🚚 ETS2: "+v30FrTxt(+$("v30Fr").value));};
+  $("v30Fecha").onchange=()=>{v30S().fecha=$("v30Fecha").value;save();try{v30Banner();}catch(e){}};
+  $("v30Hm").onchange=()=>{v30S().hm=$("v30Hm").value;save();try{v30Banner();}catch(e){}};
+  const ex=$("v29Esc");if(ex){const l=ex.closest("label");if(l){l.style.display="none";const n=l.nextElementSibling;if(n&&n.classList.contains("hint"))n.style.display="none";}}}}
+function syncV30UI(){if(!$("secV30"))return;const s=v30S();document.querySelectorAll("#secV30 input[data-v30k]").forEach(c=>c.checked=!!s[c.dataset.v30k]);$("v30Fr").value=String(s.fr);$("v30Fecha").value=s.fecha;$("v30Hm").value=s.hm;
+  const a=v30Ets(30,false),b=v30Ets(120,true);$("v30FrEx").textContent=`Ejemplo: 30 min en ciudad → ~${a.min} min (≈${num1(a.km)} km a 30 km/h) · 2 h por carretera → ~${b.min} min (≈${num1(b.km)} km a 70 km/h). Mínimo 5 min.`;
+  const C=v30St().car;$("v30Car").textContent=`🔧 Coche: ${num1(C.km)} km desde el taller · ${C.n} visita${C.n===1?"":"s"} (${eur(C.cost)})${C.itv?" · ITV hasta el "+C.itv.split("-").reverse().join("/"):""}`;}
+{const _se=syncEvUI;syncEvUI=function(){const v=_se.apply(this,arguments);try{syncV30UI();}catch(e){}return v;};}
+if(!V30off()){try{syncV30UI();v30Wk();renderStats();v30Banner();}catch(e){console.error(e);}
+  document.head.insertAdjacentHTML("beforeend",`<style>
+.v30wk{margin-top:10px}.v30wk h2{font-size:15px}.v30sub{font-size:12px;color:var(--mut,#8b949e);font-weight:400}.v30sum{font-size:13px;margin:4px 0}
+.v30days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin:4px 0}.v30d{background:#1c2430;padding:3px 2px;text-align:center;font-size:11px}.v30d b{display:block;font-size:11px}.v30d.hoy{outline:1px solid #3fb950}
+.v30r{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:13px;margin:5px 0}.v30rn{font-weight:700}.v30bar{grid-column:1/3;height:6px;background:#2a313b}.v30bar i{display:block;height:6px;background:#d29922}.v30r.v30ok .v30bar i{background:#3fb950}
+.v30ban:empty{display:none}.v30ban{margin-top:4px}
+html.v291m .v30d,html.v291m .v30bar{border-radius:0}
+</style>`);}
+window.V30={S:v30S,on:V30on,R:v30R,ets:v30Ets,etsTxt:v30EtsTxt,day:v30Day,dayOf:v30DayOf,easter:v30Easter,strike:v30Strike,demF:v30DemF,surgeAdd:v30SurgeAdd,airP:v30AirP,flight:v30Flight,week:v30Week,wk:v30Wk,
+  count:v30Count,retoCheck:v30RetoCheck,weekUI:v30WeekUI,car:v30Car,tallerAsk:v30TallerAsk,itvAsk:v30ItvAsk,st:v30St,data:V30_DATA,cam:V30_CAM,townDe:v30TownDe,banner:v30Banner,ver:APP_VER};
+
 </script>
 </body>
 </html>
