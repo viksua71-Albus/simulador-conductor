@@ -1427,7 +1427,7 @@ async function makeRequest(){
       }
     }
   }
-  const grp=PUBX?{booker:PUBX.B[0].per,comps:PUBX.B[0].comps||[]}:seatsSh>1?makeGroup(seatsSh):{booker:(isU&&!HAILX&&regBooker(pos))||makePerson(),comps:[]};
+  const grp=PUBX?{booker:PUBX.B[0].per,comps:PUBX.B[0].comps||[]}:seatsSh>1?makeGroup(seatsSh):{booker:(isU&&!HAILX&&regBooker(pos,P))||makePerson(),comps:[]};
   const per=grp.booker,comps=grp.comps,name=per.name;
   let pickup,dest,km,pickupDist,min,pickupMin,route,segKm,segMin,pts=[];
   if(routed){
@@ -3208,7 +3208,7 @@ $("vozStop").onclick=()=>vozCancel();
 if(SS()){try{SS().addEventListener?SS().addEventListener("voiceschanged",vozFill):(SS().onvoiceschanged=vozFill);}catch(e){}}
 syncVozUI();setTimeout(vozFill,600);setTimeout(vozFill,2500);
 // ---------- Móvil (Android) y app instalable (PWA) ----------
-const APP_VER="30.0";
+const APP_VER="30.1";
 const MQ_MOB=window.matchMedia("(max-width:899px),(max-height:520px) and (pointer:coarse)");
 function isMob(){return MQ_MOB.matches;}
 // Márgenes al encuadrar la ruta: en PC la tarjeta está a la izquierda; en móvil, abajo (vertical) o a la izquierda (horizontal)
@@ -6012,6 +6012,29 @@ html.v291m .v30d,html.v291m .v30bar{border-radius:0}
 </style>`);}
 window.V30={S:v30S,on:V30on,R:v30R,ets:v30Ets,etsTxt:v30EtsTxt,day:v30Day,dayOf:v30DayOf,easter:v30Easter,strike:v30Strike,demF:v30DemF,surgeAdd:v30SurgeAdd,airP:v30AirP,flight:v30Flight,week:v30Week,wk:v30Wk,
   count:v30Count,retoCheck:v30RetoCheck,weekUI:v30WeekUI,car:v30Car,tallerAsk:v30TallerAsk,itvAsk:v30ItvAsk,st:v30St,data:V30_DATA,cam:V30_CAM,townDe:v30TownDe,banner:v30Banner,ver:APP_VER};
+
+
+// ==================== v30.1: clientes que repiten con tiempos creíbles ====================
+// Un cliente que llega en avión o tren no puede haber viajado contigo hace minutos: solo repite si su último viaje fue hace ≥ 1 día.
+// En general, entre dejarlo y volver a recogerlo debe pasar al menos el tiempo de llegar de un sitio a otro (≈40 km/h) + 45 min, y nunca menos de 1 h.
+const V301_ARR_MS=864e5;
+function v301Arr(P){try{const p=P&&P.pu&&P.pu.place;return !!(p&&p.kind==="hub");}catch(e){return false;}}
+function v301Gap(g,pt,arr){const l=g&&g.last;if(!l||!l.ts)return true;const dt=Date.now()-l.ts;if(arr)return dt>=V301_ARR_MS;
+  let need=60*6e4;try{const from=l.dpt||g.pt;if(from&&pt){const km=hav(from,pt);need=Math.max(need,(km/40*60+45)*6e4);if(km>60)need=Math.max(need,4*36e5);}}catch(e){}return dt>=need;}
+let V301_CTX=null;
+{const _rc=regCands;regCands=function(pos,kind){const L=_rc.apply(this,arguments);if(window.NO_V301||!V301_CTX)return L;return L.filter(g=>v301Gap(g,V301_CTX.pt,V301_CTX.arr));};}
+{const _ch=regChoose;regChoose=function(pos,kind){if(window.NO_V301||!V301_CTX)return _ch.apply(this,arguments);
+  if(FORCE&&FORCE.reg){const g=FORCE.reg===true?regCands(pos,kind)[0]:regsS().find(x=>x.id===FORCE.reg);return g&&v301Gap(g,V301_CTX.pt,V301_CTX.arr)?g:null;}
+  return _ch.apply(this,arguments);};}
+regBooker=function(pos,P){V301_CTX={pt:(P&&P.pu&&P.pu.pt)||pos,arr:v301Arr(P)};try{const g=regChoose(pos,"pax");return g?regClone(g):null;}finally{V301_CTX=null;}};
+regSnd=function(c){V301_CTX={pt:c||S.driver,arr:false};try{const g=regChoose(c||S.driver,"pq");return g?regClone(g):null;}finally{V301_CTX=null;}};
+{const _rr=regRecord;regRecord=function(per,kind,rate,status,r){const g=_rr.apply(this,arguments);try{if(g&&g.last&&r){const d=r.dest||(r.de&&r.de.pt)||(r.de&&r.de.lat!=null?[r.de.lat,r.de.lon]:null);if(d)g.last.dpt=d.slice?d.slice():d;}}catch(e){}return g;};}
+// Textos: «Cliente habitual» solo con 2 o más viajes; con 1, «Ya viajó contigo antes»
+{const _lh=regLineHTML;regLineHTML=function(id,kind){const h=_lh.apply(this,arguments);const g=regGet(id);if(window.NO_V301||!g||g.n>=2)return h;
+  return h.replace(/<b>Cliente habitual<\/b>: [^,(<]*/,kind==="pq"?"<b>Ya te envió un paquete antes</b>":"<b>Ya viajó contigo antes</b>");};}
+{const _rs=regSay;regSay=function(id,kind){const t=_rs.apply(this,arguments);const g=regGet(id);if(window.NO_V301||!g||g.n>=2)return t;
+  return t.replace(/Cliente habitual: [^,.]*/,kind==="pq"?"Ya te envió un paquete antes":"Ya viajó contigo antes");};}
+window.V301={gap:v301Gap,arr:v301Arr,ARR:V301_ARR_MS};
 
 </script>
 </body>
