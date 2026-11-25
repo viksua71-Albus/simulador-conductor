@@ -1388,8 +1388,8 @@ async function makeRequest(){
     const pf=PROFILES[slotOf(simNow())];let pu=null,de=null,t=0;
     if(isU){
       const fp=FORCE&&FORCE.puHub,fd=FORCE&&FORCE.deHub;
-      if(HAILX)pu={pt:pos.slice(),place:HAILX.place};else if(air&&air.d<=st.radius&&(fp==="air"||(!fp&&Math.random()<v30AirP(air))))pu={pt:air.c,place:hubPlace(air,"air")};
-      else if(sta&&hav(pos,sta.c)<=st.radius&&(fp==="st"||(!fp&&Math.random()<.14)))pu={pt:sta.c,place:hubPlace(sta,"st")};
+      if(HAILX)pu={pt:pos.slice(),place:HAILX.place};else if(air&&air.d<=st.radius&&(fp==="air"||(!fp&&Math.random()<v30AirP(air)))){const _air=typeof v32AirPick==="function"?v32AirPick(air,pos):air;pu={pt:_air.c,place:hubPlace(_air,"air")};}
+      else if(sta&&hav(pos,sta.c)<=st.radius&&(fp==="st"||(!fp&&Math.random()<(typeof v32StaP==="function"?v32StaP(sta):.14))))pu={pt:sta.c,place:hubPlace(sta,"st")};
       if(!pu){const ez=evtPickPu(pos,st.radius);if(ez)pu=ez;}
       if(!pu&&!window.NO_V31){const _f=v31ForceEnd&&v31ForceEnd("pu",pos);if(_f)pu=_f;}
       if(!pu)pu=await genEnd(pos,st.radius,pf.pu,pf.puP);
@@ -1398,6 +1398,7 @@ async function makeRequest(){
       if(!de&&!window.NO_V30){de=await v30TownDe(pos,pu,genEnd);window.V30_LAST=de&&de.v30town||null;}
       if(!de&&!window.NO_V31){const _f=v31ForceEnd&&v31ForceEnd("de",pos);if(_f)de=_f;}
       if(!de&&!window.NO_V31){de=await v31TownDe(pos,pu,genEnd);window.V31_LAST=de&&de.v31town||null;}
+      if(!de&&!window.NO_V32){de=await v32TownDe(pos,pu,genEnd);window.V32_LAST=de&&de.v32town||null;}
       if(!de)do{de=await genEnd(pos,st.radius,pf.de,pf.deP);}while((hav(pu.pt,de.pt)<Math.min(.8,st.radius*.5)||(lbLong&&t<4&&hav(pu.pt,de.pt)<st.radius*.6))&&++t<6);
     }else{pu=PUBX?{pt:PUBX.meet.pt,place:PUBX.meet.place}:await genEnd(pos,st.radius,POI_GROUPS,.5);de=await genEnd(dst.c,4,CITY_GROUPS,.75);}
     return {pu,de};
@@ -3211,7 +3212,7 @@ $("vozStop").onclick=()=>vozCancel();
 if(SS()){try{SS().addEventListener?SS().addEventListener("voiceschanged",vozFill):(SS().onvoiceschanged=vozFill);}catch(e){}}
 syncVozUI();setTimeout(vozFill,600);setTimeout(vozFill,2500);
 // ---------- Móvil (Android) y app instalable (PWA) ----------
-const APP_VER="31.0";
+const APP_VER="32.0";
 const MQ_MOB=window.matchMedia("(max-width:899px),(max-height:520px) and (pointer:coarse)");
 function isMob(){return MQ_MOB.matches;}
 // Márgenes al encuadrar la ruta: en PC la tarjeta está a la izquierda; en móvil, abajo (vertical) o a la izquierda (horizontal)
@@ -6104,6 +6105,208 @@ function syncV31UI(){if(!$("secV31"))return;const s=v31S();document.querySelecto
 {const _se=syncEvUI;syncEvUI=function(){const v=_se.apply(this,arguments);try{syncV31UI();}catch(e){}return v;};}
 if(!V31off()){try{syncV31UI();}catch(e){}}
 window.V31={S:v31S,on:V31on,R:v31R,inCad:v31InCad,townDe:v31TownDe,pick:v31Pick,byName:v31ByName,forceEnd:v31ForceEnd,data:V31_DATA,cad:V31_CAD,places:V31_PLACES,ver:"31.0"};
+
+// ==================== v32: espera de pago, gente en la espera, más Cataluña, llamadas cerca de la recogida, intensidad que no baja sola, mensajes de vuelo, El Prat/Sants de noche, fiestas catalanas, peajes vigentes (lo inventado es SIMULADO; lugares y peajes verificados) ====================
+const V32_DEF={espera:true,calle:true,datos:true,llamada:true,intensa:true,vuelo:true,nocturno:true,fiestas:true,peajes:true};
+const V32_LBL={espera:"⏳ Tarifa de espera (simulado): tras unos minutos gratis, cobras por minuto (como Uber/Cabify)",calle:"🚶 Gente que se acerca mientras esperas a un cliente (simulado)",datos:"🏘️ Más municipios reales de Cataluña en los viajes",llamada:"📞 «Tardo X minutos» solo al acercarte a la recogida o ya en el punto",intensa:"🔥 Si la conversación se anima, no baja sola: el cliente sigue subiendo el tono",vuelo:"✈️ Mensajes del vuelo durante la espera en el aeropuerto (simulado)",nocturno:"🌙 Llegadas nocturnas a El Prat (T1/T2) y Barcelona-Sants (simulado)",fiestas:"🎉 Fiestas catalanas: Sant Jordi, Sant Joan, Diada y la Mercè (demanda simulada)",peajes:"🛣️ Peajes vigentes en Cataluña (tarifas oficiales 2026; se descuentan si la ruta los usa)"};
+const V32off=()=>!!window.NO_V32;
+const V32on=k=>!V32off()&&v32S()[k]!==false;
+function v32S(){if(!S.settings.v32)S.settings.v32={};const s=S.settings.v32;for(const k in V32_DEF)if(s[k]==null)s[k]=V32_DEF[k];return s;}
+const v32R=()=>window.V32R||{};
+const v32rn=a=>a[Math.floor(Math.random()*a.length)];
+function v32Now(){const F=v32R(),Fo=window.FORCE||{};if(F.nowP)return F.nowP;if(Fo.nowP)return Fo.nowP;try{return v30nowP();}catch(e){return tzParts(new Date(),"Europe/Madrid");}}
+const v32InCat=pt=>typeof inCatPt==="function"?inCatPt(pt||(typeof S!=="undefined"&&S?S.driver:null)):false;
+
+// ---------- (3) Más Cataluña: municipios reales (centro OSM/Nominatim 2026-11-25; población aproximada) ----------
+const V32_CAT=[["L'Hospitalet de Llobregat",41.359512,2.099632,269000,"Barcelona"],["Badalona",41.449354,2.248254,223000,"Barcelona"],["Terrassa",41.562962,2.010049,228000,"Barcelona"],["Sabadell",41.546080,2.108321,218000,"Barcelona"],["Mataró",41.539999,2.444858,130000,"Barcelona"],["Santa Coloma de Gramenet",41.451940,2.208081,120000,"Barcelona"],["Cornellà de Llobregat",41.355724,2.070622,91000,"Barcelona"],["Sant Cugat del Vallès",41.470793,2.084881,98000,"Barcelona"],["Castelldefels",41.286102,1.982417,68000,"Barcelona"],["El Prat de Llobregat",41.330592,2.093081,66000,"Barcelona"],["Sant Boi de Llobregat",41.324102,2.051128,84000,"Barcelona"],["Rubí",41.493619,2.031948,80000,"Barcelona"],["Vilanova i la Geltrú",41.224199,1.725633,69000,"Barcelona"],["Viladecans",41.316308,2.015603,67000,"Barcelona"],["Gavà",41.305093,2.006313,47000,"Barcelona"],["Sitges",41.235360,1.811410,32000,"Barcelona"],["Granollers",41.607956,2.287601,63000,"Barcelona"],["Cerdanyola del Vallès",41.490997,2.140551,58000,"Barcelona"],["Mollet del Vallès",41.539348,2.213093,52000,"Barcelona"],["Vic",41.930202,2.254594,48000,"Barcelona"],["Manresa",41.728894,1.828677,80000,"Barcelona"],["Igualada",41.579018,1.617346,41000,"Barcelona"],["Vilafranca del Penedès",41.346382,1.699521,41000,"Barcelona"],["Sant Feliu de Llobregat",41.381285,2.044638,46000,"Barcelona"],["Ripollet",41.499337,2.157310,39000,"Barcelona"],["El Masnou",41.479690,2.311835,24000,"Barcelona"],["Premià de Mar",41.492682,2.360585,28000,"Barcelona"],["Calella",41.613293,2.657610,19000,"Barcelona"],["Pineda de Mar",41.627681,2.689871,28000,"Barcelona"],["Arenys de Mar",41.579703,2.549156,16000,"Barcelona"],["Martorell",41.474389,1.930716,32000,"Barcelona"],["Esparreguera",41.538943,1.870594,22000,"Barcelona"],["Olesa de Montserrat",41.543961,1.891381,24000,"Barcelona"],["Molins de Rei",41.413809,2.015963,27000,"Barcelona"],["Sant Sadurní d'Anoia",41.424466,1.786395,13000,"Barcelona"],["Sant Adrià de Besòs",41.430483,2.218278,37000,"Barcelona"],["La Garriga",41.684911,2.286580,17000,"Barcelona"],["Sant Celoni",41.689504,2.491453,18000,"Barcelona"],["Barberà del Vallès",41.517253,2.126594,33000,"Barcelona"],["Castellar del Vallès",41.618343,2.087942,25000,"Barcelona"],["Berga",42.101146,1.845476,17000,"Barcelona"],["Reus",41.155556,1.107613,108000,"Tarragona"],["El Vendrell",41.219968,1.534857,40000,"Tarragona"],["Salou",41.076819,1.144041,29000,"Tarragona"],["Cambrils",41.067942,1.065758,35000,"Tarragona"],["Tortosa",40.811016,0.520933,35000,"Tarragona"],["Amposta",40.707991,0.582764,22000,"Tarragona"],["Calafell",41.201062,1.568673,28000,"Tarragona"],["Torredembarra",41.146155,1.395951,17000,"Tarragona"],["Valls",41.283535,1.247364,25000,"Tarragona"],["Vila-seca",41.110927,1.144961,23000,"Tarragona"],["Deltebre",40.720394,0.724344,11000,"Tarragona"],["La Ràpita",40.617815,0.590009,15000,"Tarragona"],["Figueres",42.266631,2.963843,48000,"Girona"],["Blanes",41.675618,2.793239,41000,"Girona"],["Lloret de Mar",41.697350,2.839239,39000,"Girona"],["Olot",42.182218,2.489021,37000,"Girona"],["Palafrugell",41.918362,3.161990,23000,"Girona"],["Sant Feliu de Guíxols",41.783883,3.028319,22000,"Girona"],["Palamós",41.849535,3.127879,18000,"Girona"],["Banyoles",42.118048,2.765361,20000,"Girona"],["Ripoll",42.198239,2.193250,11000,"Girona"],["Puigcerdà",42.431797,1.927869,9000,"Girona"],["Roses",42.263202,3.175533,20000,"Girona"],["Tàrrega",41.647276,1.140912,18000,"Lleida"],["Balaguer",41.789641,0.805071,17000,"Lleida"],["Mollerussa",41.629823,0.893773,15000,"Lleida"],["La Seu d'Urgell",42.357572,1.456007,12000,"Lleida"],["Vielha e Mijaran",42.701757,0.795474,6000,"Lleida"],["Tremp",42.166978,0.895014,6000,"Lleida"],["Cervera",41.673067,1.272943,9000,"Lleida"],["Solsona",41.994576,1.518404,9000,"Lleida"]];
+const V32_TOWNS=V32_CAT.map(c=>c[0]+"|"+c[4]);
+const V32_NM={m:[["Xevi",38],["Cesc",32],["Eudald",40],["Ponç",44],["Baldiri",68]],f:[["Àngels",55],["Dolors",70],["Immaculada",62],["Caterina",34]]};
+const V32_AP=["Capdevila","Alcover","Ollé","Tresserras","Puigvert","Garriga","Casanovas","Bofill"];
+const V32_PROFS=[["Maquinista de Rodalies","Maquinista de Rodalies",25,64],["Agente de handling de El Prat","Agente de handling de El Prat",20,60],["Técnico de Aena en El Prat","Técnica de Aena en El Prat",22,64],["Montador de la Fira de Barcelona","Montadora de la Fira de Barcelona",22,62],["Investigador del Vall d'Hebron","Investigadora del Vall d'Hebron",26,66],["Socorrista de la Costa Brava","Socorrista de la Costa Brava",18,45],["Trabajador de la Zona Franca","Trabajadora de la Zona Franca",20,62],["Guía del MNAC","Guía del MNAC",22,64]];
+const V32_TOP=[["la Diada",4],["la Revetlla de Sant Joan",4],["los correfocs de la Mercè",3],["el cava del Penedès",3],["ir a Montserrat",4],["Rodalies",3],["el Mobile World Congress",2]];
+const V32_DATA={cit:0,citEx:0,towns:0,nm:0,ap:0,prof:0,top:0};
+if(!window.NO_V32&&!V32off()&&v32S().datos){try{
+  for(const [n,la,lo,pop,prov] of V32_CAT){const ex=CITIES.find(c=>c.n===n);if(ex){ex.cat32=1;if(!ex.pop)ex.pop=pop;if(!ex.popMun)ex.popMun=n;V32_DATA.citEx++;}else{CITIES.push({n,c:[la,lo],g:"p",pop,popMun:n,cat32:1,prov});V32_DATA.cit++;}}
+  for(const n of ["Barcelona","Girona","Lleida","Tarragona"]){const ex=CITIES.find(c=>c.n===n);if(ex)ex.cat32=1;}
+  for(const t of V32_TOWNS)if(!TOWNS.includes(t)){TOWNS.push(t);V32_DATA.towns++;}
+  for(const g of ["m","f"])for(const [n,ed] of V32_NM[g]){const NL=g==="m"?NAMES_M:NAMES_F;if(NL.includes(n)||INE_NOM[g].some(x=>x[0]===n))continue;NL.push(n);INE_NOM[g].push([n,8000,ed]);if(INE_NOM.reg&&INE_NOM.reg.cat){const L=INE_NOM.reg.cat[g];if(L&&!L.some(x=>x[0]===n))L.push([n,2500,ed]);}if(typeof REG_OF!=="undefined")REG_OF[g][n]="cat";V32_DATA.nm++;}
+  for(const a of V32_AP)if(!INE_NOM.a.some(x=>x[0]===a)){INE_NOM.a.push([a,8000]);if(typeof SURNAMES!=="undefined"&&!SURNAMES.includes(a))SURNAMES.push(a);if(INE_NOM.reg&&INE_NOM.reg.cat&&INE_NOM.reg.cat.a&&!INE_NOM.reg.cat.a.some(x=>x[0]===a))INE_NOM.reg.cat.a.push([a,2500]);V32_DATA.ap++;}
+  for(const p of V32_PROFS)if(typeof PROFS!=="undefined"&&!PROFS.some(x=>x[0]===p[0])){PROFS.push([p[0],p[1],p[2],p[3],.1,""]);V32_DATA.prof++;}
+  for(const t of V32_TOP)if(typeof TOPICS!=="undefined"&&!TOPICS.some(x=>x[0]===t[0])){TOPICS.push(t);V32_DATA.top++;}
+}catch(e){console.error(e);}}
+// El Prat T1 (terminal real, Nominatim 2026-11-25). T2 ya estaba.
+if(!window.NO_V32&&!AIRPORTS.some(a=>a.iata==="BCN"&&/Terminal 1/.test(a.t||"")))AIRPORTS.push({iata:"BCN",n:"Aeropuerto Josep Tarradellas Barcelona-El Prat",t:"Terminal 1",c:[41.288955,2.074666]});
+function v32AirPick(air,pos){try{if(!air||air.iata!=="BCN")return air;const all=AIRPORTS.filter(x=>x.iata==="BCN");if(all.length<2)return air;const want=(v32R().term||(window.FORCE||{}).term||"");const hit=want?all.find(x=>(x.t||"").includes(String(want).replace(/^T/,"Terminal "))||(x.t||"").includes(String(want))):null;const pick=hit||v32rn(all);return Object.assign({},pick,{d:hav(pos||(S&&S.driver)||pick.c,pick.c)});}catch(e){return air;}}
+function v32StaP(sta){try{const F=v32R(),Fo=window.FORCE||{};if(F.st||Fo.stHub)return 1;if(!V32on("nocturno")||!sta||sta.n!=="Barcelona-Sants")return .14;return v30NightH(v32Now().h)?.45:.14;}catch(e){return .14;}}
+async function v32TownDe(pos,pu,genEnd){try{if(!V32on("datos")||!v32InCat(pos))return null;const F=window.FORCE||{},R=v32R();
+  if(!(F.v32town||R.town)&&Math.random()>=.12)return null;const here=nearestCity(pos,40),maxD=Math.min(45,Math.max(20,(S.settings.radius||10)*2.2));
+  let L=CITIES.filter(c=>c.cat32&&(!here||c.n!==here.n)&&hav(pos,c.c)>=4&&hav(pos,c.c)<=maxD);const want=F.v32town||R.town;if(typeof want==="string")L=L.filter(c=>c.n===want).concat(CITIES.filter(c=>c.n===want&&!L.includes(c)));
+  if(!L.length)return null;const T=v32rn(L),e=await genEnd(T.c,1.2,CITY_GROUPS,.6);if(e)e.v32town=T.n;return e;}catch(e){return null;}}
+
+// ---------- (7) Llegadas nocturnas El Prat / Sants (vuelos y AVE SIMULADOS) ----------
+const V32_FROM=["Londres","París","Ámsterdam","Fráncfort","Roma","Lisboa","Bruselas","Múnich","Zúrich","Milán","Palma","Tenerife","Gran Canaria","Madrid","Sevilla","Valencia"];
+const V32_AVE=["Madrid","Sevilla","Valencia","Zaragoza","Málaga","Alicante","Córdoba","Granada"];
+function v32Flight(k){const p=v32Now(),late=p.h>=22||p.h<2;let t=p.h*60+(p.m||0)-Math.round(10+Math.random()*25);t=(t+1440)%1440;const sz=Math.random();
+  const maleta=sz<.6?"maleta grande":sz<.9?"maleta de cabina":"solo mochila";
+  const hm=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
+  if(k==="ave")return {k:"ave",from:v32rn(V32_AVE),hm,late,maleta};
+  return {k:"vuelo",from:v32rn(V32_FROM),hm,late,maleta};}
+{const _p=v30AirP;v30AirP=function(air){try{if(air&&air.iata==="BCN"&&V32on("nocturno")){const F=v32R();if(F.air)return 1;return v30NightH(v32Now().h)?.45:_p.apply(this,arguments);}}catch(e){}return _p.apply(this,arguments);};}
+
+// ---------- (8) Fiestas catalanas en el calendario (demanda SIMULADA; fechas reales) ----------
+const V32_DAYS={
+  santjordi:{n:"Sant Jordi (Cataluña)",ic:"🌹",f:h=>h>=10&&h<22?1.45:1.1,s:h=>h>=12&&h<21?.15:0,line:"Libros y rosas en las calles."},
+  santjoan:{n:"Revetlla de Sant Joan (Cataluña)",ic:"🔥",f:h=>h>=20||h<6?2:1.15,s:h=>h>=21||h<4?.35:0,line:"Noche de hogueras y verbenas en la costa."},
+  diada:{n:"Diada Nacional de Catalunya",ic:"💛",f:h=>h<16?1.35:1.15,s:h=>h>=9&&h<14?.1:0,line:"Manifestaciones y ofrendas; más desplazamientos."},
+  merce:{n:"La Mercè (Barcelona)",ic:"🎆",f:h=>h>=12&&h<24?1.5:1.1,s:h=>h>=18&&h<24?.25:0,line:"Festa major: conciertos, correfoc y mucha demanda."}};
+if(typeof V30_DAYS==="object")Object.assign(V30_DAYS,V32_DAYS);
+{const _d=v30DayOf;v30DayOf=function(y,mo,d){try{if(V32on("fiestas")){const k=mo*100+d,id={423:"santjordi",623:"santjoan",911:"diada",924:"merce"}[k];
+  if(id){const forced=(v30R()&&v30R().day)===id||(v30S()&&v30S().fecha===id);if(forced||v32InCat())return id;}}}catch(e){}return _d.apply(this,arguments);};}
+function v32FechaOpts(){const sel=$("v30Fecha");if(!sel)return;for(const [id,D] of Object.entries(V32_DAYS)){if(sel.querySelector('option[value="'+id+'"]'))continue;const o=document.createElement("option");o.value=id;o.textContent=D.ic+" "+D.n;sel.appendChild(o);}}
+
+// ---------- (9) Peajes vigentes en Cataluña (tarifas 2026, Generalitat; consultado 2026-11-25) ----------
+// Fuente: https://territori.gencat.cat/ca/03_infraestructures_i_mobilitat/carreteres/peatges-tarifes-descomptes/tarifes-peatges/
+// Turismos, categoría 2, IVA incluido, desde el 1/1/2026. AP-7 y AP-2 liberalizadas en 2021; C-33 sin peaje; C-32 Maresme no figura. No se incluye la barrera de Manresa: no aparece como peaje nombrado en OSM.
+const V32_TOLL_SRC="Generalitat de Catalunya, Tarifes de peatges 2026 (territori.gencat.cat), consultado el 25/11/2026. Cat. 2 turismo.";
+const V32_TOLLS=[
+  {id:"vallvidrera",n:"Túnels de Vallvidrera (C-16)",c:[41.437242,2.075441],price:()=>{const p=v32Now(),dow=p.dow||1,h=p.h+(p.m||0)/60,punta=dow>=1&&dow<=5&&((h>=7.5&&h<10.5)||(h>=17&&h<21));return punta?5.28:4.70;},side:(pt)=>pt[0]<41.42&&pt[1]>2.08?1:pt[0]>41.45&&pt[1]<2.16?2:0},
+  {id:"cadi",n:"Túnel del Cadí (C-16)",c:[42.340173,1.839159],price:()=>14.56,side:(pt)=>pt[0]<42.30?1:pt[0]>42.33?2:0},
+  {id:"vallcarca",n:"C-32 Castelldefels–Sitges (Vallcarca)",c:[41.245048,1.852390],price:()=>8.42,side:(pt)=>pt[1]>1.90?1:pt[1]<1.83?2:0},
+  {id:"cubelles",n:"C-32 Sitges–El Vendrell (Cubelles)",c:[41.208244,1.651748],price:()=>5.03,side:(pt)=>pt[1]>1.70?1:pt[1]<1.62?2:0},
+  {id:"fonts",n:"C-16 Sant Cugat–Terrassa (les Fonts)",c:[41.517763,2.030035],price:()=>{const p=v32Now(),we=(p.dow||1)>=6;return we?3.19:1.43;},side:(pt)=>pt[0]<41.50?1:pt[0]>41.54?2:0},
+  {id:"sv",n:"C-16 Terrassa–Manresa (Sant Vicenç de Castellet)",c:[41.651887,1.864582],price:()=>{const p=v32Now(),we=(p.dow||1)>=6;return we?4.90:2.92;},side:(pt)=>pt[0]<41.60?1:pt[0]>41.68?2:0}
+];
+function v32RoutePts(r){const pts=[];const add=p=>{if(!p)return;if(Array.isArray(p[0]))p.forEach(add);else if(p.length>=2&&typeof p[0]==="number")pts.push(p);};
+  add(r.pickup);add(r.dest);add(r.start);try{add(r.route&&r.route.toPickup);add(r.route&&r.route.segs);add(r.route&&r.route.trip);}catch(e){}
+  (r.pts||[]).forEach(p=>add(p.c||p.pt||p));
+  // interpolar tramos largos
+  const out=pts.slice();
+  for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1];if(!a||!b||typeof a[0]!=="number")continue;const d=hav(a,b);if(d>2){const n=Math.min(12,Math.ceil(d/2));for(let k=1;k<n;k++)out.push([a[0]+(b[0]-a[0])*k/n,a[1]+(b[1]-a[1])*k/n]);}}
+  return out;}
+function v32Near(pt,c,km){return hav(pt,c)<=km;}
+function v32Tolls(r){if(!V32on("peajes")||!r||r.svc==="paquete")return [];
+  const F=v32R(),want=F.toll,pts=v32RoutePts(r),ends=[r.pickup,r.dest].filter(Boolean),routed=r.routed!==false&&pts.length>4,nearKm=2.0,out=[];
+  for(const T of V32_TOLLS){if(want&&want!==T.id&&want!==true)continue;
+    const prox=pts.some(p=>v32Near(p,T.c,nearKm));
+    const sides=ends.map(T.side).filter(s=>s>0);
+    const corridor=!routed&&sides.includes(1)&&sides.includes(2);
+    if(want===T.id||want===true||prox||corridor){out.push({id:T.id,n:T.n,p:r2(T.price()),src:V32_TOLL_SRC});}}
+  return out;}
+function v32ApplyTolls(r){try{if(!r||r.tolls)return r;r.tolls=v32Tolls(r);r.tollAmt=r2((r.tolls||[]).reduce((s,t)=>s+t.p,0));}catch(e){}return r;}
+{const _e=expCalc;expCalc=function(fare,kmTot,svc,r){const x=_e.apply(this,arguments);try{const t=r&&r.tollAmt!=null?r.tollAmt:r&&r.tolls?r2(r.tolls.reduce((s,p)=>s+p.p,0)):0;if(t){x.toll=r2(t);x.net=r2(x.net-t);}}catch(e){}return x;};}
+{const _n=netEstHTML;netEstHTML=function(r){let h=_n.apply(this,arguments);try{if(r&&r.tolls&&r.tolls.length)h+=` <span style="color:var(--mut)">· peaje ${eur(r.tollAmt||r.tolls.reduce((s,t)=>s+t.p,0))} (${r.tolls.map(t=>t.n).join(", ")})</span>`;}catch(e){}return h;};}
+
+// ---------- (1) Tarifa de espera en vuelo / recogida (reutiliza evS waitFree / waitFee; simulado) ----------
+function v32WaitMin(w){if(!w)return 0;if(w.real!=null)return w.real;const spm=w.spm||(typeof v27spm==="function"?v27spm():1);return v27WEl(w)/Math.max(.001,spm);}
+function v32WaitAmt(min,svc){if(svc&&svc!=="urbano")return 0;if(!V32on("espera"))return 0;const E=evS();return r2(Math.max(0,(+min||0)-E.waitFree)*E.waitFee);}
+function v32ApplyWaitFee(min,note){const r=trip&&trip.r;if(!r)return 0;const fee=v32WaitAmt(min,r.svc);if(!fee)return 0;if(!trip.ev)trip.ev=evNew();r.evAdd=r2((r.evAdd||0)+fee);trip.ev.money=trip.ev.money||{wait:0,fee:0,tip:0};trip.ev.money.wait=r2((trip.ev.money.wait||0)+fee);try{refare(r);}catch(e){}if(note){try{if(typeof evLog==="function")evLog("⏳",note);}catch(e){}try{v27Log("⏳",note);}catch(e){}}return fee;}
+function v32WaitCancel(w){const r=trip.r,min=v32WaitMin(w),E=evS(),wait=v32WaitAmt(min,r.svc),long=min>=E.noShowMin,fee=r2(wait+(long?E.noShowFee:0));
+  if(!trip.ev)trip.ev=evNew();
+  if(!fee){try{v27Log("✈️",`Dejas de esperar a ${pnom(r)} tras ${fmtWait(min)} min (dentro del tiempo gratis)`);}catch(e){}cancelTrip();toast("✋ Dejas de esperar (sin tarifa: pocos minutos)");return;}
+  const km=r.pickupDist||0,ex=expCalc(fee,km,r.svc,r);
+  const txt=`Dejas de esperar tras ${fmtWait(min)} min · tarifa de espera ${eur(wait)}${long?" + cancelación "+eur(E.noShowFee):""} (simulado)`;
+  try{evLog("💶",txt);}catch(e){}try{v27Log("💶",txt);}catch(e){}
+  evEndEarly(r,ex,fee,km,r.pickup||S.driver,"no presentado","⏳ Cobras la espera / cancelación (simulado)");}
+function v32FeeHTML(w){const r=trip&&trip.r,min=v32WaitMin(w),E=evS(),fee=v32WaitAmt(min,r&&r.svc),gratis=E.waitFree;
+  return `<div class="sub" id="v32Fee">${fee?`💸 Tarifa de espera <b>${eur(fee)}</b> <span class="simtag">simulado</span> · ${gratis} min gratis, luego ${eur(E.waitFee)}/min`:`Dentro de los ${gratis} min gratis · luego ${eur(E.waitFee)}/min <span class="simtag">simulado</span>`}</div>`;}
+function v32FlPlan(w){const m=Math.max(1,+(w.min||8));return [
+  {at:r2(Math.max(.15,m*.18)),t:"Ya he aterrizado"},
+  {at:r2(Math.max(.5,m*.5)),t:"Estoy esperando la maleta"},
+  {at:r2(Math.max(.8,m*.85)),t:"Salgo ya"}];}
+function v32FlHTML(w){if(!V32on("vuelo")||!w||w.k!=="vuelo")return "";const min=v32WaitMin(w),who=esc(pnom(trip.r));
+  const shown=v32FlPlan(w).filter(x=>min>=x.at).map(x=>`<div class="evq">“${esc(x.t)}”<span class="evwho"> — ${who}</span></div>`).join("");
+  return `<div id="v32FlMsgs">${shown}</div>`;}
+{const _h=v27WHTML;v27WHTML=function(){let h=_h.apply(this,arguments);try{const T=trip&&trip.v27,w=T&&T.w;if(!w||w.done||(w.k!=="vuelo"&&w.k!=="recogida"))return h;const extra=(w.k==="vuelo"?v32FlHTML(w):"")+(V32on("espera")?v32FeeHTML(w):"");
+  if(h.indexOf("v27WCancel")>=0)h=h.replace('<button class="btn cancel" id="v27WCancel"',extra+'<button class="btn cancel" id="v27WCancel"');
+  else h=h.replace(/<\/div>$/,extra+"</div>");}catch(e){}return h;};}
+{const _t=v27WTick;v27WTick=function(){const v=_t.apply(this,arguments);try{const T=trip&&trip.v27,w=T&&T.w;if(!w||w.done)return v;const f=$("v32Fee");if(f&&V32on("espera")){const n=document.createElement("div");n.innerHTML=v32FeeHTML(w);if(n.firstChild&&f.innerHTML!==n.firstChild.innerHTML)f.innerHTML=n.firstChild.innerHTML;}
+  const m=$("v32FlMsgs");if(m){const n=document.createElement("div");n.innerHTML=v32FlHTML(w);if(n.firstChild&&m.innerHTML!==n.firstChild.innerHTML)m.innerHTML=n.firstChild.innerHTML;}}catch(e){}return v;};}
+{const _vu=V27DONE.vuelo;V27DONE.vuelo=function(w){try{const min=v32WaitMin(w),f=v32WaitAmt(min,trip.r.svc);if(f)v32ApplyWaitFee(min,pnom(trip.r)+" sale de llegadas tras "+fmtWait(min)+" min · tarifa de espera "+eur(f)+" (simulado)");}catch(e){}return _vu&&_vu(w);};}
+{const _rc=V27DONE.recogida;V27DONE.recogida=function(w){try{const min=v32WaitMin(w),f=v32WaitAmt(min,trip.r.svc);if(f)v32ApplyWaitFee(min,`${pnom(trip.r)} sube tras ${fmtWait(min)} min · tarifa de espera ${eur(f)} (simulado)`);}catch(e){}return _rc&&_rc(w);};}
+V27DONE.vuelo_cancel=function(w){try{const T=trip.v27;if(T){T.w=null;T.flA="cancel";}v32WaitCancel(w);}catch(e){console.error(e);}};
+V27DONE.recogida_cancel=function(w){try{const T=trip.v27;if(T)T.w=null;v32WaitCancel(w);}catch(e){console.error(e);}};
+{const _n=evNoShow;evNoShow=function(c,m){try{if(V32on("espera")&&trip&&trip.r&&trip.r.svc==="urbano"){const r=trip.r,E=evS(),wait=v32WaitAmt(m,r.svc),fee=r2(E.noShowFee+wait),ex=expCalc(fee,r.pickupDist,r.svc,r);
+  evLog("🚫",`${r.name} no se presentó tras ${Math.floor(m)} min de espera · cancelación ${eur(E.noShowFee)}${wait?" + espera "+eur(wait):""} (simulado)`);
+  playSound("cancela");evEndEarly(r,ex,fee,r.pickupDist,r.pickup,"no presentado","🚫 El pasajero no se ha presentado");return;}}catch(e){console.error(e);}return _n.apply(this,arguments);};}
+
+// ---------- (6) ya cubierto en la tarjeta de espera (mensajes de vuelo) ----------
+// ---------- (4) Llamada «tardo X minutos» solo al acercarse o en el punto ----------
+function v32NearPu(){if(!trip||!trip.r||trip.phase!==1)return false;if(trip.atPickup)return true;const r=trip.r,E=r.pickupMin||0,now=Date.now();
+  try{if(typeof driveMin==="function"&&trip.acceptedAt){const used=driveMin(trip,trip.acceptedAt,now);if(E>0&&Math.max(0,E-used)<=2)return true;}}catch(e){}
+  try{if(S.driver&&r.pickup&&hav(S.driver,r.pickup)<=0.7)return true;}catch(e){}
+  return false;}
+{const _i=v27Init;v27Init=function(){const T=_i.apply(this,arguments);try{if(V32on("llamada")&&T&&trip&&trip.r&&trip.r.call&&!T.v32callKept){const F=typeof v27R==="function"?v27R():{};if(F.callAt==null){T.callPend=true;T.callAt=0;T.v32callKept=1;}}}catch(e){}return T;};}
+{const _c=v27Call;v27Call=function(){try{const T=v27T();if(T)T.callDone=1;}catch(e){}
+  const _a=v27Ask;v27Ask=function(q){v27Ask=_a;if(q&&q.k==="v27call"&&q.sub==null)q.body=(q.body||"").replace("Llamada antes de la recogida (simulada).","Llamada cerca de la recogida (simulada).");
+    const old=q.on;q.on=function(a){const out=old&&old.apply(this,arguments);try{const T=v27T();if(T&&T.callHold){T.callHold=0;setTimeout(()=>{try{pickedUp();}catch(e){}},60);}}catch(e){}return out;};return _a(q);};
+  return _c.apply(this,arguments);};}
+{const _pu=pickedUp;pickedUp=function(){try{if(!window.NO_V32&&V32on("llamada")&&trip&&trip.phase===1&&trip.r&&trip.r.call&&trip.v27&&!trip.v27.callDone&&!v27Busy()){const T=v27T();T.callDone=1;T.callHold=1;T.callAt=0;v27Call();return;}}catch(e){console.error(e);}return _pu.apply(this,arguments);};}
+setInterval(()=>{try{if(window.NO_V27||window.NO_V32||!V32on("llamada")||!trip||!trip.v27||!trip.r||!trip.r.call||trip.v27.callDone||trip.v27.callHold)return;
+  if(animating||v27Busy()||(trip.ev&&trip.ev.cur)||(typeof V26C!=="undefined"&&(V26C||(V26Q||[]).some(q=>q.trip))))return;
+  if(!v32NearPu())return;trip.v27.callDone=1;trip.v27.callAt=0;v27Call();}catch(e){}},400);
+
+// ---------- (5) Intensidad: una vez se anima (4/10), no baja sola; el cliente sigue subiendo. Si ALBA corta, sí cambia el rumbo (se respeta T.escOff).
+{const _a=v28IntAdd;v28IntAdd=function(d,why){try{const T=trip&&trip.v28;if(V32on("intensa")&&V29on("intensa")&&T&&d<0&&!why&&!T.escOff&&(T.esc||(T.intMax||0)>=4||(T.int||0)>=4)){T.intAt=Date.now();return;}}catch(e){}
+  return _a.apply(this,arguments);};
+  try{if(window.V28)V28.int=v28IntAdd;}catch(e){}}
+{const _t=v29Tick;v29Tick=function(){try{if(trip&&trip.v28&&V32on("intensa")&&V29on("intensa")){const T=trip.v28,now=Date.now();
+  if(!T.escOff&&((T.intMax||0)>=4||(T.int||0)>=4||T.esc))T.intAt=now;
+  if(!T.esc&&!T.escOff&&!v28Kids()&&(T.int||0)>=4){const pr=typeof v29Prof==="function"?v29Prof():null,R=pr&&V29_RISE[pr],F=v29R();
+    if(R){const iv=F.rise!=null?F.rise*1000:R[0];if(now-(T.riseAt||T.p2||now)>=iv&&(T.int||0)<R[2]){T.riseAt=now;v28IntAdd(R[1],R[3]);}}}
+}}catch(e){}return _t.apply(this,arguments);};}
+
+// ---------- (2) Gente que se acerca mientras esperas al cliente (reutiliza el sistema de Parada v29) ----------
+const V32_LIBRE={ic:"🚕",n:"pregunta si estás libre",dia:3.2,noche:3.5,q:["¿Estás libre? Es que necesito un taxi.","Oye, ¿haces un viaje? Voy cerca.","¿Trabajas ahora? ¿Me recogerías?"],dar:"🚕 Explicar que esperas a un cliente"};
+function v32Waiting(){try{if(!trip)return false;const w=trip.v27&&trip.v27.w;if(w&&!w.done&&(w.k==="vuelo"||w.k==="recogida"))return true;const c=trip.ev&&trip.ev.cur;if(c&&(c.type==="tarde"||c.type==="bbTarde"))return true;}catch(e){}return false;}
+function v32StKind(){const F=v29R()||{},G=v32R();if(G.stKind||F.stKind)return G.stKind||F.stKind;const n=v29Night(),kinds=Object.assign({},V29_KIND,{libre:V32_LIBRE});return wpick(Object.keys(kinds).map(k=>[k,kinds[k][n?"noche":"dia"]]));}
+function v32Street(){if(!V32on("calle")||!v32Waiting())return;if(typeof V26C!=="undefined"&&(V26C||(V26Q||[]).length))return;
+  const kind=v32StKind(),K=kind==="libre"?V32_LIBRE:V29_KIND[kind];if(!K)return;const p=v29StPerson(kind==="libre"?"dir":kind),spot=kind==="dir"?v29StSpot():null;
+  const who=`${p.g==="m"?"Un hombre":"Una mujer"} de unos ${Math.round(p.edad/5)*5} años`;
+  const q=kind==="dir"?`Perdona, ¿para ir a ${spot.n}?`:v32rn(K.q);
+  const opts=kind==="ligar"?[["amable","🙂 Sonreír y decir que no, con amabilidad","ok"],["firme","✋ «Estoy trabajando», firme","mid"],["cerrar","🪟 Cerrar la ventanilla","no"]]
+    :[["dar",K.dar,"ok"],["nodar",kind==="dir"?"🙂 «Lo siento, no lo sé»":kind==="libre"?"🙂 «Ahora no, lo siento»":"🙂 «No tengo, lo siento»","mid"],["firme","✋ Decir que no, firme","no"],["cerrar","🪟 Cerrar la ventanilla","no"]];
+  const body=`<div class="v26q">«${esc(q)}»</div><div class="sub">${K.ic} ${who} ${esc(K.n)} mientras esperas al cliente. <b>Aspecto:</b> ${esc(p.asp)} · <b>actitud:</b> ${esc(p.act)}. <span class="simtag">simulado</span>${spot&&spot.d!=null?` · ${esc(spot.n)} es un sitio real a ${num1(spot.d)} km`:""}</div>`;
+  v29Ask({k:"v29calle",ic:"🚶",title:"Alguien se acerca a la ventanilla",body,opts,snd:"v29calle",voz:`${who} se acerca a la ventanilla y ${K.n}.`,trip:true,on:a=>v32StAns(kind,p,a,spot,who,q)});}
+function v32StAns(kind,p,a,spot,who,q){if(a==="ign")a="cerrar";const f=p.g==="f";let out;
+  if(a==="dar"){out=kind==="dir"?`Le indicas cómo llegar a ${spot.n}. Se va ${f?"agradecida":"agradecido"}.`:kind==="libre"?`Le explicas que estás esperando a un cliente. «Ah, vale, perdona» y se va.`:(kind==="dinero"?`Le das un par de euros (simulado). «¡Gracias, de verdad!»`:`Se lo das. «¡Gracias, guapa!» y se va ${f?"contenta":"contento"}.`);}
+  else if(a==="amable")out=v32rn(["Se ríe y se despide: «¡Otra vez será!».","Te sonríe, «perdona la molestia», y se va."]);
+  else if(a==="nodar")out=`«Vale, gracias igualmente», y se va.`;
+  else if(a==="firme")out="Lo entiende y se va.";
+  else out=v32rn(["Cierras la ventanilla. Se queda un segundo mirando y se va.","Cierras la ventanilla y se aleja."]);
+  toast("🚶 "+out);try{v29say(out);}catch(e){}
+  try{v27Log("🚶",`${who} se acercó (${V29_KIND[kind]?V29_KIND[kind].n:V32_LIBRE.n}) mientras esperabas: ${out}`);}catch(e){}
+  const s=S.v32wst=S.v32wst||{n:0,log:[]};s.n++;s.log.push({k:kind,a,ts:Date.now()});if(s.log.length>40)s.log.shift();save();}
+function v32StTick(){if(window.NO_V32||!V32on("calle")||!v32Waiting())return;if(typeof V26C!=="undefined"&&(V26C||(V26Q||[]).length))return;
+  const F=v32R(),now=Date.now();S.v32wst=S.v32wst||{n:0,log:[],next:0};
+  if(F.st&&!S.v32wst.didF){S.v32wst.didF=1;S.v32wst.next=0;}
+  if(now<(S.v32wst.next||0))return;S.v32wst.next=now+(F.stGap!=null?F.stGap*1000:rnd(20,55)*1000);
+  if(!F.st&&S.v32wst.n>=4)return;v32Street();}
+setInterval(()=>{try{v32StTick();}catch(e){}},1000);
+
+// ---------- Tarjeta, makeRequest, ajustes ----------
+{const _cl=v30CardLines;v30CardLines=function(r,trip){let h=_cl.apply(this,arguments)||"";
+  try{if(r&&r.v32town)h+=`<div class="sub v30x">🏘️ Viaje a ${esc(r.v32town)} (Cataluña)</div>`;
+    if(r&&r.v32air){const a=r.v32air;h+=a.k==="ave"?`<div class="sub v30x">🚄 Llegada nocturna: AVE de ${esc(a.from)} llegado a las ${a.hm} · ${esc(a.maleta)} <span class="simtag">simulado</span></div>`:`<div class="sub v30x">✈️ Llegada nocturna: vuelo de ${esc(a.from)} aterrizado a las ${a.hm} · ${esc(a.maleta)} <span class="simtag">simulado</span></div>`;}
+    if(r&&r.tolls&&r.tolls.length)h+=`<div class="sub v32toll">🛣️ Peaje: ${r.tolls.map(t=>`${esc(t.n)} ${eur(t.p)}`).join(" · ")} <span class="simtag">oficial 2026</span></div>`;}catch(e){}
+  return h;};}
+{const _mr=makeRequest;makeRequest=async function(){const r=await _mr.apply(this,arguments);if(!r||window.NO_V32)return r;try{
+  if(window.V32_LAST){r.v32town=V32_LAST;window.V32_LAST=null;}
+  if(r.svc==="urbano"){const pl=JSON.stringify(r.pu||r.from||"");
+    if(V32on("nocturno")&&/El Prat|Barcelona-El Prat/.test(pl)&&(v32R().air||v30NightH(v32Now().h)))r.v32air=v32Flight("air");
+    if(V32on("nocturno")&&/Barcelona-Sants/.test(pl)&&(v32R().st||v32R().sants||v30NightH(v32Now().h)))r.v32air=v32Flight("ave");}
+  v32ApplyTolls(r);}catch(e){console.error(e);}return r;};}
+{const _s=showSummary;showSummary=function(o){const v=_s.apply(this,arguments);try{const r=o&&o.r||(o&&o.ex&&trip&&trip.r);const R=o&&o.r;if(R&&R.tolls&&R.tolls.length){const box=document.querySelector(".tsum,.sum")||$("overlay");if(box&&!box.querySelector(".v32toll")){const row=document.createElement("div");row.className="row v32toll";row.innerHTML=`<span>Peaje (${R.tolls.map(t=>esc(t.n)).join(", ")})</span><span>−${eur(R.tollAmt||R.tolls.reduce((s,t)=>s+t.p,0))}</span>`;const net=[...box.querySelectorAll(".row")].find(e=>/Neto|neto/.test(e.textContent));if(net)net.insertAdjacentElement("beforebegin",row);else box.appendChild(row);}}}catch(e){}return v;};}
+
+function syncV32UI(){if(!$("secV32"))return;const s=v32S();document.querySelectorAll("#secV32 input[data-v32k]").forEach(c=>c.checked=!!s[c.dataset.v32k]);}
+{const a=$("secV31")||$("secV30")||$("secV29");if(a&&!$("secV32")&&!V32off()){v32S();a.insertAdjacentHTML("afterend",`<div class="sec" id="secV32"><h2>Versión 32 <span class="v29ver">v${APP_VER}</span></h2>
+  ${Object.keys(V32_LBL).map(k=>`<label><input type="checkbox" data-v32k="${k}"> ${V32_LBL[k]}</label>`).join("")}
+  <div class="sub">Peajes: solo tramos vigentes en 2026 (Túnels de Vallvidrera, Túnel del Cadí, C-16 Sant Cugat–Manresa, C-32 Castelldefels–El Vendrell). AP-7, AP-2 y C-33 no se cobran. Fuente: Generalitat, tarifes 2026.</div></div>`);
+  document.querySelectorAll("#secV32 input[data-v32k]").forEach(c=>c.onchange=()=>{v32S()[c.dataset.v32k]=c.checked;save();toast(V32_LBL[c.dataset.v32k]+": "+(c.checked?"activado":"desactivado"));});
+  try{v32FechaOpts();}catch(e){}}
+  try{syncV32UI();}catch(e){}}
+{const _sy=typeof syncV31UI==="function"?syncV31UI:null;}
+
+window.V32={S:v32S,on:V32on,R:v32R,now:v32Now,inCat:v32InCat,townDe:v32TownDe,airPick:v32AirPick,staP:v32StaP,flight:v32Flight,tolls:v32Tolls,applyTolls:v32ApplyTolls,waitAmt:v32WaitAmt,waitMin:v32WaitMin,nearPu:v32NearPu,waiting:v32Waiting,street:v32Street,days:V32_DAYS,data:V32_DATA,cat:V32_CAT,src:V32_TOLL_SRC,ver:"32.0"};
 
 </script>
 </body>
